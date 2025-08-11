@@ -9,7 +9,12 @@ import { useRouter, usePathname } from "next/navigation";
 
 const drawerWidth = 260;
 
-export default function Sidebar() {
+type SidebarProps = {
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+};
+
+export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const { resolveLabel } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
@@ -23,17 +28,11 @@ export default function Sidebar() {
 
   const handleNavigate = (entityListField: string) => {
     router.push(`/entities/${entityListField}`);
+    onCloseMobile?.();
   };
 
-  return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: "border-box" },
-      }}
-    >
+  const drawerContent = (
+    <>
       <Toolbar>
         <Typography variant="h6">Simfinity Entities</Typography>
       </Toolbar>
@@ -64,7 +63,28 @@ export default function Sidebar() {
           })}
         </List>
       </Box>
-    </Drawer>
+    </>
+  );
+
+  return (
+    <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }} aria-label="entity folders">
+      <Drawer
+        variant="temporary"
+        open={!!mobileOpen}
+        onClose={onCloseMobile}
+        ModalProps={{ keepMounted: true }}
+        sx={{ display: { xs: "block", md: "none" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
+      >
+        {drawerContent}
+      </Drawer>
+      <Drawer
+        variant="permanent"
+        sx={{ display: { xs: "none", md: "block" }, "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" } }}
+        open
+      >
+        {drawerContent}
+      </Drawer>
+    </Box>
   );
 }
 

@@ -152,11 +152,12 @@ export type ValueResolver = (row: Record<string, unknown>) => unknown;
 export function buildSelectionSetForObjectType(
   schema: SchemaData,
   objectTypeName: string
-): { selection: string; columns: string[]; valueResolvers: Record<string, ValueResolver> } {
+): { selection: string; columns: string[]; valueResolvers: Record<string, ValueResolver>; sortFieldByColumn: Record<string, string> } {
   const type = getTypeByName(schema, objectTypeName);
   const columns: string[] = [];
   const valueResolvers: Record<string, ValueResolver> = {};
-  if (!type?.fields) return { selection: "id", columns: ["id"], valueResolvers };
+  const sortFieldByColumn: Record<string, string> = {};
+  if (!type?.fields) return { selection: "id", columns: ["id"], valueResolvers, sortFieldByColumn };
 
   const fieldSelections: string[] = [];
   for (const field of type.fields) {
@@ -187,6 +188,7 @@ export function buildSelectionSetForObjectType(
         }
         return v;
       };
+      sortFieldByColumn[name] = name;
     } else if (kind === "OBJECT" && namedTypeName) {
       // Prefer displayField from Simfinity extensions; fallback to name, then first scalar field; include id only if not embedded and present
       const objType = getTypeByName(schema, namedTypeName);
@@ -244,6 +246,12 @@ export function buildSelectionSetForObjectType(
         }
         return v;
       };
+      // For sorting, prefer dot notation to the chosen display field when available
+      if (chosenDisplay) {
+        sortFieldByColumn[name] = `${name}.${chosenDisplay}`;
+      } else {
+        sortFieldByColumn[name] = name;
+      }
     }
   }
 
@@ -256,7 +264,7 @@ export function buildSelectionSetForObjectType(
   }
 
   const selection = fieldSelections.join("\n");
-  return { selection, columns, valueResolvers };
+  return { selection, columns, valueResolvers, sortFieldByColumn };
 }
 
 

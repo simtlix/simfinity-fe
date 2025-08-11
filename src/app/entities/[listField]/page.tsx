@@ -1,7 +1,6 @@
 import * as React from "react";
 import EntityTable from "@/components/EntityTable";
-import { Box, Toolbar } from "@mui/material";
-import Sidebar from "@/components/Sidebar";
+import LayoutShell from "@/components/LayoutShell";
 
 export default async function EntityPage({
   params,
@@ -10,13 +9,9 @@ export default async function EntityPage({
 }) {
   const { listField } = await params;
   return (
-    <Box sx={{ display: "flex" }}>
-      <Sidebar />
-      <Box component="main" sx={{ flexGrow: 1, p: 0 }}>
-        <Toolbar />
-        <EntityTable listField={listField} />
-      </Box>
-    </Box>
+    <LayoutShell>
+      <EntityTable listField={listField} />
+    </LayoutShell>
   );
 }
 
