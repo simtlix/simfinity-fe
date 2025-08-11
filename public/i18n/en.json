@@ -1,0 +1,25 @@
+{
+  "series": "Series",
+  "seasons": "Seasons",
+  "episodes": "Episodes",
+  "stars": "Stars",
+
+  "serie.name": "Name",
+  "serie.categories": "Categories",
+  "serie.director": "Director",
+
+  "season.number": "Number",
+  "season.year": "Year",
+  "season.state": "State",
+  "season.serie": "Series",
+
+  "episode.number": "Number",
+  "episode.name": "Name",
+  "episode.date": "Air Date",
+  "episode.season": "Season",
+
+  "star.name": "Name",
+  "star.country": "Country"
+}
+
+

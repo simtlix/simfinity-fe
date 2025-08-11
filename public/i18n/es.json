@@ -1,0 +1,24 @@
+{
+  "series": "Series",
+  "seasons": "Temporadas",
+  "episodes": "Episodios",
+  "stars": "Actores",
+
+  "serie.name": "Título",
+  "serie.categories": "Categorías",
+  "serie.director": "Director",
+
+  "season.number": "N°",
+  "season.year": "Año",
+  "season.state": "Estado",
+  "season.serie": "Serie",
+
+  "episode.number": "N°",
+  "episode.name": "Nombre",
+  "episode.date": "Fecha",
+  "episode.season": "Temporada",
+
+  "star.name": "Nombre",
+  "star.country": "País"
+}
+
