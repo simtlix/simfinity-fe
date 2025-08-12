@@ -48,4 +48,18 @@ export function BetweenFilterInput(props: GridFilterInputValueProps & { inputTyp
   );
 }
 
+export function DateFilterInput(props: GridFilterInputValueProps & { inputType?: 'date' | 'datetime-local' }) {
+  const { item, applyValue, inputType = 'datetime-local' } = props;
+  const value = (item.value ?? '') as string | number;
+  return (
+    <TextField
+      size="small"
+      type={inputType}
+      value={value as string}
+      onChange={(e) => applyValue({ ...item, value: e.target.value })}
+      fullWidth
+    />
+  );
+}
+
 
