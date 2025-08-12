@@ -20,6 +20,21 @@
 
   "star.name": "Name",
   "star.country": "Country"
+  ,
+  "grid.filter.columns": "Columns",
+  "grid.filter.operator": "Operator",
+  "grid.filter.value": "Value",
+  "grid.filter.contains": "contains",
+  "grid.filter.equals": "equals",
+  "grid.filter.startsWith": "starts with",
+  "grid.filter.endsWith": "ends with",
+  "grid.filter.is": "is",
+  "grid.filter.not": "not",
+  "grid.filter.isAnyOf": "is any of",
+  "grid.filter.greaterThan": "greater than",
+  "grid.filter.greaterThanOrEqual": "greater than or equal to",
+  "grid.filter.lessThan": "less than",
+  "grid.filter.lessThanOrEqual": "less than or equal to"
 }
 
 

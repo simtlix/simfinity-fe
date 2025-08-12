@@ -3,19 +3,23 @@
 import * as React from "react";
 import { gql, useApolloClient, useQuery } from "@apollo/client";
 import { Box, CircularProgress, Paper, Typography } from "@mui/material";
-import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
-import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, buildSelectionSetForObjectType, ValueResolver } from "@/lib/introspection";
+import { DataGrid, type GridColDef, type GridPaginationModel, type GridFilterModel, type GridFilterOperator, getGridNumericOperators, getGridStringOperators, getGridBooleanOperators, GridFilterInputValue } from "@mui/x-data-grid";
+import ServerToolbar from "@/components/ServerToolbar";
+import ServerFilterPanel from "@/components/ServerFilterPanel";
+import { TagsFilterInput, BetweenFilterInput } from "@/components/FilterInputs";
+import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, buildSelectionSetForObjectType, ValueResolver, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName } from "@/lib/introspection";
 import { useI18n } from "@/lib/i18n";
 
 type EntityTableProps = {
   listField: string; // e.g., "series"
 };
 
-function buildPaginatedListQuery(listField: string, selection: string, sortBlock: string | null) {
+function buildPaginatedListQuery(listField: string, selection: string, sortBlock: string | null, filterBlock: string | null) {
   const sortArg = sortBlock ? `, ${sortBlock}` : "";
+  const filterArgs = filterBlock ? `, ${filterBlock}` : "";
   return gql`
     query DynamicList($page: Int!, $size: Int!, $count: Boolean!) {
-      ${listField}(pagination: { page: $page, size: $size, count: $count }${sortArg}) {
+      ${listField}(pagination: { page: $page, size: $size, count: $count }${sortArg}${filterArgs}) {
         ${selection}
       }
     }
@@ -29,7 +33,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
   const { data: schemaData } = useQuery(INTROSPECTION_QUERY);
   const { resolveLabel } = useI18n();
 
-  const { selection, columns, valueResolvers, entityTypeName, sortFieldByColumn } = React.useMemo(() => {
+  const { selection, columns, valueResolvers, entityTypeName, sortFieldByColumn, fieldTypeByColumn } = React.useMemo(() => {
     const schema = schemaData as SchemaData | undefined;
     if (!schema)
       return {
@@ -37,7 +41,8 @@ export default function EntityTable({ listField }: EntityTableProps) {
         columns: ["id"],
         valueResolvers: { id: (r: Record<string, unknown>) => r["id"] } as Record<string, ValueResolver>,
         entityTypeName: listField,
-        sortFieldByColumn: {},
+         sortFieldByColumn: {},
+         fieldTypeByColumn: {},
       } as const;
     const etn = getElementTypeNameOfListField(schema, listField);
     if (!etn)
@@ -46,7 +51,8 @@ export default function EntityTable({ listField }: EntityTableProps) {
         columns: ["id"],
         valueResolvers: { id: (r: Record<string, unknown>) => r["id"] } as Record<string, ValueResolver>,
         entityTypeName: listField,
-        sortFieldByColumn: {},
+         sortFieldByColumn: {},
+         fieldTypeByColumn: {},
       } as const;
     return { ...buildSelectionSetForObjectType(schema, etn), entityTypeName: etn } as const;
   }, [schemaData, listField]);
@@ -58,6 +64,69 @@ export default function EntityTable({ listField }: EntityTableProps) {
   const [loadingData, setLoadingData] = React.useState<boolean>(false);
   const [errorData, setErrorData] = React.useState<string | null>(null);
   const [sortModel, setSortModel] = React.useState<{ field: string; sort: 'asc' | 'desc' }[]>([]);
+  const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
+  const [pendingFilterModel, setPendingFilterModel] = React.useState<GridFilterModel>({ items: [] });
+
+  const filterBlock: string | null = React.useMemo(() => {
+    if (!filterModel?.items?.length) return null;
+    const byField = new Map<string, { operator: string; value: unknown }[]>();
+    for (const item of filterModel.items) {
+      if (!item.field || item.value == null || item.value === '') continue;
+      const field = String(item.field);
+      const opMap: Record<string, string> = {
+        contains: 'LIKE', startsWith: 'LIKE', endsWith: 'LIKE', equals: 'EQ', '=': 'EQ', is: 'EQ', '!=': 'NE', not: 'NE',
+        greaterThan: 'GT', '>': 'GT', greaterThanOrEqual: 'GTE', '>=': 'GTE', lessThan: 'LT', '<': 'LT', lessThanOrEqual: 'LTE', '<=': 'LTE',
+        isAnyOf: 'IN', in: 'IN', nin: 'NIN', btw: 'BTW'
+      };
+      const operator = opMap[item.operator ?? 'equals'] ?? 'EQ';
+      const value = item.value as unknown;
+      const arr = byField.get(field) ?? [];
+      arr.push({ operator, value });
+      byField.set(field, arr);
+    }
+    if (byField.size === 0) return null;
+
+    const parts: string[] = [];
+    byField.forEach((conds, col) => {
+      const sortField = (sortFieldByColumn as Record<string, string | undefined>)[col];
+      const isObjectColumn = sortField ? sortField.includes('.') : false;
+      const typeName = (fieldTypeByColumn as Record<string, string | undefined>)[col];
+      const isNumeric = isNumericScalarName(typeName);
+      const isBoolean = isBooleanScalarName(typeName);
+      const allowedOpsScalar = isNumeric ? new Set(["EQ","NE","GT","GTE","LT","LTE","IN","NIN","BTW"]) : isBoolean ? new Set(["EQ","NE"]) : new Set(["EQ","NE","LIKE","IN","NIN"]);
+      if (!isObjectColumn) {
+        const { operator, value } = conds[0];
+        if (!allowedOpsScalar.has(operator)) return;
+        const toLiteral = (v: unknown) => isNumeric ? String(Number(v)) : isBoolean ? String(Boolean(v)) : JSON.stringify(String(v));
+        if (operator === 'IN' || operator === 'NIN') {
+          const values = Array.isArray(value) ? value : [value];
+          const arrLit = `[${values.map(toLiteral).join(', ')}]`;
+          parts.push(`${col}: { operator: ${operator}, value: ${arrLit} }`);
+        } else if (operator === 'BTW') {
+          const values = Array.isArray(value) ? value : [value, value];
+          const arrLit = `[${values.slice(0,2).map(toLiteral).join(', ')}]`;
+          parts.push(`${col}: { operator: ${operator}, value: ${arrLit} }`);
+        } else {
+          const valueLiteral = toLiteral(value);
+          parts.push(`${col}: { operator: ${operator}, value: ${valueLiteral} }`);
+        }
+      } else {
+        const pathWithin = sortField!.split('.').slice(1).join('.');
+        const terms = conds.map(({ operator, value }) => {
+          const toLiteral = (v: unknown) => isNumeric ? String(Number(v)) : isBoolean ? String(Boolean(v)) : JSON.stringify(String(v));
+          if (operator === 'IN' || operator === 'NIN' || operator === 'BTW') {
+            const values = Array.isArray(value) ? value : [value];
+            const arrLit = operator === 'BTW' ? `[${values.slice(0,2).map(toLiteral).join(', ')}]` : `[${values.map(toLiteral).join(', ')}]`;
+            return `{ path: ${JSON.stringify(pathWithin)}, operator: ${operator}, value: ${arrLit} }`;
+          }
+          const valueLiteral = toLiteral(value);
+          return `{ path: ${JSON.stringify(pathWithin)}, operator: ${operator}, value: ${valueLiteral} }`;
+        }).join(', ');
+        parts.push(`${col}: { terms: [ ${terms} ] }`);
+      }
+    });
+    return parts.length ? parts.join(', ') : null;
+  }, [filterModel, sortFieldByColumn, fieldTypeByColumn]);
 
   React.useEffect(() => {
     if (!selection) return;
@@ -79,7 +148,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
       : null;
     client
       .query({
-        query: buildPaginatedListQuery(listField, selection, sortBlock),
+        query: buildPaginatedListQuery(listField, selection, sortBlock, filterBlock),
         variables: {
           page: page + 1,
           size: rowsPerPage,
@@ -110,7 +179,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
     return () => {
       cancelled = true;
     };
-  }, [client, listField, selection, page, rowsPerPage, sortModel, sortFieldByColumn]);
+  }, [client, listField, selection, page, rowsPerPage, sortModel, sortFieldByColumn, filterBlock]);
 
   const resolvedColumns = columns;
   const entityNameForLabels = entityTypeName;
@@ -120,11 +189,62 @@ export default function EntityTable({ listField }: EntityTableProps) {
   const gridColumns: GridColDef<GridRow>[] = React.useMemo(() => {
     return resolvedColumns.map((col) => {
       const header = resolveLabel([`${entityNameForLabels}.${col}`], { entity: entityNameForLabels, field: col }, col);
+      const typeName = (fieldTypeByColumn as Record<string, string | undefined>)[col];
+      const isNumeric = isNumericScalarName(typeName);
+      const isBoolean = isBooleanScalarName(typeName);
+      const isDate = isDateTimeScalarName(typeName);
       const def: GridColDef<GridRow> = {
         field: col,
         headerName: header,
         flex: 1,
         minWidth: 140,
+        type: isNumeric ? 'number' : isBoolean ? 'boolean' : isDate ? 'dateTime' : 'string',
+        headerAlign: 'left',
+        align: 'left',
+        filterOperators: (() => {
+          if (isNumeric) {
+            const base = getGridNumericOperators();
+            const keep = new Set(['=', '!=', '>', '>=', '<', '<=', 'equals']);
+            return [
+              ...base.filter((o) => (o.value ? keep.has(o.value) : false)),
+              { label: 'between', value: 'btw', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: BetweenFilterInput, InputComponentProps: { inputType: 'number' } } as unknown as GridFilterOperator,
+              { label: 'in', value: 'in', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: TagsFilterInput } as unknown as GridFilterOperator,
+              { label: 'not in', value: 'nin', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: TagsFilterInput } as unknown as GridFilterOperator,
+            ];
+          }
+          if (isBoolean) {
+            return getGridBooleanOperators();
+          }
+          if (isDate) {
+            const single: GridFilterOperator[] = [
+              { label: 'equals', value: 'equals', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: GridFilterInputValue } as unknown as GridFilterOperator,
+              { label: 'greaterThan', value: '>', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: GridFilterInputValue } as unknown as GridFilterOperator,
+              { label: 'greaterThanOrEqual', value: '>=', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: GridFilterInputValue } as unknown as GridFilterOperator,
+              { label: 'lessThan', value: '<', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: GridFilterInputValue } as unknown as GridFilterOperator,
+              { label: 'lessThanOrEqual', value: '<=', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: GridFilterInputValue } as unknown as GridFilterOperator,
+            ];
+            return [
+              ...single,
+              { label: 'between', value: 'btw', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: BetweenFilterInput, InputComponentProps: { inputType: 'datetime-local' } } as unknown as GridFilterOperator,
+            ];
+          }
+          const base = getGridStringOperators();
+          const keep = new Set(['contains', 'equals', 'not', 'startsWith', 'endsWith']);
+          return [
+            ...base.filter((o) => (o.value ? keep.has(o.value) : false)),
+            { label: 'in', value: 'in', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: TagsFilterInput } as unknown as GridFilterOperator,
+            { label: 'not in', value: 'nin', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: TagsFilterInput } as unknown as GridFilterOperator,
+          ];
+        })(),
+        valueGetter: isDate
+          ? (params: { value: unknown }) => {
+              const raw = params.value as unknown;
+              if (raw == null) return null;
+              if (raw instanceof Date) return raw;
+              const d = new Date(raw as string | number);
+              return isNaN(d.getTime()) ? null : d;
+            }
+          : undefined,
         renderCell: (params) => {
           const row = params.row as GridRow;
           const resolver = (valueResolvers as Record<string, ValueResolver | undefined>)[col];
@@ -134,11 +254,31 @@ export default function EntityTable({ listField }: EntityTableProps) {
       };
       return def;
     });
-  }, [resolvedColumns, resolveLabel, entityNameForLabels, valueResolvers]);
+  }, [resolvedColumns, resolveLabel, entityNameForLabels, valueResolvers, fieldTypeByColumn]);
 
   const gridRows: GridRow[] = React.useMemo(() => {
     return rows.map((row, idx) => ({ __rid: String((row as Record<string, unknown>)["id"] ?? `${listField}-${page}-${idx}`), ...row }));
   }, [rows, listField, page]);
+
+  const localeText = React.useMemo(() => {
+    const t = (k: string, d: string) => resolveLabel([`grid.${k}`], { entity: listField }, d);
+    return {
+      filterPanelColumns: t('filter.columns', 'Columns'),
+      filterPanelOperator: t('filter.operator', 'Operator'),
+      filterPanelValue: t('filter.value', 'Value'),
+      filterOperatorContains: t('filter.contains', 'contains'),
+      filterOperatorEquals: t('filter.equals', 'equals'),
+      filterOperatorStartsWith: t('filter.startsWith', 'starts with'),
+      filterOperatorEndsWith: t('filter.endsWith', 'ends with'),
+      filterOperatorIs: t('filter.is', 'is'),
+      filterOperatorNot: t('filter.not', 'not'),
+      filterOperatorIsAnyOf: t('filter.isAnyOf', 'is any of'),
+      filterOperatorGreaterThan: t('filter.greaterThan', 'greater than'),
+      filterOperatorGreaterThanOrEqual: t('filter.greaterThanOrEqual', 'greater than or equal to'),
+      filterOperatorLessThan: t('filter.lessThan', 'less than'),
+      filterOperatorLessThanOrEqual: t('filter.lessThanOrEqual', 'less than or equal to'),
+    } as const;
+  }, [resolveLabel, listField]);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -162,6 +302,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
             rows={gridRows}
             getRowId={(row: { __rid: string }) => row.__rid}
             columns={gridColumns}
+            localeText={localeText}
             loading={loadingData}
             rowCount={totalCount ?? gridRows.length}
             paginationMode="server"
@@ -182,10 +323,36 @@ export default function EntityTable({ listField }: EntityTableProps) {
                 .map((m) => ({ field: String(m.field), sort: m.sort as 'asc' | 'desc' }));
               setSortModel(norm);
             }}
+            filterMode="server"
+            filterModel={pendingFilterModel}
+            onFilterModelChange={(model) => setPendingFilterModel(model)}
             pageSizeOptions={[5, 10, 25, 50]}
-            disableColumnMenu
+            slots={{
+              toolbar: () => (
+                <ServerToolbar
+                  filterModel={pendingFilterModel}
+                  onFilterModelChange={setPendingFilterModel}
+                  onApply={() => setFilterModel(pendingFilterModel)}
+                  onClear={() => { setPendingFilterModel({ items: [] }); setFilterModel({ items: [] }); }}
+                  onOpenFilter={() => {
+                    // Directly call the grid API when possible
+                    const root = document.querySelector('[data-mui-internal="GridRoot"]') || document.querySelector('[role="grid"]');
+                    if (root) {
+                      const toggleBtn = root.querySelector('[aria-label="Filters"]') || root.querySelector('[aria-label="Show filters"]') || root.querySelector('[aria-label="Hide filters"]');
+                      (toggleBtn as HTMLButtonElement | null)?.click();
+                    }
+                  }}
+                />
+              ),
+              filterPanel: () => (
+                <ServerFilterPanel
+                  onApply={(model) => setFilterModel(model)}
+                  onClear={() => { setPendingFilterModel({ items: [] }); setFilterModel({ items: [] }); }}
+                />
+              ),
+            }}
             disableRowSelectionOnClick
-            sx={{ border: 0 }}
+            sx={{ border: 0, height: '100%' }}
           />
         </Paper>
       )}

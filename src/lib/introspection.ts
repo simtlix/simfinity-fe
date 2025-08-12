@@ -152,12 +152,13 @@ export type ValueResolver = (row: Record<string, unknown>) => unknown;
 export function buildSelectionSetForObjectType(
   schema: SchemaData,
   objectTypeName: string
-): { selection: string; columns: string[]; valueResolvers: Record<string, ValueResolver>; sortFieldByColumn: Record<string, string> } {
+): { selection: string; columns: string[]; valueResolvers: Record<string, ValueResolver>; sortFieldByColumn: Record<string, string>; fieldTypeByColumn: Record<string, string> } {
   const type = getTypeByName(schema, objectTypeName);
   const columns: string[] = [];
   const valueResolvers: Record<string, ValueResolver> = {};
   const sortFieldByColumn: Record<string, string> = {};
-  if (!type?.fields) return { selection: "id", columns: ["id"], valueResolvers, sortFieldByColumn };
+  const fieldTypeByColumn: Record<string, string> = {};
+  if (!type?.fields) return { selection: "id", columns: ["id"], valueResolvers, sortFieldByColumn, fieldTypeByColumn };
 
   const fieldSelections: string[] = [];
   for (const field of type.fields) {
@@ -189,6 +190,7 @@ export function buildSelectionSetForObjectType(
         return v;
       };
       sortFieldByColumn[name] = name;
+      fieldTypeByColumn[name] = namedTypeName ?? kind ?? "SCALAR";
     } else if (kind === "OBJECT" && namedTypeName) {
       // Prefer displayField from Simfinity extensions; fallback to name, then first scalar field; include id only if not embedded and present
       const objType = getTypeByName(schema, namedTypeName);
@@ -249,8 +251,11 @@ export function buildSelectionSetForObjectType(
       // For sorting, prefer dot notation to the chosen display field when available
       if (chosenDisplay) {
         sortFieldByColumn[name] = `${name}.${chosenDisplay}`;
+        const displayType = unwrapNamedType(objFields.find((f) => f.name === chosenDisplay)?.type);
+        fieldTypeByColumn[name] = displayType ?? "OBJECT";
       } else {
         sortFieldByColumn[name] = name;
+        fieldTypeByColumn[name] = "OBJECT";
       }
     }
   }
@@ -264,7 +269,24 @@ export function buildSelectionSetForObjectType(
   }
 
   const selection = fieldSelections.join("\n");
-  return { selection, columns, valueResolvers, sortFieldByColumn };
+  return { selection, columns, valueResolvers, sortFieldByColumn, fieldTypeByColumn };
+}
+
+export function isNumericScalarName(name?: string | null): boolean {
+  if (!name) return false;
+  const n = name.toLowerCase();
+  return (
+    n === "int" ||
+    n === "float" ||
+    /_int$/.test(n) ||
+    /_float$/.test(n) ||
+    n === "idnumber" // fallback if custom
+  );
+}
+
+export function isBooleanScalarName(name?: string | null): boolean {
+  if (!name) return false;
+  return name.toLowerCase() === "boolean" || /_boolean$/.test(name.toLowerCase());
 }
 
 

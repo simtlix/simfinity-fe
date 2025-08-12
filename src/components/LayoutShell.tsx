@@ -9,12 +9,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <AppHeader onMenuClick={() => setMobileOpen((v) => !v)} />
       <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, display: "flex", flexDirection: "column" }}>
         <Toolbar />
-        {children}
+        <Box sx={{ flex: 1, minHeight: 0 }}>{children}</Box>
       </Box>
     </Box>
   );
