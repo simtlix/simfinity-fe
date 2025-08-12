@@ -3,7 +3,7 @@
 import * as React from "react";
 import { gql, useApolloClient, useQuery } from "@apollo/client";
 import { Box, CircularProgress, Paper, Typography } from "@mui/material";
-import { DataGrid, type GridColDef, type GridPaginationModel, type GridFilterModel, type GridFilterOperator, getGridNumericOperators, getGridStringOperators, getGridBooleanOperators, GridFilterInputValue } from "@mui/x-data-grid";
+import { DataGrid, type GridColDef, type GridPaginationModel, type GridFilterModel, type GridFilterOperator, getGridNumericOperators, getGridBooleanOperators, GridFilterInputValue } from "@mui/x-data-grid";
 import ServerToolbar from "@/components/ServerToolbar";
 import ServerFilterPanel from "@/components/ServerFilterPanel";
 import { TagsFilterInput, BetweenFilterInput } from "@/components/FilterInputs";
@@ -228,10 +228,11 @@ export default function EntityTable({ listField }: EntityTableProps) {
               { label: 'between', value: 'btw', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: BetweenFilterInput, InputComponentProps: { inputType: 'datetime-local' } } as unknown as GridFilterOperator,
             ];
           }
-          const base = getGridStringOperators();
-          const keep = new Set(['contains', 'equals', 'not', 'startsWith', 'endsWith']);
+          // Strings: only contains, equals, not equal ("!="), in, nin
           return [
-            ...base.filter((o) => (o.value ? keep.has(o.value) : false)),
+            { label: 'contains', value: 'contains', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: GridFilterInputValue } as unknown as GridFilterOperator,
+            { label: 'equals', value: 'equals', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: GridFilterInputValue } as unknown as GridFilterOperator,
+            { label: 'not equal', value: '!=', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: GridFilterInputValue } as unknown as GridFilterOperator,
             { label: 'in', value: 'in', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: TagsFilterInput } as unknown as GridFilterOperator,
             { label: 'not in', value: 'nin', getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], InputComponent: TagsFilterInput } as unknown as GridFilterOperator,
           ];
