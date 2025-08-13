@@ -1,5 +1,7 @@
+import * as React from "react";
 import { registerFunctionLabels, type LabelValue } from "@/lib/i18n";
 import { registerColumnRenderer } from "@/lib/columnRenderers";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 export const labels: Record<string, LabelValue> = {
   // Sidebar entities
@@ -17,7 +19,13 @@ registerFunctionLabels("en", labels);
 registerColumnRenderer("episode.date", ({ value }) => {
   if (value == null) return "";
   const d = new Date(value as string | number);
-  return isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
+  const text = isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
+  return React.createElement(
+    "span",
+    { style: { display: "inline-flex", alignItems: "center", gap: 6 } },
+    React.createElement(CalendarMonthIcon, { fontSize: "small" }),
+    text
+  );
 });
 
 
