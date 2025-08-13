@@ -1,4 +1,5 @@
 import { registerFunctionLabels, type LabelValue } from "@/lib/i18n";
+import { registerColumnRenderers } from "@/lib/columnRenderers";
 
 export const labels: Record<string, LabelValue> = {
   // Ejemplos de etiquetas en español
@@ -20,5 +21,9 @@ export const labels: Record<string, LabelValue> = {
 };
 
 registerFunctionLabels("es", labels);
+// Ejemplo de renderizadores personalizados (comentado)
+registerColumnRenderers({
+  // "Episode.name": ({ value }) => <strong>{String(value ?? "")}</strong>,
+});
 
 

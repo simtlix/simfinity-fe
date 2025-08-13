@@ -1,4 +1,5 @@
 import { registerFunctionLabels, type LabelValue } from "@/lib/i18n";
+import { registerColumnRenderer } from "@/lib/columnRenderers";
 
 export const labels: Record<string, LabelValue> = {
   // Sidebar entities
@@ -11,5 +12,16 @@ export const labels: Record<string, LabelValue> = {
 
 // Register on load (safe if imported in client only)
 registerFunctionLabels("en", labels);
+// Example: register custom column renderers (commented; adapt as needed)
+// Lowercase key to match label style; registry normalizes to lowercase
+registerColumnRenderer("episode.date", ({ value, entity, field }) => {
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.debug('[i18n/en] renderer invoked', { entity, field, value });
+  }
+  if (value == null) return "";
+  const d = new Date(value as string | number);
+  return isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
+});
 
 

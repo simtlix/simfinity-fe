@@ -8,6 +8,7 @@ import ServerToolbar from "@/components/ServerToolbar";
 import ServerFilterPanel from "@/components/ServerFilterPanel";
 import { TagsFilterInput, BetweenFilterInput, DateFilterInput } from "@/components/FilterInputs";
 import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, buildSelectionSetForObjectType, ValueResolver, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName } from "@/lib/introspection";
+import { resolveColumnRenderer } from "@/lib/columnRenderers";
 import { useI18n } from "@/lib/i18n";
 
 type EntityTableProps = {
@@ -249,6 +250,29 @@ export default function EntityTable({ listField }: EntityTableProps) {
           const row = params.row as GridRow;
           const resolver = (valueResolvers as Record<string, ValueResolver | undefined>)[col];
           const value = resolver ? resolver(row) : (row as Record<string, unknown>)[col];
+
+          // Custom renderer resolution by ordered keys:
+          // 1) entity.field  2) field  3) entity
+          const key1 = `${entityNameForLabels}.${col}`;
+          const key2 = col;
+          const key3 = entityNameForLabels;
+          if (process.env.NODE_ENV !== 'production') {
+            // eslint-disable-next-line no-console
+            console.debug('[EntityTable] resolve renderer', { entity: entityNameForLabels, field: col, tryKeys: [key1, key2, key3] });
+          }
+          const renderer =
+            resolveColumnRenderer(key1) ||
+            resolveColumnRenderer(key2) ||
+            resolveColumnRenderer(key3);
+          if (renderer) {
+            if (process.env.NODE_ENV !== 'production') {
+              // eslint-disable-next-line no-console
+              console.debug('[EntityTable] apply renderer', { entity: entityNameForLabels, field: col });
+            }
+            return (
+              <>{renderer({ entity: entityNameForLabels, field: col, row, value, gridParams: params })}</>
+            );
+          }
           return <span>{String(value ?? "")}</span>;
         },
       };
