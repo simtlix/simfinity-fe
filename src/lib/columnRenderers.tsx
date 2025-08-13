@@ -20,22 +20,12 @@ class ColumnRendererRegistry {
   register(key: string, renderer: ColumnRenderer): void {
     const k = key.toLowerCase();
     this.registry.set(k, renderer);
-    if (process.env.NODE_ENV !== 'production') {
-      // Debug: show registration key
-      // eslint-disable-next-line no-console
-      console.debug('[columnRenderers] register', { key, normalizedKey: k });
-    }
   }
 
   // Resolve by exact key
   get(key: string): ColumnRenderer | undefined {
     const k = key.toLowerCase();
     const r = this.registry.get(k);
-    if (process.env.NODE_ENV !== 'production') {
-      // Debug: show lookup attempt and hit/miss
-      // eslint-disable-next-line no-console
-      console.debug('[columnRenderers] resolve', { key, normalizedKey: k, hit: !!r });
-    }
     return r;
   }
 

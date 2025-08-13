@@ -256,19 +256,11 @@ export default function EntityTable({ listField }: EntityTableProps) {
           const key1 = `${entityNameForLabels}.${col}`;
           const key2 = col;
           const key3 = entityNameForLabels;
-          if (process.env.NODE_ENV !== 'production') {
-            // eslint-disable-next-line no-console
-            console.debug('[EntityTable] resolve renderer', { entity: entityNameForLabels, field: col, tryKeys: [key1, key2, key3] });
-          }
           const renderer =
             resolveColumnRenderer(key1) ||
             resolveColumnRenderer(key2) ||
             resolveColumnRenderer(key3);
           if (renderer) {
-            if (process.env.NODE_ENV !== 'production') {
-              // eslint-disable-next-line no-console
-              console.debug('[EntityTable] apply renderer', { entity: entityNameForLabels, field: col });
-            }
             return (
               <>{renderer({ entity: entityNameForLabels, field: col, row, value, gridParams: params })}</>
             );
