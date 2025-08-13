@@ -297,7 +297,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
         </Typography>
       )}
       {!loadingData && !errorData && (
-        <Paper sx={{ width: "100%", p: 0 }}>
+        <Paper sx={{ width: "100%", p: 0, minWidth: 0 }}>
           <DataGrid
             autoHeight
             rows={gridRows}
