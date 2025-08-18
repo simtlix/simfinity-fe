@@ -34,6 +34,19 @@
   "grid.filter.greaterThan": "mayor que",
   "grid.filter.greaterThanOrEqual": "mayor o igual que",
   "grid.filter.lessThan": "menor que",
-  "grid.filter.lessThanOrEqual": "menor o igual que"
+  "grid.filter.lessThanOrEqual": "menor o igual que",
+
+  "form.create": "Crear",
+  "form.edit": "Editar",
+  "form.view": "Ver",
+  "form.cancel": "Cancelar",
+  "form.update": "Actualizar",
+  "form.submit": "Enviar",
+  "form.required": "Este campo es obligatorio",
+  "form.invalidNumber": "Debe ser un número válido",
+  "form.invalidDate": "Debe ser una fecha válida",
+  "form.successCreated": "¡Entidad creada exitosamente!",
+  "form.successUpdated": "¡Entidad actualizada exitosamente!",
+  "form.errorOccurred": "Ocurrió un error"
 }
 

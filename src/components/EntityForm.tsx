@@ -166,6 +166,15 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   // The actual GraphQL integration can be added later once the form rendering works
   const queriesReady = true;
 
+  // Helper function to get i18n label for form fields
+  const getFieldLabel = (fieldName: string): string => {
+    // Try to get the label using the entity.field pattern (e.g., "serie.name")
+    const entityKey = listField.slice(0, -1); // Remove 's' from end
+    const fieldKey = `${entityKey}.${fieldName}`;
+    
+    return resolveLabel([fieldKey, fieldName], { entity: listField, field: fieldName }, fieldName);
+  };
+
   // For now, we'll skip the GraphQL queries and just show the form
   // The actual GraphQL integration can be added later once the form rendering works
   const entityData = null;
@@ -221,15 +230,15 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
     formFields.forEach(field => {
       if (field.required && (field.value === "" || field.value === null || field.value === undefined)) {
-        newFormData[field.name] = { ...field, error: "This field is required" };
+        newFormData[field.name] = { ...field, error: resolveLabel(["form.required"], { entity: listField }, "This field is required") };
         isValid = false;
       } else if (field.isNumeric && typeof field.value === "string" && isNaN(Number(field.value))) {
-        newFormData[field.name] = { ...field, error: "Must be a valid number" };
+        newFormData[field.name] = { ...field, error: resolveLabel(["form.invalidNumber"], { entity: listField }, "Must be a valid number") };
         isValid = false;
       } else if (field.isDate && typeof field.value === "string") {
         const timestamp = new Date(String(field.value)).getTime();
         if (isNaN(timestamp)) {
-          newFormData[field.name] = { ...field, error: "Must be a valid date" };
+          newFormData[field.name] = { ...field, error: resolveLabel(["form.invalidDate"], { entity: listField }, "Must be a valid date") };
           isValid = false;
         }
       }
@@ -259,11 +268,11 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       if (action === "create") {
         // TODO: Implement create mutation
         console.log('Would create entity with:', inputData);
-        setSuccessMessage("Entity created successfully! (Mock)");
+        setSuccessMessage(resolveLabel(["form.successCreated"], { entity: listField }, "Entity created successfully! (Mock)"));
       } else if (action === "edit") {
         // TODO: Implement update mutation
         console.log('Would update entity with:', inputData);
-        setSuccessMessage("Entity updated successfully! (Mock)");
+        setSuccessMessage(resolveLabel(["form.successUpdated"], { entity: listField }, "Entity updated successfully! (Mock)"));
       }
 
       // Redirect back to list
@@ -271,7 +280,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         router.push(`/entities/${listField}`);
       }, 1500);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred";
+      const errorMessage = err instanceof Error ? err.message : resolveLabel(["form.errorOccurred"], { entity: listField }, "An error occurred");
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -280,6 +289,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
   // Render form field
   const renderField = (field: FormField) => {
+    const fieldLabel = getFieldLabel(field.name);
+    
     if (field.isBoolean) {
       return (
         <FormControlLabel
@@ -290,7 +301,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               onChange={(e) => handleFieldChange(field.name, e.target.checked)}
             />
           }
-          label={field.name}
+          label={fieldLabel}
         />
       );
     }
@@ -299,7 +310,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       return (
         <TextField
           fullWidth
-          label={field.name}
+          label={fieldLabel}
           type="date"
           value={field.value as string}
           onChange={(e) => handleFieldChange(field.name, e.target.value)}
@@ -314,7 +325,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     return (
       <TextField
         fullWidth
-        label={field.name}
+        label={fieldLabel}
         type={field.isNumeric ? "number" : "text"}
         value={field.value as string}
         onChange={(e) => handleFieldChange(field.name, e.target.value)}
@@ -359,16 +370,26 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       {/* Breadcrumbs */}
       <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3 }}>
         <Link href={`/entities/${listField}`} color="inherit">
-          {listField}
+          {resolveLabel([listField], { entity: listField }, listField)}
         </Link>
         <Typography color="text.primary">
-          {action === "create" ? "Create" : action === "edit" ? "Edit" : "View"}
+          {action === "create" 
+            ? resolveLabel(["form.create"], { entity: listField }, "Create")
+            : action === "edit" 
+            ? resolveLabel(["form.edit"], { entity: listField }, "Edit")
+            : resolveLabel(["form.view"], { entity: listField }, "View")
+          }
         </Typography>
       </Breadcrumbs>
 
       {/* Title */}
       <Typography variant="h4" sx={{ mb: 3 }}>
-        {action === "create" ? "Create" : action === "edit" ? "Edit" : "View"} {listField}
+        {action === "create" 
+          ? resolveLabel(["form.create"], { entity: listField }, "Create")
+          : action === "edit" 
+          ? resolveLabel(["form.edit"], { entity: listField }, "Edit")
+          : resolveLabel(["form.view"], { entity: listField }, "View")
+        } {resolveLabel([listField], { entity: listField }, listField)}
       </Typography>
 
       {/* Success/Error Messages */}
@@ -403,7 +424,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               variant="outlined"
               onClick={() => router.push(`/entities/${listField}`)}
             >
-              Cancel
+              {resolveLabel(["form.cancel"], { entity: listField }, "Cancel")}
             </Button>
             {action !== "view" && (
               <Button
@@ -411,7 +432,10 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                 variant="contained"
                 disabled={loading}
               >
-                {loading ? <CircularProgress size={20} /> : action === "create" ? "Create" : "Update"}
+                {loading ? <CircularProgress size={20} /> : action === "create" 
+                  ? resolveLabel(["form.create"], { entity: listField }, "Create")
+                  : resolveLabel(["form.update"], { entity: listField }, "Update")
+                }
               </Button>
             )}
           </Box>

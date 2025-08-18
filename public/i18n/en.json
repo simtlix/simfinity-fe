@@ -34,7 +34,20 @@
   "grid.filter.greaterThan": "greater than",
   "grid.filter.greaterThanOrEqual": "greater than or equal to",
   "grid.filter.lessThan": "less than",
-  "grid.filter.lessThanOrEqual": "less than or equal to"
+  "grid.filter.lessThanOrEqual": "less than or equal to",
+
+  "form.create": "Create",
+  "form.edit": "Edit",
+  "form.view": "View",
+  "form.cancel": "Cancel",
+  "form.update": "Update",
+  "form.submit": "Submit",
+  "form.required": "This field is required",
+  "form.invalidNumber": "Must be a valid number",
+  "form.invalidDate": "Must be a valid date",
+  "form.successCreated": "Entity created successfully!",
+  "form.successUpdated": "Entity updated successfully!",
+  "form.errorOccurred": "An error occurred"
 }
 
 
