@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { gql, useApolloClient, useQuery } from "@apollo/client";
-import { Box, CircularProgress, Paper, Typography } from "@mui/material";
+import { Box, CircularProgress, Paper, Typography, Button, Stack } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel, type GridFilterModel, type GridFilterOperator, getGridNumericOperators, getGridBooleanOperators, GridFilterInputValue } from "@mui/x-data-grid";
 import { useSearchParams, useRouter } from "next/navigation";
 import ServerToolbar from "@/components/ServerToolbar";
@@ -295,7 +295,38 @@ export default function EntityTable({ listField }: EntityTableProps) {
 
   type GridRow = Row & { __rid: string };
   const gridColumns: GridColDef<GridRow>[] = React.useMemo(() => {
-    return resolvedColumns.map((col) => {
+    const actionColumn: GridColDef<GridRow> = {
+      field: 'actions',
+      headerName: 'Actions',
+      sortable: false,
+      filterable: false,
+      width: 120,
+      renderCell: (params) => {
+        const row = params.row as GridRow;
+        const entityId = String(row.id);
+        return (
+          <Stack direction="row" spacing={1}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => router.push(`/entities/${listField}/${entityId}/view`)}
+            >
+              View
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="primary"
+              onClick={() => router.push(`/entities/${listField}/${entityId}/edit`)}
+            >
+              Edit
+            </Button>
+          </Stack>
+        );
+      },
+    };
+
+    const dataColumns = resolvedColumns.map((col) => {
       const header = resolveLabel([`${entityNameForLabels}.${col}`], { entity: entityNameForLabels, field: col }, col);
       const typeName = (fieldTypeByColumn as Record<string, string | undefined>)[col];
       const isNumeric = isNumericScalarName(typeName);
@@ -377,7 +408,9 @@ export default function EntityTable({ listField }: EntityTableProps) {
       };
       return def;
     });
-  }, [resolvedColumns, resolveLabel, entityNameForLabels, valueResolvers, fieldTypeByColumn]);
+
+    return [actionColumn, ...dataColumns];
+  }, [resolvedColumns, resolveLabel, entityNameForLabels, valueResolvers, fieldTypeByColumn, listField, router]);
 
   const gridRows: GridRow[] = React.useMemo(() => {
     return rows.map((row, idx) => ({ __rid: String((row as Record<string, unknown>)["id"] ?? `${listField}-${page}-${idx}`), ...row }));
@@ -405,9 +438,18 @@ export default function EntityTable({ listField }: EntityTableProps) {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        {tableTitle}
-      </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        <Typography variant="h5">
+          {tableTitle}
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => router.push(`/entities/${listField}/create`)}
+        >
+          Create {resolveLabel([listField], { entity: listField }, listField)}
+        </Button>
+      </Stack>
       {loadingData && (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <CircularProgress size={20} />
