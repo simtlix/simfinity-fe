@@ -4,6 +4,7 @@ import * as React from "react";
 import { gql, useApolloClient, useQuery } from "@apollo/client";
 import { Box, CircularProgress, Paper, Typography } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel, type GridFilterModel, type GridFilterOperator, getGridNumericOperators, getGridBooleanOperators, GridFilterInputValue } from "@mui/x-data-grid";
+import { useSearchParams, useRouter } from "next/navigation";
 import ServerToolbar from "@/components/ServerToolbar";
 import ServerFilterPanel from "@/components/ServerFilterPanel";
 import { TagsFilterInput, BetweenFilterInput, DateFilterInput } from "@/components/FilterInputs";
@@ -33,6 +34,8 @@ export default function EntityTable({ listField }: EntityTableProps) {
   const client = useApolloClient();
   const { data: schemaData } = useQuery(INTROSPECTION_QUERY);
   const { resolveLabel } = useI18n();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const { selection, columns, valueResolvers, entityTypeName, sortFieldByColumn, fieldTypeByColumn } = React.useMemo(() => {
     const schema = schemaData as SchemaData | undefined;
@@ -129,6 +132,97 @@ export default function EntityTable({ listField }: EntityTableProps) {
     return parts.length ? parts.join(', ') : null;
   }, [filterModel, sortFieldByColumn, fieldTypeByColumn]);
 
+  // URL state management
+  const updateURL = React.useCallback((updates: {
+    page?: number | null;
+    size?: number | null;
+    sort?: { field: string; sort: 'asc' | 'desc' }[] | null;
+    filter?: GridFilterModel | null;
+  }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (updates.page !== undefined) {
+      if (updates.page === null || updates.page === 0) {
+        params.delete('page');
+      } else {
+        params.set('page', String(updates.page + 1)); // Convert to 1-based for URL
+      }
+    }
+    
+    if (updates.size !== undefined) {
+      if (updates.size === null || updates.size === 10) {
+        params.delete('size');
+      } else {
+        params.set('size', String(updates.size));
+      }
+    }
+    
+    if (updates.sort !== undefined) {
+      if (updates.sort === null || updates.sort.length === 0) {
+        params.delete('sort');
+      } else {
+        const sortStr = updates.sort.map(s => `${s.field}:${s.sort}`).join(',');
+        params.set('sort', sortStr);
+      }
+    }
+    
+    if (updates.filter !== undefined) {
+      if (updates.filter === null || updates.filter.items.length === 0) {
+        params.delete('filter');
+      } else {
+        const filterStr = JSON.stringify(updates.filter);
+        params.set('filter', filterStr);
+      }
+    }
+    
+    const newURL = `${window.location.pathname}?${params.toString()}`;
+    router.replace(newURL, { scroll: false });
+  }, [searchParams, router]);
+
+  // Initialize state from URL
+  React.useEffect(() => {
+    const pageParam = searchParams.get('page');
+    const sizeParam = searchParams.get('size');
+    const sortParam = searchParams.get('sort');
+    const filterParam = searchParams.get('filter');
+    
+    if (pageParam) {
+      const pageNum = parseInt(pageParam, 10);
+      if (!isNaN(pageNum) && pageNum > 0) {
+        setPage(pageNum - 1); // Convert from 1-based to 0-based
+      }
+    }
+    
+    if (sizeParam) {
+      const sizeNum = parseInt(sizeParam, 10);
+      if (!isNaN(sizeNum) && [5, 10, 25, 50].includes(sizeNum)) {
+        setRowsPerPage(sizeNum);
+      }
+    }
+    
+    if (sortParam) {
+      try {
+        const sortItems = sortParam.split(',').map(item => {
+          const [field, sort] = item.split(':');
+          return { field, sort: sort as 'asc' | 'desc' };
+        });
+        setSortModel(sortItems);
+      } catch (e) {
+        console.warn('Invalid sort parameter:', sortParam);
+      }
+    }
+    
+    if (filterParam) {
+      try {
+        const filterModel = JSON.parse(filterParam);
+        setFilterModel(filterModel);
+        setPendingFilterModel(filterModel);
+      } catch (e) {
+        console.warn('Invalid filter parameter:', filterParam);
+      }
+    }
+  }, [searchParams]);
+
   React.useEffect(() => {
     if (!selection) return;
     let cancelled = false;
@@ -181,6 +275,19 @@ export default function EntityTable({ listField }: EntityTableProps) {
       cancelled = true;
     };
   }, [client, listField, selection, page, rowsPerPage, sortModel, sortFieldByColumn, filterBlock]);
+
+  // Update URL when state changes
+  React.useEffect(() => {
+    updateURL({ page, size: rowsPerPage });
+  }, [page, rowsPerPage, updateURL]);
+
+  React.useEffect(() => {
+    updateURL({ sort: sortModel });
+  }, [sortModel, updateURL]);
+
+  React.useEffect(() => {
+    updateURL({ filter: filterModel });
+  }, [filterModel, updateURL]);
 
   const resolvedColumns = columns;
   const entityNameForLabels = entityTypeName;
@@ -350,7 +457,11 @@ export default function EntityTable({ listField }: EntityTableProps) {
                   filterModel={pendingFilterModel}
                   onFilterModelChange={setPendingFilterModel}
                   onApply={() => setFilterModel(pendingFilterModel)}
-                  onClear={() => { setPendingFilterModel({ items: [] }); setFilterModel({ items: [] }); }}
+                  onClear={() => { 
+                    setPendingFilterModel({ items: [] }); 
+                    setFilterModel({ items: [] }); 
+                    updateURL({ filter: null });
+                  }}
                   onOpenFilter={() => {
                     // Directly call the grid API when possible
                     const root = document.querySelector('[data-mui-internal="GridRoot"]') || document.querySelector('[role="grid"]');
@@ -364,7 +475,11 @@ export default function EntityTable({ listField }: EntityTableProps) {
               filterPanel: () => (
                 <ServerFilterPanel
                   onApply={(model) => setFilterModel(model)}
-                  onClear={() => { setPendingFilterModel({ items: [] }); setFilterModel({ items: [] }); }}
+                  onClear={() => { 
+                    setPendingFilterModel({ items: [] }); 
+                    setFilterModel({ items: [] }); 
+                    updateURL({ filter: null });
+                  }}
                 />
               ),
             }}
