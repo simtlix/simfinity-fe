@@ -77,6 +77,7 @@ type FormField = {
   isObject: boolean;
   objectTypeName?: string;
   descriptionField?: string;
+  descriptionFieldType?: string; // The type of the description field
   listQueryName?: string;
   singleQueryName?: string;
 };
@@ -121,6 +122,24 @@ function getQueryNamesForObjectType(schema: SchemaData, objectTypeName: string):
   } catch (error) {
     console.error(`Error getting query names for object type ${objectTypeName}:`, error);
     return null;
+  }
+}
+
+// Helper function to get the type of a field in an object type
+function getDescriptionFieldType(schema: SchemaData, objectTypeName: string, descriptionField: string): string {
+  try {
+    const objectType = getTypeByName(schema, objectTypeName);
+    if (!objectType?.fields) return "String";
+    
+    const field = objectType.fields.find(f => f.name === descriptionField);
+    if (!field) return "String";
+    
+    // Unwrap the type to handle NON_NULL and LIST wrappers
+    const typeName = unwrapNamedType(field.type);
+    return typeName || "String";
+  } catch (error) {
+    console.error(`Error getting description field type for ${objectTypeName}.${descriptionField}:`, error);
+    return "String";
   }
 }
 
@@ -232,6 +251,10 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           const descriptionField = isObject && field.extensions?.relation?.displayField ? 
             field.extensions.relation.displayField : "name";
           
+          // Get description field type for object types
+          const descriptionFieldType = isObject && objectTypeName && descriptionField ? 
+            getDescriptionFieldType(schema, objectTypeName, descriptionField) : undefined;
+          
           // Get query names for object types
           const queryNames = isObject && objectTypeName ? getQueryNamesForObjectType(schema, objectTypeName) : null;
           const listQueryName = queryNames?.listQueryName;
@@ -254,6 +277,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             isObject,
             objectTypeName,
             descriptionField,
+            descriptionFieldType,
             listQueryName,
             singleQueryName,
             required: isObject ? isObjectRequired : isRequired,
@@ -516,7 +540,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     const fieldLabel = getFieldLabel(field.name);
     const isViewMode = action === "view";
     
-    if (field.isObject && field.objectTypeName && field.descriptionField && field.listQueryName && field.singleQueryName) {
+    if (field.isObject && field.objectTypeName && field.descriptionField && field.descriptionFieldType && field.listQueryName && field.singleQueryName) {
       return (
         <ObjectFieldSelector
           label={fieldLabel}
@@ -527,6 +551,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           disabled={isViewMode}
           objectTypeName={field.objectTypeName}
           descriptionField={field.descriptionField}
+          descriptionFieldType={field.descriptionFieldType}
           listQueryName={field.listQueryName}
           singleQueryName={field.singleQueryName}
         />

@@ -24,6 +24,7 @@ type ObjectFieldSelectorProps = {
   disabled?: boolean;
   objectTypeName: string;
   descriptionField: string;
+  descriptionFieldType: string; // The type of the description field (e.g., "String", "Int", "Float")
   listQueryName: string; // The query name for listing objects (e.g., "directors")
   singleQueryName: string; // The query name for getting a single object (e.g., "director")
 };
@@ -39,6 +40,7 @@ export default function ObjectFieldSelector({
   disabled = false,
   objectTypeName,
   descriptionField,
+  descriptionFieldType,
   listQueryName,
   singleQueryName,
 }: ObjectFieldSelectorProps) {
@@ -47,16 +49,46 @@ export default function ObjectFieldSelector({
   const [selectedObject, setSelectedObject] = React.useState<{ id: string; description: string } | null>(null);
   const anchorRef = React.useRef<HTMLDivElement>(null);
 
+  // Helper function to cast search term to proper type
+  const castSearchTerm = React.useCallback((term: string, fieldType: string) => {
+    if (!term) return term;
+    
+    // Handle Simfinity validated scalars (e.g., "SeasonNumber_Int" -> "Int")
+    const actualType = fieldType.includes('_') ? fieldType.split('_').pop() : fieldType;
+    
+    switch (actualType?.toLowerCase()) {
+      case 'int':
+      case 'integer':
+        const intValue = parseInt(term, 10);
+        return isNaN(intValue) ? term : intValue;
+      case 'float':
+      case 'double':
+        const floatValue = parseFloat(term);
+        return isNaN(floatValue) ? term : floatValue;
+      case 'boolean':
+        if (term.toLowerCase() === 'true') return true;
+        if (term.toLowerCase() === 'false') return false;
+        return term;
+      case 'string':
+      default:
+        return term;
+    }
+  }, []);
+
   // Generate dynamic search query using the provided list query name
   const generateSearchQuery = React.useMemo(() => {
     if (!listQueryName || !descriptionField) return null;
+    
+    // Determine the operator based on the field type
+    const isStringType = descriptionFieldType.toLowerCase() === 'string';
+    const operator = isStringType ? 'LIKE' : 'EQ';
     
     // Create the query string dynamically using the Simfinity pattern with pagination
     const queryString = `
       query Search${listQueryName.charAt(0).toUpperCase() + listQueryName.slice(1)}($page: Int!, $size: Int!, $count: Boolean!, $searchTerm: QLValue!) {
         ${listQueryName}(
           pagination: {page: $page, size: $size, count: $count}
-          ${descriptionField}: {operator: LIKE, value: $searchTerm}
+          ${descriptionField}: {operator: ${operator}, value: $searchTerm}
         ) {
           id
           ${descriptionField}
@@ -72,17 +104,17 @@ export default function ObjectFieldSelector({
       console.error('Error generating search query:', error);
       return null;
     }
-  }, [listQueryName, descriptionField]);
+  }, [listQueryName, descriptionField, descriptionFieldType]);
 
-  // Fetch search results when search term is 2+ characters
+  // Fetch search results when search term is 1+ characters
   const { data: searchData, loading: searchLoading, error: searchError } = useQuery(generateSearchQuery!, {
     variables: {
       page: 1,
       size: 10,
       count: false,
-      searchTerm: searchTerm,
+      searchTerm: castSearchTerm(searchTerm, descriptionFieldType),
     },
-    skip: searchTerm.length < 2 || !isOpen || !generateSearchQuery,
+    skip: searchTerm.length < 1 || !isOpen || !generateSearchQuery,
   });
 
   // Log any search errors
@@ -148,7 +180,7 @@ export default function ObjectFieldSelector({
     const newValue = event.target.value;
     setSearchTerm(newValue);
     
-    if (newValue.length >= 2) {
+    if (newValue.length >= 1) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
@@ -168,7 +200,7 @@ export default function ObjectFieldSelector({
   };
 
   const handleInputFocus = () => {
-    if (searchTerm.length >= 2) {
+    if (searchTerm.length >= 1) {
       setIsOpen(true);
     }
   };

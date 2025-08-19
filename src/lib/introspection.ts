@@ -90,10 +90,20 @@ export function isListTypeOf(typeRef?: IntrospectionTypeRef | null, ofType?: str
   return false;
 }
 
+// Helper function to extract actual scalar type from validated scalar names
+function getActualScalarType(name?: string | null): string | null {
+  if (!name) return null;
+  // Handle Simfinity validated scalars (e.g., "SeasonNumber_Int" -> "Int")
+  return name.includes('_') ? name.split('_').pop() || name : name;
+}
+
 // Heuristics to detect date/time scalars and fields
 export function isDateTimeScalarName(name?: string | null): boolean {
   if (!name) return false;
-  const normalized = name.toLowerCase();
+  const actualType = getActualScalarType(name);
+  if (!actualType) return false;
+  
+  const normalized = actualType.toLowerCase();
   return (
     normalized === "date" ||
     normalized === "datetime" ||
@@ -296,19 +306,23 @@ export function buildSelectionSetForObjectType(
 
 export function isNumericScalarName(name?: string | null): boolean {
   if (!name) return false;
-  const n = name.toLowerCase();
+  const actualType = getActualScalarType(name);
+  if (!actualType) return false;
+  
+  const n = actualType.toLowerCase();
   return (
     n === "int" ||
     n === "float" ||
-    /_int$/.test(n) ||
-    /_float$/.test(n) ||
     n === "idnumber" // fallback if custom
   );
 }
 
 export function isBooleanScalarName(name?: string | null): boolean {
   if (!name) return false;
-  return name.toLowerCase() === "boolean" || /_boolean$/.test(name.toLowerCase());
+  const actualType = getActualScalarType(name);
+  if (!actualType) return false;
+  
+  return actualType.toLowerCase() === "boolean";
 }
 
 
