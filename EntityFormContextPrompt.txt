@@ -1,0 +1,174 @@
+# EntityForm Component Documentation
+
+## Overview
+The `EntityForm` is a dynamic, schema-driven form component that automatically generates form fields based on GraphQL schema introspection. It supports create, edit, and view modes for any entity type in a Simfinity application.
+
+## Key Features
+
+### 🔄 Dynamic Field Generation
+- Automatically analyzes GraphQL schema to determine form fields
+- Supports all GraphQL field types: String, Int, Float, Boolean, DateTime, ENUM, and Lists
+- Excludes ID fields and complex object relationships from form rendering
+- Includes list-of-scalar fields as tag inputs
+
+### 📝 Form Modes
+- **Create Mode**: Empty form for creating new entities
+- **Edit Mode**: Pre-populated form for updating existing entities  
+- **View Mode**: Read-only display of entity data
+
+### 🎨 Field Type Rendering
+- **Text Fields**: Standard text inputs
+- **Number Fields**: Numeric inputs with validation
+- **Boolean Fields**: Checkbox inputs
+- **Date Fields**: Date picker inputs
+- **ENUM Fields**: Dropdown selects with schema-defined options
+- **List Fields**: Tag-based inputs with chip display
+
+### 🔧 Technical Implementation
+
+#### GraphQL Integration
+- Uses Apollo Client for data fetching and mutations
+- Dynamically generates GraphQL queries based on schema fields
+- Supports real-time data loading for edit/view modes
+- Handles create and update mutations
+
+#### Schema Introspection
+- Fetches complete GraphQL schema via introspection query
+- Extracts field types, ENUM values, and validation rules
+- Determines field requirements and default values
+- Identifies list types and scalar relationships
+
+#### State Management
+- Manages form data state with proper validation
+- Handles field changes and error states
+- Supports async data loading and form submission
+- Prevents data overwriting during initialization
+
+#### Responsive Design
+- Uses Material-UI Grid system for responsive layout
+- Mobile: 1 column, Tablet: 2 columns, Desktop: 3 columns
+- Consistent spacing and styling across all field types
+- Modern Material-UI v7.3.1 components
+
+## Component Props
+
+```typescript
+type EntityFormProps = {
+  listField: string;        // Entity type (e.g., "series", "episodes")
+  entityId?: string;        // Entity ID for edit/view mode
+  action: "create" | "edit" | "view"; // Form mode
+};
+```
+
+## Usage Examples
+
+### Create New Entity
+```tsx
+<EntityForm 
+  listField="series" 
+  action="create" 
+/>
+```
+
+### Edit Existing Entity
+```tsx
+<EntityForm 
+  listField="series" 
+  entityId="123" 
+  action="edit" 
+/>
+```
+
+### View Entity (Read-Only)
+```tsx
+<EntityForm 
+  listField="series" 
+  entityId="123" 
+  action="view" 
+/>
+```
+
+## Field Type Examples
+
+### Text Field
+```graphql
+name: String!
+```
+Renders as: Text input with label "Name"
+
+### Number Field  
+```graphql
+episodeNumber: Int!
+```
+Renders as: Number input with validation
+
+### Boolean Field
+```graphql
+isActive: Boolean!
+```
+Renders as: Checkbox with label
+
+### Date Field
+```graphql
+airDate: DateTime!
+```
+Renders as: Date picker input
+
+### ENUM Field
+```graphql
+status: StatusEnum!
+enum StatusEnum {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+```
+Renders as: Dropdown with options "ACTIVE", "INACTIVE", "PENDING"
+
+### List Field
+```graphql
+tags: [String!]!
+```
+Renders as: Tag input with chip display, supports free text entry
+
+## Form Behavior
+
+### Data Loading
+- Edit/View mode: Fetches entity data via GraphQL query
+- Create mode: Starts with empty form and default values
+- Handles loading states with spinner display
+- Shows error messages for failed queries
+
+### Validation
+- Required field validation
+- Numeric field validation
+- Date format validation
+- Real-time error display
+
+### Submission
+- Create mode: Executes create mutation
+- Edit mode: Executes update mutation
+- Redirects to entity list on success
+- Shows success/error messages
+
+### Read-Only Mode
+- All fields disabled when `action === "view"`
+- Maintains visual consistency
+- No form submission available
+- Navigation controls only
+
+## Dependencies
+- React 19.1.0
+- Material-UI v7.3.1
+- Apollo Client v3.13.9
+- Next.js 15.4.6
+- TypeScript
+
+## File Structure
+```
+src/components/EntityForm.tsx
+src/lib/introspection.ts
+src/lib/i18n.tsx
+```
+
+This component provides a complete, production-ready form solution for any GraphQL entity type with automatic field generation, validation, and responsive design.

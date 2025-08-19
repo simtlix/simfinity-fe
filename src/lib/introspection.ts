@@ -36,6 +36,9 @@ export const INTROSPECTION_QUERY = gql`
             }
           }
         }
+        enumValues {
+          name
+        }
       }
     }
   }
@@ -78,6 +81,15 @@ export function isListType(typeRef?: IntrospectionTypeRef | null): boolean {
   return false;
 }
 
+export function isListTypeOf(typeRef?: IntrospectionTypeRef | null, ofType?: string | null): boolean {
+  let current: IntrospectionTypeRef | undefined | null = typeRef;
+  while (current) {
+    if (current.kind === "LIST" && current.ofType?.name === ofType) return true;
+    current = current.ofType ?? null;
+  }
+  return false;
+}
+
 // Heuristics to detect date/time scalars and fields
 export function isDateTimeScalarName(name?: string | null): boolean {
   if (!name) return false;
@@ -112,6 +124,7 @@ export type SchemaObjectType = {
   kind: string;
   name: string;
   fields?: SchemaField[];
+  enumValues?: { name: string }[];
 };
 
 export type SchemaData = {
@@ -124,6 +137,15 @@ export type SchemaData = {
 export function getQueryType(schema: SchemaData): SchemaObjectType | undefined {
   const queryTypeName = schema.__schema.queryType?.name;
   return schema.__schema.types.find((t) => t.name === queryTypeName);
+}
+
+export function getListEntityFieldNamesOfType(schema: SchemaData, ofType?: string | null): string[] {
+  const queryType = getQueryType(schema);
+  if (!queryType?.fields) return [];
+  return queryType.fields
+    .filter((f) => isListTypeOf(f.type, ofType))
+    .map((f) => f.name)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export function getListEntityFieldNames(schema: SchemaData): string[] {

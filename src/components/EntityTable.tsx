@@ -207,7 +207,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
           return { field, sort: sort as 'asc' | 'desc' };
         });
         setSortModel(sortItems);
-      } catch (e) {
+      } catch {
         console.warn('Invalid sort parameter:', sortParam);
       }
     }
@@ -217,7 +217,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
         const filterModel = JSON.parse(filterParam);
         setFilterModel(filterModel);
         setPendingFilterModel(filterModel);
-      } catch (e) {
+      } catch {
         console.warn('Invalid filter parameter:', filterParam);
       }
     }
