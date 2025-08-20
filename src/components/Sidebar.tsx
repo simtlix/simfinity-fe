@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useQuery } from "@apollo/client";
-import { INTROSPECTION_QUERY, getListEntityFieldNames, SchemaData } from "@/lib/introspection";
+import { INTROSPECTION_QUERY, getListEntityFieldNames, getElementTypeNameOfListField, SchemaData } from "@/lib/introspection";
 import { useI18n } from "@/lib/i18n";
 import { Box, CircularProgress, Divider, Drawer, List, ListItemButton, ListItemText, Toolbar, Typography } from "@mui/material";
 import { useRouter, usePathname } from "next/navigation";
@@ -19,6 +19,20 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { data, loading, error } = useQuery(INTROSPECTION_QUERY);
+
+  // Helper function to get entity name from i18n
+  const getEntityName = (pluralName: string, form: 'single' | 'plural'): string => {
+    if (!data) return `entity.${pluralName}.${form}`;
+    
+    // Get the proper entity type name from schema
+    const entityTypeName = getElementTypeNameOfListField(data as SchemaData, pluralName);
+    if (!entityTypeName) return `entity.${pluralName}.${form}`;
+    
+    // Convert to lowercase for i18n key
+    const baseName = entityTypeName.toLowerCase();
+    
+    return `entity.${baseName}.${form}`;
+  };
 
   const entries = React.useMemo(() => {
     const schema = data as SchemaData | undefined;
@@ -54,7 +68,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
         <List>
           {entries.map((field) => {
             const selected = pathname?.startsWith(`/entities/${field}`);
-            const label = resolveLabel([field], { entity: field }, field);
+            const label = resolveLabel([getEntityName(field, 'plural')], { entity: field }, field);
             return (
               <ListItemButton key={field} selected={!!selected} onClick={() => handleNavigate(field)}>
                 <ListItemText primary={label} />

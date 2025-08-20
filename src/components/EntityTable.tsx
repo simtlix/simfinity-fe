@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { gql, useApolloClient, useQuery } from "@apollo/client";
-import { Box, CircularProgress, Paper, Typography, Button, Stack } from "@mui/material";
+import { Box, CircularProgress, Paper, Typography, Button, Stack, IconButton, Tooltip } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel, type GridFilterModel, type GridFilterOperator, getGridNumericOperators, getGridBooleanOperators, GridFilterInputValue } from "@mui/x-data-grid";
 import { useSearchParams, useRouter } from "next/navigation";
 import ServerToolbar from "@/components/ServerToolbar";
@@ -11,6 +11,8 @@ import { TagsFilterInput, BetweenFilterInput, DateFilterInput } from "@/componen
 import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, buildSelectionSetForObjectType, ValueResolver, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName } from "@/lib/introspection";
 import { resolveColumnRenderer } from "@/lib/columnRenderers";
 import { useI18n } from "@/lib/i18n";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
 
 type EntityTableProps = {
   listField: string; // e.g., "series"
@@ -36,6 +38,20 @@ export default function EntityTable({ listField }: EntityTableProps) {
   const { resolveLabel } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // Helper function to get entity name from i18n
+  const getEntityName = (pluralName: string, form: 'single' | 'plural'): string => {
+    if (!schemaData) return `entity.${pluralName}.${form}`;
+    
+    // Get the proper entity type name from schema
+    const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, pluralName);
+    if (!entityTypeName) return `entity.${pluralName}.${form}`;
+    
+    // Convert to lowercase for i18n key
+    const baseName = entityTypeName.toLowerCase();
+    
+    return `entity.${baseName}.${form}`;
+  };
 
   const { selection, columns, valueResolvers, entityTypeName, sortFieldByColumn, fieldTypeByColumn } = React.useMemo(() => {
     const schema = schemaData as SchemaData | undefined;
@@ -291,36 +307,39 @@ export default function EntityTable({ listField }: EntityTableProps) {
 
   const resolvedColumns = columns;
   const entityNameForLabels = entityTypeName;
-  const tableTitle = resolveLabel([listField], { entity: listField }, listField);
+  const tableTitle = resolveLabel([getEntityName(listField, 'plural')], { entity: listField }, listField);
 
   type GridRow = Row & { __rid: string };
   const gridColumns: GridColDef<GridRow>[] = React.useMemo(() => {
     const actionColumn: GridColDef<GridRow> = {
       field: 'actions',
-      headerName: 'Actions',
+      headerName: resolveLabel(["actions.column"], { entity: listField }, "Actions"),
       sortable: false,
       filterable: false,
-      width: 120,
+      width: 100,
       renderCell: (params) => {
         const row = params.row as GridRow;
         const entityId = String(row.id);
         return (
-          <Stack direction="row" spacing={1}>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => router.push(`/entities/${listField}/${entityId}/view`)}
-            >
-              View
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              color="primary"
-              onClick={() => router.push(`/entities/${listField}/${entityId}/edit`)}
-            >
-              Edit
-            </Button>
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title={resolveLabel(["actions.view"], { entity: listField }, "View")}>
+              <IconButton
+                size="small"
+                onClick={() => router.push(`/entities/${listField}/${entityId}/view`)}
+                color="primary"
+              >
+                <VisibilityIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={resolveLabel(["actions.edit"], { entity: listField }, "Edit")}>
+              <IconButton
+                size="small"
+                onClick={() => router.push(`/entities/${listField}/${entityId}/edit`)}
+                color="primary"
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Stack>
         );
       },
@@ -447,7 +466,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
           color="primary"
           onClick={() => router.push(`/entities/${listField}/create`)}
         >
-          Create {resolveLabel([listField], { entity: listField }, listField)}
+          {resolveLabel(["button.create"], { entity: listField }, "Create")} {resolveLabel([getEntityName(listField, 'plural')], { entity: listField }, listField)}
         </Button>
       </Stack>
       {loadingData && (

@@ -125,6 +125,8 @@ function getQueryNamesForObjectType(schema: SchemaData, objectTypeName: string):
   }
 }
 
+
+
 // Helper function to get the type of a field in an object type
 function getDescriptionFieldType(schema: SchemaData, objectTypeName: string, descriptionField: string): string {
   try {
@@ -153,6 +155,20 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
   // Get schema data to understand entity structure
   const { data: schemaData, loading: schemaLoading } = useQuery(INTROSPECTION_QUERY);
+
+  // Helper function to get entity name from i18n
+  const getEntityName = React.useCallback((pluralName: string, form: 'single' | 'plural'): string => {
+    if (!schemaData) return `entity.${pluralName}.${form}`;
+    
+    // Get the proper entity type name from schema
+    const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, pluralName);
+    if (!entityTypeName) return `entity.${pluralName}.${form}`;
+    
+    // Convert to lowercase for i18n key
+    const baseName = entityTypeName.toLowerCase();
+    
+    return `entity.${baseName}.${form}`;
+  }, [schemaData]);
 
   // Build form fields based on schema first
   const formFields = React.useMemo(() => {
@@ -703,7 +719,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       {/* Breadcrumbs */}
       <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3 }}>
         <Link href={`/entities/${listField}`} color="inherit">
-          {resolveLabel([listField], { entity: listField }, listField)}
+          {resolveLabel([getEntityName(listField, 'plural')], { entity: listField }, getEntityName(listField, 'plural'))}
         </Link>
         <Typography color="text.primary">
           {action === "create" 
@@ -722,7 +738,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           : action === "edit" 
           ? resolveLabel(["form.edit"], { entity: listField }, "Edit")
           : resolveLabel(["form.view"], { entity: listField }, "View")
-        } {resolveLabel([listField], { entity: listField }, listField)}
+        } {resolveLabel([getEntityName(listField, 'single')], { entity: listField }, getEntityName(listField, 'single'))}
       </Typography>
 
       {/* Success/Error Messages */}

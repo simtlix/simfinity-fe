@@ -1,8 +1,18 @@
 {
-  "series": "Series",
-  "seasons": "Seasons",
-  "episodes": "Episodes",
-  "stars": "Stars",
+  "entity.serie.single": "Serie",
+  "entity.serie.plural": "Series",
+  "entity.season.single": "Season",
+  "entity.season.plural": "Seasons",
+  "entity.episode.single": "Episode",
+  "entity.episode.plural": "Episodes",
+  "entity.director.single": "Director",
+  "entity.director.plural": "Directors",
+  "entity.star.single": "Star",
+  "entity.star.plural": "Stars",
+  "entity.category.single": "Category",
+  "entity.category.plural": "Categories",
+  "entity.movie.single": "Movie",
+  "entity.movie.plural": "Movies",
 
   "serie.name": "Name",
   "serie.categories": "Categories",
@@ -47,7 +57,12 @@
   "form.invalidDate": "Must be a valid date",
   "form.successCreated": "Entity created successfully!",
   "form.successUpdated": "Entity updated successfully!",
-  "form.errorOccurred": "An error occurred"
+  "form.errorOccurred": "An error occurred",
+
+  "actions.view": "View",
+  "actions.edit": "Edit",
+  "actions.column": "Actions",
+  "button.create": "Create"
 }
 
 
