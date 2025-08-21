@@ -18,6 +18,9 @@
   "serie.categories": "Categories",
   "serie.director": "Director",
 
+  "director.name": "Name",
+  "director.country": "Country",
+
   "season.number": "Number",
   "season.year": "Year",
   "season.state": "State",

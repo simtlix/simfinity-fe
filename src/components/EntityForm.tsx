@@ -55,6 +55,8 @@ import { useRouter } from "next/navigation";
 import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getTypeByName, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName, isScalarOrEnum, unwrapNamedType, getListEntityFieldNamesOfType } from "@/lib/introspection";
 import ObjectFieldSelector from "./ObjectFieldSelector";
 import { useI18n } from "@/lib/i18n";
+import { Accordion, AccordionDetails, AccordionSummary } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 type EntityFormProps = {
   listField: string; // e.g., "series"
@@ -80,6 +82,8 @@ type FormField = {
   descriptionFieldType?: string; // The type of the description field
   listQueryName?: string;
   singleQueryName?: string;
+  isEmbedded?: boolean; // Whether this field is an embedded object
+  embeddedFields?: FormField[]; // Fields within the embedded object
 };
 
 type FormData = Record<string, FormField>;
@@ -142,6 +146,57 @@ function getDescriptionFieldType(schema: SchemaData, objectTypeName: string, des
   } catch (error) {
     console.error(`Error getting description field type for ${objectTypeName}.${descriptionField}:`, error);
     return "String";
+  }
+}
+
+// Helper function to process embedded object fields
+function processEmbeddedObjectFields(schema: SchemaData, objectTypeName: string, parentFieldName: string): FormField[] {
+  try {
+    const objectType = getTypeByName(schema, objectTypeName);
+    if (!objectType?.fields) return [];
+    
+    return objectType.fields
+      .filter(field => field.name !== "id") // Exclude id fields from embedded objects since they don't have IDs
+      .map(field => {
+        try {
+          const typeName = unwrapNamedType(field.type);
+          const isNumeric = isNumericScalarName(typeName);
+          const isBoolean = isBooleanScalarName(typeName);
+          const isDate = isDateTimeScalarName(typeName);
+          const isRequired = isNonNullField(field.type);
+          const isList = field.type.kind === "LIST";
+          
+          // Check if this is an ENUM type
+          let current = field.type as { kind?: string; ofType?: unknown; name?: string };
+          while (current && current.kind && (current.kind === "NON_NULL" || current.kind === "LIST")) {
+            current = current.ofType as { kind?: string; ofType?: unknown; name?: string };
+          }
+          const isEnum = current?.kind === "ENUM";
+          const enumValues = isEnum && typeName ? getEnumValues(schema, typeName) : undefined;
+          
+          return {
+            name: `${parentFieldName}.${field.name}`,
+            type: typeName || "String",
+            isNumeric,
+            isBoolean,
+            isDate,
+            isList,
+            isEnum,
+            enumValues,
+            isObject: false, // Embedded fields are not objects themselves
+            required: isRequired,
+            value: getDefaultValue(typeName, isBoolean, isList, false),
+            error: undefined,
+          };
+        } catch (error) {
+          console.error(`Error processing embedded field ${field.name}:`, error);
+          return null;
+        }
+      })
+      .filter((field): field is NonNullable<typeof field> => field !== null);
+  } catch (error) {
+    console.error(`Error processing embedded object fields for ${objectTypeName}:`, error);
+    return [];
   }
 }
 
@@ -227,12 +282,13 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               const isScalar = current?.kind && isScalarOrEnum(current.kind);
               const isObject = current?.kind === "OBJECT";
               
-              // Exclude embedded object fields
+              // Include embedded object fields for section rendering
               const isEmbedded = field.extensions?.relation?.embedded === true;
               const shouldIncludeObject = isObject && !isEmbedded;
+              const shouldIncludeEmbedded = isObject && isEmbedded;
               
-              console.log(`Field ${field.name}: underlying kind=${current?.kind}, isScalar=${isScalar}, isObject=${isObject}, isEmbedded=${isEmbedded}, shouldIncludeObject=${shouldIncludeObject}, isNotId=${isNotId}, type.kind=${field.type.kind}`);
-              return isScalar || shouldIncludeObject;
+              console.log(`Field ${field.name}: underlying kind=${current?.kind}, isScalar=${isScalar}, isObject=${isObject}, isEmbedded=${isEmbedded}, shouldIncludeObject=${shouldIncludeObject}, shouldIncludeEmbedded=${shouldIncludeEmbedded}, isNotId=${isNotId}, type.kind=${field.type.kind}`);
+              return isScalar || shouldIncludeObject || shouldIncludeEmbedded;
             }
             
             return false;
@@ -279,7 +335,12 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           // Check if the object field is non-null (required)
           const isObjectRequired = isObject && isNonNullField(field.type);
           
-          console.log(`Field ${field.name}: type=${typeName}, isNumeric=${isNumeric}, isBoolean=${isBoolean}, isDate=${isDate}, isRequired=${isRequired}, isList=${isList}, isEnum=${isEnum}, isObject=${isObject}, objectTypeName=${objectTypeName}, descriptionField=${descriptionField}`);
+          // Check if this is an embedded object field
+          const isEmbedded = field.extensions?.relation?.embedded === true;
+          const embeddedFields = isEmbedded && objectTypeName ? 
+            processEmbeddedObjectFields(schema, objectTypeName, field.name) : undefined;
+          
+          console.log(`Field ${field.name}: type=${typeName}, isNumeric=${isNumeric}, isBoolean=${isBoolean}, isDate=${isDate}, isRequired=${isRequired}, isList=${isList}, isEnum=${isEnum}, isObject=${isObject}, isEmbedded=${isEmbedded}, objectTypeName=${objectTypeName}, descriptionField=${descriptionField}`);
           
           return {
             name: field.name,
@@ -296,6 +357,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             descriptionFieldType,
             listQueryName,
             singleQueryName,
+            isEmbedded,
+            embeddedFields,
             required: isObject ? isObjectRequired : isRequired,
             value: getDefaultValue(typeName, isBoolean, isList, isObject),
             error: undefined,
@@ -333,11 +396,20 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     // Build field selections including object field details
     const fieldSelections = formFields.map(field => {
       if (field.isObject && field.objectTypeName && field.descriptionField) {
-        // For object fields, include the object with id and description field
-        return `${field.name} {
+        if (field.isEmbedded) {
+          // For embedded objects, include all fields that are rendered in the form
+          const embeddedFieldNames = field.embeddedFields?.map(ef => ef.name.replace(`${field.name}.`, '')) || [];
+          console.log(`Embedded object ${field.name}: including fields:`, embeddedFieldNames);
+          return `${field.name} {
+            ${embeddedFieldNames.join('\n            ')}
+          }`;
+        } else {
+          // For non-embedded objects, include id for proper object reference
+          return `${field.name} {
             id
             ${field.descriptionField}
           }`;
+        }
       }
       return field.name;
     });
@@ -447,8 +519,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           if (entity[field.name] !== undefined) {
             let fieldValue = entity[field.name];
             
-            // Handle object fields - extract the ID
-            if (field.isObject && fieldValue && typeof fieldValue === 'object' && 'id' in fieldValue) {
+            // Handle object fields - extract the ID for non-embedded objects
+            if (field.isObject && !field.isEmbedded && fieldValue && typeof fieldValue === 'object' && 'id' in fieldValue) {
               fieldValue = fieldValue.id;
             }
             
@@ -457,6 +529,28 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               value: fieldValue,
             };
             console.log(`Updated field ${field.name} with value:`, fieldValue);
+            
+            // Handle embedded object fields - populate their nested fields
+            if (field.isEmbedded && field.embeddedFields && fieldValue && typeof fieldValue === 'object') {
+              console.log(`Processing embedded object ${field.name}:`, fieldValue);
+              field.embeddedFields.forEach(embeddedField => {
+                const embeddedFieldName = embeddedField.name.replace(`${field.name}.`, '');
+                const embeddedFieldValue = fieldValue[embeddedFieldName];
+                
+                console.log(`Embedded field ${embeddedField.name}: extracted name = ${embeddedFieldName}, value = ${embeddedFieldValue}`);
+                
+                if (embeddedFieldValue !== undefined) {
+                  updatedData[embeddedField.name] = {
+                    ...embeddedField,
+                    value: embeddedFieldValue,
+                  };
+                  console.log(`Updated embedded field ${embeddedField.name} with value:`, embeddedFieldValue);
+                } else {
+                  updatedData[embeddedField.name] = embeddedField;
+                  console.log(`Embedded field ${embeddedField.name} not found in data, using default`);
+                }
+              });
+            }
           } else {
             updatedData[field.name] = field;
           }
@@ -473,6 +567,19 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       ...prev,
       [fieldName]: {
         ...prev[fieldName],
+        value: value === null ? "" : value,
+        error: undefined,
+      },
+    }));
+  };
+
+  // Handle embedded field changes
+  const handleEmbeddedFieldChange = (parentFieldName: string, embeddedFieldName: string, value: string | number | boolean | string[] | null) => {
+    const fullFieldName = `${parentFieldName}.${embeddedFieldName}`;
+    setFormData(prev => ({
+      ...prev,
+      [fullFieldName]: {
+        ...prev[fullFieldName],
         value: value === null ? "" : value,
         error: undefined,
       },
@@ -550,18 +657,63 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     }
   };
 
+  // Render embedded object section
+  const renderEmbeddedSection = (field: FormField) => {
+    if (!field.isEmbedded || !field.embeddedFields) return null;
+    
+    const sectionLabel = getFieldLabel(field.name);
+    const isViewMode = action === "view";
+    
+    return (
+      <Grid key={field.name} size={{ xs: 12 }}>
+        <Accordion defaultExpanded>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="h6">{sectionLabel}</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid container spacing={3}>
+              {field.embeddedFields.map(embeddedField => {
+                // Get the current value from formData for this embedded field
+                const currentValue = formData[embeddedField.name]?.value;
+                
+                console.log(`Embedded field ${embeddedField.name}: original value =`, embeddedField.value, 'current value from formData =', currentValue);
+                
+                // Create a modified field with the current value and correct onChange handler
+                const modifiedField = {
+                  ...embeddedField,
+                  value: currentValue !== undefined ? currentValue : embeddedField.value,
+                  onChange: (value: string | number | boolean | string[] | null) => 
+                    handleEmbeddedFieldChange(field.name, embeddedField.name.replace(`${field.name}.`, ''), value)
+                };
+                
+                return (
+                  <Grid key={embeddedField.name} size={{ xs: 12, sm: 6, md: 4 }}>
+                    {renderField(modifiedField)}
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
+      </Grid>
+    );
+  };
+
   // Render form field
-  const renderField = (field: FormField) => {
+  const renderField = (field: FormField & { onChange?: (value: string | number | boolean | string[] | null) => void }) => {
     console.log(`Rendering field ${field.name} with value:`, field.value, 'from formData:', formData[field.name]?.value);
     const fieldLabel = getFieldLabel(field.name);
     const isViewMode = action === "view";
+    
+    // Use the field's onChange if provided, otherwise use the default handleFieldChange
+    const onChange = field.onChange || ((value: string | number | boolean | string[] | null) => handleFieldChange(field.name, value));
     
     if (field.isObject && field.objectTypeName && field.descriptionField && field.descriptionFieldType && field.listQueryName && field.singleQueryName) {
       return (
         <ObjectFieldSelector
           label={fieldLabel}
           value={field.value as string}
-          onChange={(value) => handleFieldChange(field.name, value)}
+          onChange={onChange}
           error={field.error}
           required={field.required}
           disabled={isViewMode}
@@ -580,7 +732,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           <InputLabel>{fieldLabel}</InputLabel>
           <Select
             value={field.value as string}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
+            onChange={(e) => onChange(e.target.value)}
             label={fieldLabel}
             required={field.required}
             disabled={isViewMode}
@@ -602,7 +754,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           freeSolo
           options={[]}
           value={field.value as string[]}
-          onChange={(_, newValue) => handleFieldChange(field.name, newValue)}
+          onChange={(_, newValue) => onChange(newValue)}
           disabled={isViewMode}
           slotProps={{
             chip: {
@@ -629,7 +781,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             <input
               type="checkbox"
               checked={field.value as boolean}
-              onChange={(e) => handleFieldChange(field.name, e.target.checked)}
+              onChange={(e) => onChange(e.target.checked)}
               disabled={isViewMode}
             />
           }
@@ -657,7 +809,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           label={fieldLabel}
           type="date"
           value={formatDateForInput(field.value)}
-          onChange={(e) => handleFieldChange(field.name, e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           error={!!field.error}
           helperText={field.error}
           required={field.required}
@@ -673,7 +825,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         label={fieldLabel}
         type={field.isNumeric ? "number" : "text"}
         value={field.value as string}
-        onChange={(e) => handleFieldChange(field.name, e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         error={!!field.error}
         helperText={field.error}
         required={field.required}
@@ -754,16 +906,24 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         </Alert>
       )}
 
-      {/* Form */}
-      <Paper sx={{ p: 3 }}>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3} >
-            {formFields.map(field => (
-              <Grid key={field.name} size={{ xs: 12, sm: 6, md: 4 }} >
-                {renderField(formData[field.name] || field)}
+                {/* Form */}
+          <Paper sx={{ p: 3 }}>
+            <form onSubmit={handleSubmit}>
+              <Grid container spacing={3} >
+                {formFields.map(field => {
+                  // Handle embedded object fields as sections
+                  if (field.isEmbedded) {
+                    return renderEmbeddedSection(field);
+                  }
+                  
+                  // Handle regular fields
+                  return (
+                    <Grid key={field.name} size={{ xs: 12, sm: 6, md: 4 }} >
+                      {renderField(formData[field.name] || field)}
+                    </Grid>
+                  );
+                })}
               </Grid>
-            ))}
-          </Grid>
 
           <Divider sx={{ my: 3 }} />
 
