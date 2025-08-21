@@ -17,6 +17,8 @@
   "serie.name": "Name",
   "serie.categories": "Categories",
   "serie.director": "Director",
+  "serie.seasons": "Seasons",
+  "serie.stars": "Stars",
 
   "director.name": "Name",
   "director.country": "Country",
@@ -32,7 +34,15 @@
   "episode.season": "Season",
 
   "star.name": "Name",
-  "star.country": "Country"
+  "star.country": "Country",
+
+  "assignedStarAndSerie.id": "ID",
+  "assignedStarAndSerie.serie": "Series",
+  "assignedStarAndSerie.star": "Star",
+  
+  "collection.loading": "Loading...",
+  "collection.error": "Error loading data",
+  "collection.noData": "No data available"
   ,
   "grid.filter.columns": "Columns",
   "grid.filter.operator": "Operator",

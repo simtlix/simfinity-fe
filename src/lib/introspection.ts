@@ -126,6 +126,7 @@ export type SchemaField = {
     relation?: {
       displayField?: string | null;
       embedded?: boolean | null;
+      connectionField?: string | null;
     } | null;
   } | null;
 };

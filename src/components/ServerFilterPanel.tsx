@@ -30,8 +30,10 @@ export default function ServerFilterPanel({ onApply, onClear }: ServerFilterPane
           size="small"
           variant="contained"
           onClick={() => {
-            const model = (apiRef.current.state as any)?.filter?.filterModel as GridFilterModel;
-            onApply(model);
+            const model = (apiRef.current.state as { filter?: { filterModel?: GridFilterModel } })?.filter?.filterModel;
+            if (model) {
+              onApply(model);
+            }
             apiRef.current.hideFilterPanel();
           }}
         >

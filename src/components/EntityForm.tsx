@@ -54,6 +54,7 @@ const UPDATE_ENTITY_MUTATION = gql`
 import { useRouter } from "next/navigation";
 import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getTypeByName, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName, isScalarOrEnum, unwrapNamedType, getListEntityFieldNamesOfType } from "@/lib/introspection";
 import ObjectFieldSelector from "./ObjectFieldSelector";
+import CollectionFieldGrid from "./CollectionFieldGrid";
 import { useI18n } from "@/lib/i18n";
 import { Accordion, AccordionDetails, AccordionSummary } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -84,6 +85,9 @@ type FormField = {
   singleQueryName?: string;
   isEmbedded?: boolean; // Whether this field is an embedded object
   embeddedFields?: FormField[]; // Fields within the embedded object
+  isCollection?: boolean; // Whether this field is a collection of objects
+  collectionObjectTypeName?: string; // The type name of objects in the collection
+  connectionField?: string; // The field name used to connect to the parent entity
 };
 
 type FormData = Record<string, FormField>;
@@ -263,14 +267,22 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             const isList = current?.kind === "LIST";
             
             if (isList) {
-              // For list fields, check if the underlying type is a scalar
+              // For list fields, check if the underlying type is a scalar or object
               while (current && current.kind && (current.kind === "NON_NULL" || current.kind === "LIST")) {
                 current = current.ofType as { kind?: string; ofType?: unknown; name?: string };
               }
               const underlyingIsScalar = current?.kind && isScalarOrEnum(current.kind);
+              const underlyingIsObject = current?.kind === "OBJECT";
+              
               // Include list-of-scalar fields for tag input
               if (underlyingIsScalar) {
                 console.log(`Field ${field.name}: INCLUDED - List of scalar (${current?.name}) for tag input`);
+                return true;
+              }
+              
+              // Include list-of-object fields for collection grid rendering
+              if (underlyingIsObject) {
+                console.log(`Field ${field.name}: INCLUDED - List of object (${current?.name}) for collection grid`);
                 return true;
               }
             } else {
@@ -323,6 +335,33 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           const descriptionField = isObject && field.extensions?.relation?.displayField ? 
             field.extensions.relation.displayField : "name";
           
+          // Check if this is a COLLECTION type (list of objects)
+          const isCollection = isList && current?.kind === "OBJECT";
+          const collectionObjectTypeName = isCollection && typeName && typeName !== null ? typeName : undefined;
+          let connectionField = isCollection && field.extensions?.relation?.connectionField ? 
+            field.extensions.relation.connectionField : undefined;
+          
+          // Fallback: try to derive connectionField if not explicitly defined
+          if (isCollection && !connectionField && collectionObjectTypeName) {
+            // Common patterns: if the collection is named 'seasons', the connection field might be 'serie'
+            // or if it's 'stars', it might be 'serie' as well
+            const entityName = listField.slice(0, -1); // Remove 's' from end (e.g., 'series' -> 'serie')
+            
+            // For now, let's use the entity name as a fallback
+            connectionField = entityName;
+            console.log(`Collection field ${field.name}: Using fallback connectionField: ${connectionField}`);
+          }
+          
+          // Debug collection field detection
+          if (isCollection) {
+            console.log(`Collection field ${field.name}:`, {
+              typeName,
+              extensions: field.extensions,
+              connectionField,
+              relation: field.extensions?.relation
+            });
+          }
+          
           // Get description field type for object types
           const descriptionFieldType = isObject && objectTypeName && descriptionField ? 
             getDescriptionFieldType(schema, objectTypeName, descriptionField) : undefined;
@@ -340,7 +379,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           const embeddedFields = isEmbedded && objectTypeName ? 
             processEmbeddedObjectFields(schema, objectTypeName, field.name) : undefined;
           
-          console.log(`Field ${field.name}: type=${typeName}, isNumeric=${isNumeric}, isBoolean=${isBoolean}, isDate=${isDate}, isRequired=${isRequired}, isList=${isList}, isEnum=${isEnum}, isObject=${isObject}, isEmbedded=${isEmbedded}, objectTypeName=${objectTypeName}, descriptionField=${descriptionField}`);
+          console.log(`Field ${field.name}: type=${typeName}, isNumeric=${isNumeric}, isBoolean=${isBoolean}, isDate=${isDate}, isRequired=${isRequired}, isList=${isList}, isEnum=${isEnum}, isObject=${isObject}, isEmbedded=${isEmbedded}, isCollection=${isCollection}, objectTypeName=${objectTypeName}, descriptionField=${descriptionField}, collectionObjectTypeName=${collectionObjectTypeName}, connectionField=${connectionField}`);
           
           return {
             name: field.name,
@@ -359,6 +398,9 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             singleQueryName,
             isEmbedded,
             embeddedFields,
+            isCollection,
+            collectionObjectTypeName,
+            connectionField,
             required: isObject ? isObjectRequired : isRequired,
             value: getDefaultValue(typeName, isBoolean, isList, isObject),
             error: undefined,
@@ -393,31 +435,38 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   const generateQueries = React.useMemo(() => {
     if (!formFields.length) return null;
     
-    // Build field selections including object field details
-    const fieldSelections = formFields.map(field => {
-      if (field.isObject && field.objectTypeName && field.descriptionField) {
-        if (field.isEmbedded) {
-          // For embedded objects, include all fields that are rendered in the form
-          const embeddedFieldNames = field.embeddedFields?.map(ef => ef.name.replace(`${field.name}.`, '')) || [];
-          console.log(`Embedded object ${field.name}: including fields:`, embeddedFieldNames);
-          return `${field.name} {
-            ${embeddedFieldNames.join('\n            ')}
-          }`;
-        } else {
-          // For non-embedded objects, include id for proper object reference
-          return `${field.name} {
-            id
-            ${field.descriptionField}
-          }`;
+    // Build field selections including object field details, but EXCLUDE collection fields
+    const fieldSelections = formFields
+      .filter(field => !field.isCollection) // Exclude collection fields from main query
+      .map(field => {
+        if (field.isObject && field.objectTypeName && field.descriptionField) {
+          if (field.isEmbedded) {
+            // For embedded objects, include all fields that are rendered in the form
+            const embeddedFieldNames = field.embeddedFields?.map(ef => ef.name.replace(`${field.name}.`, '')) || [];
+            console.log(`Embedded object ${field.name}: including fields:`, embeddedFieldNames);
+            return `${field.name} {
+              ${embeddedFieldNames.join('\n            ')}
+            }`;
+          } else {
+            // For non-embedded objects, include id for proper object reference
+            return `${field.name} {
+              id
+              ${field.descriptionField}
+            }`;
+          }
         }
-      }
-      return field.name;
-    });
+        return field.name;
+      });
     
     const fieldNames = fieldSelections.join('\n      ');
     const entityName = listField.slice(0, -1); // Remove 's' from end
     
-    console.log('Generating queries for:', { entityName, fieldNames, formFields: formFields.map(f => ({ name: f.name, isObject: f.isObject, objectTypeName: f.objectTypeName })) });
+    console.log('Generating queries for:', { 
+      entityName, 
+      fieldNames, 
+      includedFields: formFields.filter(f => !f.isCollection).map(f => ({ name: f.name, isObject: f.isObject, objectTypeName: f.objectTypeName })),
+      excludedCollectionFields: formFields.filter(f => f.isCollection).map(f => ({ name: f.name, collectionObjectTypeName: f.collectionObjectTypeName, connectionField: f.connectionField }))
+    });
     
     const getQuery = gql`
       query Get${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($id: ID!) {
@@ -662,7 +711,6 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     if (!field.isEmbedded || !field.embeddedFields) return null;
     
     const sectionLabel = getFieldLabel(field.name);
-    const isViewMode = action === "view";
     
     return (
       <Grid key={field.name} size={{ xs: 12 }}>
@@ -910,19 +958,29 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           <Paper sx={{ p: 3 }}>
             <form onSubmit={handleSubmit}>
               <Grid container spacing={3} >
-                {formFields.map(field => {
-                  // Handle embedded object fields as sections
-                  if (field.isEmbedded) {
-                    return renderEmbeddedSection(field);
-                  }
+                {(() => {
+                  const mainFormFields = formFields.filter(field => !field.isCollection);
+                  const collectionFields = formFields.filter(field => field.isCollection);
                   
-                  // Handle regular fields
-                  return (
-                    <Grid key={field.name} size={{ xs: 12, sm: 6, md: 4 }} >
-                      {renderField(formData[field.name] || field)}
-                    </Grid>
-                  );
-                })}
+                  console.log('Form rendering:', {
+                    mainFormFields: mainFormFields.map(f => f.name),
+                    collectionFields: collectionFields.map(f => ({ name: f.name, collectionObjectTypeName: f.collectionObjectTypeName, connectionField: f.connectionField }))
+                  });
+                  
+                  return mainFormFields.map(field => {
+                    // Handle embedded object fields as sections
+                    if (field.isEmbedded) {
+                      return renderEmbeddedSection(field);
+                    }
+                    
+                    // Handle regular fields
+                    return (
+                      <Grid key={field.name} size={{ xs: 12, sm: 6, md: 4 }} >
+                        {renderField(formData[field.name] || field)}
+                      </Grid>
+                    );
+                  });
+                })()}
               </Grid>
 
           <Divider sx={{ my: 3 }} />
@@ -950,6 +1008,41 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           </Box>
         </form>
       </Paper>
+
+      {/* Collection Fields */}
+      {(() => {
+        const validCollectionFields = formFields.filter(field => 
+          field.isCollection && field.collectionObjectTypeName && field.connectionField
+        );
+        
+        console.log('Rendering collection fields:', {
+          totalCollectionFields: formFields.filter(f => f.isCollection).length,
+          validCollectionFields: validCollectionFields.map(f => ({
+            name: f.name,
+            collectionObjectTypeName: f.collectionObjectTypeName,
+            connectionField: f.connectionField
+          })),
+          invalidCollectionFields: formFields.filter(f => f.isCollection && (!f.collectionObjectTypeName || !f.connectionField)).map(f => ({
+            name: f.name,
+            collectionObjectTypeName: f.collectionObjectTypeName,
+            connectionField: f.connectionField
+          }))
+        });
+        
+        return validCollectionFields.map(field => (
+          <Box key={field.name} sx={{ mt: 3 }}>
+            <CollectionFieldGrid
+              collectionField={{
+                name: field.name,
+                objectTypeName: field.collectionObjectTypeName!,
+                connectionField: field.connectionField!,
+              }}
+              parentEntityId={entityId || ""}
+              parentEntityType={getElementTypeNameOfListField(schemaData, listField) || "" }
+            />
+          </Box>
+        ));
+      })()}
 
       {/* Snackbar for success messages */}
       <Snackbar

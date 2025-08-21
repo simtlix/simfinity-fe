@@ -17,6 +17,8 @@
   "serie.name": "Título",
   "serie.categories": "Categorías",
   "serie.director": "Director",
+  "serie.seasons": "Temporadas",
+  "serie.stars": "Actores",
 
   "director.name": "Nombre",
   "director.country": "País",
@@ -32,7 +34,15 @@
   "episode.season": "Temporada",
 
   "star.name": "Nombre",
-  "star.country": "País"
+  "star.country": "País",
+
+  "assignedStarAndSerie.id": "ID",
+  "assignedStarAndSerie.serie": "Serie",
+  "assignedStarAndSerie.star": "Estrella",
+  
+  "collection.loading": "Cargando...",
+  "collection.error": "Error al cargar datos",
+  "collection.noData": "No hay datos disponibles"
   ,
   "grid.filter.columns": "Columnas",
   "grid.filter.operator": "Operador",
