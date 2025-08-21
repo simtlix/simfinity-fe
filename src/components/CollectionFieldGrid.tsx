@@ -184,12 +184,23 @@ export default function CollectionFieldGrid({parentEntityType, collectionField, 
       // Apply custom column renderers if available
       const renderer = resolveColumnRenderer(`${collectionField.objectTypeName}.${column}`);
       if (renderer) {
-        columnDef.renderCell = (params) => renderer(params.value);
+        columnDef.renderCell = (params) => {
+          const value = valueResolvers[column] ? valueResolvers[column](params.row) : params.row[column];
+          return (
+            <>{renderer({ 
+              entity: collectionField.objectTypeName, 
+              field: column, 
+              row: params.row, 
+              value, 
+              gridParams: params 
+            })}</>
+          );
+        };
       }
 
       return columnDef;
     });
-  }, [columns, collectionField.objectTypeName, collectionField.name, resolveLabel]);
+  }, [columns, collectionField.objectTypeName, collectionField.name, resolveLabel, valueResolvers]);
 
   // Handle pagination change
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {
