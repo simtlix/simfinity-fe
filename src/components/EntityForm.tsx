@@ -776,7 +776,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     
     // Get section-level customization (for the embedded object section itself)
     const sectionCustomization = getEmbeddedSectionCustomization(customizationState.customization, field.name);
-    const sectionSize = sectionCustomization?.size || { xs: 12, sm: 6, md: 4 };
+    const sectionSize = sectionCustomization?.size || { xs: 12, sm: 12, md: 12 }; // Default to full width
     const isSectionVisible = sectionCustomization?.visible ?? true;
     const isSectionEnabled = sectionCustomization?.enabled ?? true;
     
@@ -1110,9 +1110,9 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                     const fieldSize = getFieldSize(field.name, customizationState.customization);
                     const isEnabled = isFieldEnabled(field.name, customizationState);
                     
-                    // Handle embedded object fields as sections
+                    // Handle embedded object fields as sections - these will be rendered separately at the bottom
                     if (field.isEmbedded) {
-                      return renderEmbeddedSection(field, isEnabled);
+                      return null; // Don't render embedded sections here
                     }
                     
                     // Handle regular fields with customization
@@ -1124,6 +1124,30 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                   });
                 })()}
               </Grid>
+
+          {/* Embedded Object Sections - Rendered at the bottom */}
+          {(() => {
+            const embeddedFields = formFields.filter(field => field.isEmbedded);
+            if (embeddedFields.length === 0) return null;
+            
+            // Sort embedded fields by their customization order
+            const sortedEmbeddedFields = embeddedFields.sort((a, b) => {
+              const aCustomization = getEmbeddedSectionCustomization(customizationState.customization, a.name);
+              const bCustomization = getEmbeddedSectionCustomization(customizationState.customization, b.name);
+              
+              const aOrder = aCustomization?.order ?? 999;
+              const bOrder = bCustomization?.order ?? 999;
+              
+              return aOrder - bOrder;
+            });
+            
+            return (
+              <>
+                <Divider sx={{ my: 3 }} />
+                {sortedEmbeddedFields.map(field => renderEmbeddedSection(field, true))}
+              </>
+            );
+          })()}
 
           <Divider sx={{ my: 3 }} />
 
