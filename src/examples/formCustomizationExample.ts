@@ -11,15 +11,6 @@ export function setupFormCustomizations() {
       enabled: true, // default is true
       visible: true, // default is true
       order: 1, // order in the form (lower numbers appear first)
-      errorMessage: (value) => {
-        if (!value || String(value).trim() === '') {
-          return "Name is required";
-        }
-        if (String(value).length < 3) {
-          return "Name must be at least 3 characters long";
-        }
-        return undefined; // no error
-      },
       onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
         // Example: Auto-capitalize the first letter
         const stringValue = String(value);
@@ -65,15 +56,7 @@ export function setupFormCustomizations() {
       size: { xs: 12, sm: 6, md: 4 },
       enabled: true,
       visible: true,
-      order: 3,
-      errorMessage: (value) => {
-        if (!value) return undefined;
-        const year = Number(value);
-        if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
-          return `Year must be between 1900 and ${new Date().getFullYear()}`;
-        }
-        return undefined;
-      }
+      order: 3
     },
     
     categories: {
@@ -99,13 +82,7 @@ export function setupFormCustomizations() {
       size: { xs: 12, sm: 12, md: 8 }, // Larger field for description
       enabled: false, // Initially disabled
       visible: true,
-      order: 5,
-      errorMessage: (value) => {
-        if (value && String(value).length > 500) {
-          return "Description must be less than 500 characters";
-        }
-        return undefined;
-      }
+      order: 5
     },
     
     rating: {
@@ -127,40 +104,17 @@ export function setupFormCustomizations() {
   registerFormCustomization("episode", {
     number: {
       size: { xs: 12, sm: 6, md: 3 },
-      order: 1,
-      errorMessage: (value) => {
-        if (!value || Number(value) <= 0) {
-          return "Episode number must be greater than 0";
-        }
-        return undefined;
-      }
+      order: 1
     },
     
     name: {
       size: { xs: 12, sm: 6, md: 6 },
-      order: 2,
-      errorMessage: (value) => {
-        if (!value || String(value).trim() === '') {
-          return "Episode name is required";
-        }
-        return undefined;
-      }
+      order: 2
     },
     
     airDate: {
       size: { xs: 12, sm: 6, md: 3 },
-      order: 3,
-      errorMessage: (value) => {
-        if (!value) return undefined;
-        const date = new Date(value as string);
-        if (isNaN(date.getTime())) {
-          return "Invalid date format";
-        }
-        if (date > new Date()) {
-          return "Air date cannot be in the future";
-        }
-        return undefined;
-      }
+      order: 3
     },
     
     season: {
@@ -192,12 +146,6 @@ export function setupFormCustomizations() {
     // Field-level customization for fields within the "director" embedded object
     "director.name": {
       size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
-      errorMessage: (value) => {
-        if (!value || String(value).trim() === '') {
-          return "Director name is required";
-        }
-        return undefined;
-      },
       onChange: (fieldName, value, formData, setFieldData) => {
         // Auto-capitalize director name
         if (value && typeof value === 'string') {
@@ -217,12 +165,6 @@ export function setupFormCustomizations() {
     
     "director.country": {
       size: { xs: 12, sm: 6, md: 6 }, // Field takes the other half of the section width
-      errorMessage: (value) => {
-        if (!value || String(value).trim() === '') {
-          return "Director country is required";
-        }
-        return undefined;
-      },
       onChange: (fieldName, value, formData, setFieldData) => {
         // Example: Auto-fill production company based on country
         if (value === 'United States') {
@@ -244,37 +186,15 @@ export function setupFormCustomizations() {
     },
     
     "production.company": {
-      size: { xs: 12, sm: 12, md: 12 }, // Field takes full width of its section
-      errorMessage: (value) => {
-        if (!value || String(value).trim() === '') {
-          return "Production company is required";
-        }
-        return undefined;
-      }
+      size: { xs: 12, sm: 12, md: 12 } // Field takes full width of its section
     },
     
     "production.year": {
-      size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
-      errorMessage: (value) => {
-        if (!value) return undefined;
-        const year = Number(value);
-        if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
-          return `Year must be between 1900 and ${new Date().getFullYear()}`;
-        }
-        return undefined;
-      }
+      size: { xs: 12, sm: 6, md: 6 } // Field takes half the section width
     },
     
     "production.budget": {
-      size: { xs: 12, sm: 6, md: 6 }, // Field takes the other half of the section width
-      errorMessage: (value) => {
-        if (!value) return undefined;
-        const budget = Number(value);
-        if (isNaN(budget) || budget < 0) {
-          return "Budget must be a positive number";
-        }
-        return undefined;
-      }
+      size: { xs: 12, sm: 6, md: 6 } // Field takes the other half of the section width
     }
   });
 

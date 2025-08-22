@@ -21,7 +21,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  FormHelperText,
+
 } from "@mui/material";
 
 // GraphQL queries and mutations
@@ -853,9 +853,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     const fieldLabel = getFieldLabel(field.name);
     const isViewMode = action === "view";
     
-    // Get field customization for error message and custom onChange
+    // Get field customization for custom onChange
     const fieldCustomization = customizationState.customization[field.name];
-    const customErrorMessage = fieldCustomization && 'errorMessage' in fieldCustomization ? fieldCustomization.errorMessage : undefined;
     const customOnChange = fieldCustomization && 'onChange' in fieldCustomization ? fieldCustomization.onChange : undefined;
     
     // Use custom onChange if provided, otherwise use the default handleFieldChange
@@ -883,9 +882,6 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             listQueryName={field.listQueryName}
             singleQueryName={field.singleQueryName}
           />
-          {customErrorMessage && customErrorMessage(field.value) && (
-            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
-          )}
         </>
       );
     }
@@ -907,9 +903,6 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               </MenuItem>
             ))}
           </Select>
-          {customErrorMessage && customErrorMessage(field.value) && (
-            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
-          )}
         </FormControl>
       );
     }
@@ -939,9 +932,6 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               />
             )}
           />
-          {customErrorMessage && customErrorMessage(field.value) && (
-            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
-          )}
         </>
       );
     }
@@ -960,9 +950,6 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             }
             label={fieldLabel}
           />
-          {customErrorMessage && customErrorMessage(field.value) && (
-            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
-          )}
         </>
       );
     }
@@ -994,9 +981,6 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             disabled={isViewMode || !enabled}
             slotProps={{ inputLabel: { shrink: true } }}
           />
-          {customErrorMessage && customErrorMessage(field.value) && (
-            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
-          )}
         </>
       );
     }
@@ -1014,9 +998,6 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           required={field.required}
           disabled={isViewMode || !enabled}
         />
-        {customErrorMessage && customErrorMessage(field.value) && (
-          <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
-        )}
       </>
     );
   };

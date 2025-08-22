@@ -129,25 +129,7 @@ enabled: false  // Field is disabled
 
 **Default**: `true`
 
-### Custom Error Messages (`errorMessage`)
 
-Provide custom validation logic:
-
-```typescript
-errorMessage: (value) => {
-  if (!value || String(value).trim() === '') {
-    return "This field is required";
-  }
-  if (String(value).length < 3) {
-    return "Must be at least 3 characters";
-  }
-  return undefined; // No error
-}
-```
-
-**Return Value**: 
-- `string`: Error message to display
-- `undefined`: No error
 
 ### Custom onChange Events (`onChange`)
 
@@ -359,27 +341,11 @@ registerFormCustomization("serie", {
   },
   
   "production.year": {
-    size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
-    errorMessage: (value) => {
-      if (!value) return undefined;
-      const year = Number(value);
-      if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
-        return `Year must be between 1900 and ${new Date().getFullYear()}`;
-      }
-      return undefined;
-    }
+    size: { xs: 12, sm: 6, md: 6 } // Field takes half the section width
   },
   
   "production.budget": {
-    size: { xs: 12, sm: 6, md: 6 }, // Field takes the other half of the section
-    errorMessage: (value) => {
-      if (!value) return undefined;
-      const budget = Number(value);
-      if (isNaN(budget) || budget < 0) {
-        return "Budget must be a positive number";
-      }
-      return undefined;
-    }
+    size: { xs: 12, sm: 6, md: 6 } // Field takes the other half of the section
   }
 });
 ```
@@ -395,7 +361,7 @@ The EntityForm component automatically detects and applies customizations:
 
 1. **Automatic Detection**: Customizations are applied based on the entity type from the schema
 2. **State Management**: Field visibility, enabled state, and order are managed automatically
-3. **Error Display**: Custom error messages appear below fields using FormHelperText
+3. **Error Display**: Custom error messages are handled through the onChange function's return value
 4. **Event Handling**: Custom onChange events are executed before the default field change handler
 
 ## Best Practices
@@ -452,7 +418,6 @@ type FieldCustomization = {
   enabled?: boolean;
   visible?: boolean;
   order?: number;
-  errorMessage?: (value: unknown) => string | undefined;
   onChange?: (fieldName: string, value: string | number | boolean | string[] | null, formData: Record<string, unknown>, setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => void, setFieldVisible: (fieldName: string, visible: boolean) => void, setFieldEnabled: (fieldName: string, enabled: boolean) => void) => { value: string | number | boolean | string[] | null; error?: string };
 };
 ```

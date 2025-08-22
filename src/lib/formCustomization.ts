@@ -11,7 +11,6 @@ export type FieldCustomization = {
   enabled?: boolean;
   visible?: boolean;
   order?: number;
-  errorMessage?: (value: unknown) => string | undefined;
   onChange?: (
     fieldName: string,
     value: string | number | boolean | string[] | null,
