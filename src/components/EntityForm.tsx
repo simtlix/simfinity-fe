@@ -21,6 +21,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  FormHelperText,
 } from "@mui/material";
 
 // GraphQL queries and mutations
@@ -58,6 +59,15 @@ import CollectionFieldGrid from "./CollectionFieldGrid";
 import { useI18n } from "@/lib/i18n";
 import { Accordion, AccordionDetails, AccordionSummary } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { 
+  FormCustomizationState, 
+  FormCustomizationActions, 
+  createFormCustomizationState,
+  getFieldSize,
+  isFieldVisible,
+  isFieldEnabled,
+  getFieldOrder
+} from "@/lib/formCustomization";
 
 type EntityFormProps = {
   listField: string; // e.g., "series"
@@ -212,6 +222,14 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   const [error, setError] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
+  // Form customization state
+  const [customizationState, setCustomizationState] = React.useState<FormCustomizationState>({
+    customization: {},
+    fieldVisibility: {},
+    fieldEnabled: {},
+    fieldOrder: [],
+  });
+
   // Get schema data to understand entity structure
   const { data: schemaData, loading: schemaLoading } = useQuery(INTROSPECTION_QUERY);
 
@@ -229,6 +247,34 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     return `entity.${baseName}.${form}`;
   }, [schemaData]);
 
+  // Form customization actions
+  const customizationActions: FormCustomizationActions = React.useMemo(() => ({
+    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => {
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: { ...prev[fieldName], value }
+      }));
+    },
+    setFieldVisible: (fieldName: string, visible: boolean) => {
+      setCustomizationState(prev => ({
+        ...prev,
+        fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
+      }));
+    },
+    setFieldEnabled: (fieldName: string, enabled: boolean) => {
+      setCustomizationState(prev => ({
+        ...prev,
+        fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
+      }));
+    },
+    setFieldOrder: (fieldOrder: string[]) => {
+      setCustomizationState(prev => ({
+        ...prev,
+        fieldOrder
+      }));
+    },
+  }), []);
+
   // Build form fields based on schema first
   const formFields = React.useMemo(() => {
     if (!schemaData) {
@@ -242,7 +288,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       
       const entityTypeName = getElementTypeNameOfListField(schema, listField);
       if (!entityTypeName) {
-        console.log('No entity type found for listField:', listField);
+        console.log('No entity type name:', entityTypeName);
         return [];
       }
       
@@ -417,6 +463,19 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       return [];
     }
   }, [schemaData, listField]);
+
+  // Initialize customization state when formFields change
+  React.useEffect(() => {
+    if (formFields.length > 0) {
+      const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, listField);
+      if (entityTypeName) {
+        const fieldNames = formFields.map(field => field.name);
+        const newCustomizationState = createFormCustomizationState(entityTypeName, fieldNames);
+        setCustomizationState(newCustomizationState);
+        console.log('Initialized customization state for', entityTypeName, ':', newCustomizationState);
+      }
+    }
+  }, [formFields, schemaData, listField]);
 
   // For now, we'll skip the dynamic GraphQL queries and just show the form
   // The actual GraphQL integration can be added later once the form rendering works
@@ -707,7 +766,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   };
 
   // Render embedded object section
-  const renderEmbeddedSection = (field: FormField) => {
+  const renderEmbeddedSection = (field: FormField, enabled: boolean = true) => {
     if (!field.isEmbedded || !field.embeddedFields) return null;
     
     const sectionLabel = getFieldLabel(field.name);
@@ -736,7 +795,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                 
                 return (
                   <Grid key={embeddedField.name} size={{ xs: 12, sm: 6, md: 4 }}>
-                    {renderField(modifiedField)}
+                    {renderField(modifiedField, enabled)}
                   </Grid>
                 );
               })}
@@ -748,29 +807,52 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   };
 
   // Render form field
-  const renderField = (field: FormField & { onChange?: (value: string | number | boolean | string[] | null) => void }) => {
+  const renderField = (field: FormField & { onChange?: (value: string | number | boolean | string[] | null) => void }, enabled: boolean = true) => {
     console.log(`Rendering field ${field.name} with value:`, field.value, 'from formData:', formData[field.name]?.value);
     const fieldLabel = getFieldLabel(field.name);
     const isViewMode = action === "view";
     
-    // Use the field's onChange if provided, otherwise use the default handleFieldChange
-    const onChange = field.onChange || ((value: string | number | boolean | string[] | null) => handleFieldChange(field.name, value));
+    // Get field customization for error message and custom onChange
+    const fieldCustomization = customizationState.customization[field.name];
+    const customErrorMessage = fieldCustomization?.errorMessage;
+    const customOnChange = fieldCustomization?.onChange;
+    
+    // Use custom onChange if provided, otherwise use the default handleFieldChange
+    const onChange = customOnChange 
+      ? (value: string | number | boolean | string[] | null) => {
+          const result = customOnChange(field.name, value, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled);
+          if (result.error) {
+            // Set error on the field
+            setFormData(prev => ({
+              ...prev,
+              [field.name]: { ...prev[field.name], error: result.error }
+            }));
+          }
+          // Use the returned value (which might be modified by the custom onChange)
+          handleFieldChange(field.name, result.value as string | number | boolean | string[] | null);
+        }
+      : ((value: string | number | boolean | string[] | null) => handleFieldChange(field.name, value));
     
     if (field.isObject && field.objectTypeName && field.descriptionField && field.descriptionFieldType && field.listQueryName && field.singleQueryName) {
       return (
-        <ObjectFieldSelector
-          label={fieldLabel}
-          value={field.value as string}
-          onChange={onChange}
-          error={field.error}
-          required={field.required}
-          disabled={isViewMode}
-          objectTypeName={field.objectTypeName}
-          descriptionField={field.descriptionField}
-          descriptionFieldType={field.descriptionFieldType}
-          listQueryName={field.listQueryName}
-          singleQueryName={field.singleQueryName}
-        />
+        <>
+          <ObjectFieldSelector
+            label={fieldLabel}
+            value={field.value as string}
+            onChange={onChange}
+            error={field.error}
+            required={field.required}
+            disabled={isViewMode || !enabled}
+            objectTypeName={field.objectTypeName}
+            descriptionField={field.descriptionField}
+            descriptionFieldType={field.descriptionFieldType}
+            listQueryName={field.listQueryName}
+            singleQueryName={field.singleQueryName}
+          />
+          {customErrorMessage && customErrorMessage(field.value) && (
+            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
+          )}
+        </>
       );
     }
     
@@ -783,7 +865,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             onChange={(e) => onChange(e.target.value)}
             label={fieldLabel}
             required={field.required}
-            disabled={isViewMode}
+            disabled={isViewMode || !enabled}
           >
             {field.enumValues.map((enumValue) => (
               <MenuItem key={enumValue} value={enumValue}>
@@ -791,50 +873,63 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               </MenuItem>
             ))}
           </Select>
+          {customErrorMessage && customErrorMessage(field.value) && (
+            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
+          )}
         </FormControl>
       );
     }
     
     if (field.isList) {
       return (
-        <Autocomplete
-          multiple
-          freeSolo
-          options={[]}
-          value={field.value as string[]}
-          onChange={(_, newValue) => onChange(newValue)}
-          disabled={isViewMode}
-          slotProps={{
-            chip: {
-              variant: "outlined"
-            }
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label={fieldLabel}
-              error={!!field.error}
-              helperText={field.error}
-              required={field.required}
-            />
+        <>
+          <Autocomplete
+            multiple
+            freeSolo
+            options={[]}
+            value={field.value as string[]}
+            onChange={(_, newValue) => onChange(newValue)}
+            disabled={isViewMode || !enabled}
+            slotProps={{
+              chip: {
+                variant: "outlined"
+              }
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={fieldLabel}
+                error={!!field.error}
+                helperText={field.error}
+                required={field.required}
+              />
+            )}
+          />
+          {customErrorMessage && customErrorMessage(field.value) && (
+            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
           )}
-        />
+        </>
       );
     }
     
     if (field.isBoolean) {
       return (
-        <FormControlLabel
-          control={
-            <input
-              type="checkbox"
-              checked={field.value as boolean}
-              onChange={(e) => onChange(e.target.checked)}
-              disabled={isViewMode}
-            />
-          }
-          label={fieldLabel}
-        />
+        <>
+          <FormControlLabel
+            control={
+              <input
+                type="checkbox"
+                checked={field.value as boolean}
+                onChange={(e) => onChange(e.target.checked)}
+                disabled={isViewMode || !enabled}
+              />
+            }
+            label={fieldLabel}
+          />
+          {customErrorMessage && customErrorMessage(field.value) && (
+            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
+          )}
+        </>
       );
     }
 
@@ -852,33 +947,43 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       };
 
       return (
-        <TextField
-          fullWidth
-          label={fieldLabel}
-          type="date"
-          value={formatDateForInput(field.value)}
-          onChange={(e) => onChange(e.target.value)}
-          error={!!field.error}
-          helperText={field.error}
-          required={field.required}
-          disabled={isViewMode}
-          slotProps={{ inputLabel: { shrink: true } }}
-        />
+        <>
+          <TextField
+            fullWidth
+            label={fieldLabel}
+            type="date"
+            value={formatDateForInput(field.value)}
+            onChange={(e) => onChange(e.target.value)}
+            error={!!field.error}
+            helperText={field.error}
+            required={field.required}
+            disabled={isViewMode || !enabled}
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+          {customErrorMessage && customErrorMessage(field.value) && (
+            <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
+          )}
+        </>
       );
     }
 
     return (
-      <TextField
-        fullWidth
-        label={fieldLabel}
-        type={field.isNumeric ? "number" : "text"}
-        value={field.value as string}
-        onChange={(e) => onChange(e.target.value)}
-        error={!!field.error}
-        helperText={field.error}
-        required={field.required}
-        disabled={isViewMode}
-      />
+      <>
+        <TextField
+          fullWidth
+          label={fieldLabel}
+          type={field.isNumeric ? "number" : "text"}
+          value={field.value as string}
+          onChange={(e) => onChange(e.target.value)}
+          error={!!field.error}
+          helperText={field.error}
+          required={field.required}
+          disabled={isViewMode || !enabled}
+        />
+        {customErrorMessage && customErrorMessage(field.value) && (
+          <FormHelperText error>{customErrorMessage(field.value)}</FormHelperText>
+        )}
+      </>
     );
   };
 
@@ -967,16 +1072,34 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                     collectionFields: collectionFields.map(f => ({ name: f.name, collectionObjectTypeName: f.collectionObjectTypeName, connectionField: f.connectionField }))
                   });
                   
-                  return mainFormFields.map(field => {
+                  // Get ordered fields based on customization
+                  const orderedFields = getFieldOrder(customizationState);
+                  const visibleFields = mainFormFields.filter(field => isFieldVisible(field.name, customizationState));
+                  
+                  // Sort fields according to customization order
+                  const sortedFields = visibleFields.sort((a, b) => {
+                    const aIndex = orderedFields.indexOf(a.name);
+                    const bIndex = orderedFields.indexOf(b.name);
+                    if (aIndex === -1 && bIndex === -1) return 0;
+                    if (aIndex === -1) return 1;
+                    if (bIndex === -1) return -1;
+                    return aIndex - bIndex;
+                  });
+                  
+                  return sortedFields.map(field => {
+                    // Get field customization properties
+                    const fieldSize = getFieldSize(field.name, customizationState.customization);
+                    const isEnabled = isFieldEnabled(field.name, customizationState);
+                    
                     // Handle embedded object fields as sections
                     if (field.isEmbedded) {
-                      return renderEmbeddedSection(field);
+                      return renderEmbeddedSection(field, isEnabled);
                     }
                     
-                    // Handle regular fields
+                    // Handle regular fields with customization
                     return (
-                      <Grid key={field.name} size={{ xs: 12, sm: 6, md: 4 }} >
-                        {renderField(formData[field.name] || field)}
+                      <Grid key={field.name} size={fieldSize}>
+                        {renderField(formData[field.name] || field, isEnabled)}
                       </Grid>
                     );
                   });

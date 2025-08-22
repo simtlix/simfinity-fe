@@ -1,0 +1,190 @@
+import { registerFormCustomization } from '@/lib/formCustomization';
+
+// Example of how to use the form customization system
+// This should be called early in your application, typically in a layout or main component
+
+export function setupFormCustomizations() {
+  // Example 1: Customize a "serie" entity form
+  registerFormCustomization("serie", {
+    name: {
+      size: { xs: 12, sm: 6, md: 4 },
+      enabled: true, // default is true
+      visible: true, // default is true
+      order: 1, // order in the form (lower numbers appear first)
+      errorMessage: (value) => {
+        if (!value || String(value).trim() === '') {
+          return "Name is required";
+        }
+        if (String(value).length < 3) {
+          return "Name must be at least 3 characters long";
+        }
+        return undefined; // no error
+      },
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+        // Example: Auto-capitalize the first letter
+        const stringValue = String(value);
+        const capitalizedValue = stringValue.charAt(0).toUpperCase() + stringValue.slice(1);
+        
+        // Example: Show/hide other fields based on this value
+        if (stringValue.toLowerCase().includes('movie')) {
+          setFieldVisible('director', true);
+          setFieldVisible('year', true);
+        } else {
+          setFieldVisible('director', false);
+          setFieldVisible('year', false);
+        }
+        
+        // Example: Enable/disable fields based on value
+        if (stringValue.length > 10) {
+          setFieldEnabled('description', true);
+        } else {
+          setFieldEnabled('description', false);
+        }
+        
+        return { value: capitalizedValue, error: undefined };
+      }
+    },
+    
+    director: {
+      size: { xs: 12, sm: 6, md: 4 },
+      enabled: true,
+      visible: true,
+      order: 2,
+      errorMessage: (value) => {
+        if (!value) {
+          return "Director is required for movies";
+        }
+        return undefined;
+      },
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+        // Example: Auto-fill country field when director is selected
+        if (value && typeof value === 'string') {
+          // Simulate fetching director info and setting related fields
+          setFieldData('country', 'United States'); // This would come from API
+        }
+        
+        return { value, error: undefined };
+      }
+    },
+    
+    year: {
+      size: { xs: 12, sm: 6, md: 4 },
+      enabled: true,
+      visible: true,
+      order: 3,
+      errorMessage: (value) => {
+        if (!value) return undefined;
+        const year = Number(value);
+        if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
+          return `Year must be between 1900 and ${new Date().getFullYear()}`;
+        }
+        return undefined;
+      }
+    },
+    
+    categories: {
+      size: { xs: 12, sm: 6, md: 4 },
+      enabled: true,
+      visible: true,
+      order: 4,
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+        // Example: Show genre-specific fields based on categories
+        if (Array.isArray(value) && value.includes('Horror')) {
+          setFieldVisible('rating', true);
+          setFieldVisible('ageRestriction', true);
+        } else {
+          setFieldVisible('rating', false);
+          setFieldVisible('ageRestriction', false);
+        }
+        
+        return { value, error: undefined };
+      }
+    },
+    
+    description: {
+      size: { xs: 12, sm: 12, md: 8 }, // Larger field for description
+      enabled: false, // Initially disabled
+      visible: true,
+      order: 5,
+      errorMessage: (value) => {
+        if (value && String(value).length > 500) {
+          return "Description must be less than 500 characters";
+        }
+        return undefined;
+      }
+    },
+    
+    rating: {
+      size: { xs: 12, sm: 6, md: 4 },
+      enabled: true,
+      visible: false, // Initially hidden
+      order: 6
+    },
+    
+    ageRestriction: {
+      size: { xs: 12, sm: 6, md: 4 },
+      enabled: true,
+      visible: false, // Initially hidden
+      order: 7
+    }
+  });
+
+  // Example 2: Customize an "episode" entity form
+  registerFormCustomization("episode", {
+    number: {
+      size: { xs: 12, sm: 6, md: 3 },
+      order: 1,
+      errorMessage: (value) => {
+        if (!value || Number(value) <= 0) {
+          return "Episode number must be greater than 0";
+        }
+        return undefined;
+      }
+    },
+    
+    name: {
+      size: { xs: 12, sm: 6, md: 6 },
+      order: 2,
+      errorMessage: (value) => {
+        if (!value || String(value).trim() === '') {
+          return "Episode name is required";
+        }
+        return undefined;
+      }
+    },
+    
+    airDate: {
+      size: { xs: 12, sm: 6, md: 3 },
+      order: 3,
+      errorMessage: (value) => {
+        if (!value) return undefined;
+        const date = new Date(value as string);
+        if (isNaN(date.getTime())) {
+          return "Invalid date format";
+        }
+        if (date > new Date()) {
+          return "Air date cannot be in the future";
+        }
+        return undefined;
+      }
+    },
+    
+    season: {
+      size: { xs: 12, sm: 6, md: 4 },
+      order: 4,
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+        // Example: Auto-fill series field based on season
+        const serieData = formData as Record<string, { value?: unknown }>;
+        if (value && serieData.serie?.value) {
+          // This would typically fetch from API based on season
+          setFieldData('serie', serieData.serie.value as string | number | boolean | string[] | null);
+        }
+        
+        return { value, error: undefined };
+      }
+    }
+  });
+}
+
+// Call this function in your app initialization
+// setupFormCustomizations();
