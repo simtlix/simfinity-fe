@@ -253,10 +253,25 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   // Form customization actions
   const customizationActions: FormCustomizationActions = React.useMemo(() => ({
     setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: { ...prev[fieldName], value }
-      }));
+      // Check if this is an embedded field (contains a dot)
+      if (fieldName.includes('.')) {
+        const [parentField, embeddedField] = fieldName.split('.');
+        const fullFieldName = `${parentField}.${embeddedField}`;
+        
+        setFormData(prev => ({
+          ...prev,
+          [fullFieldName]: { 
+            ...prev[fullFieldName], 
+            value: value === null ? "" : value 
+          }
+        }));
+      } else {
+        // Regular field
+        setFormData(prev => ({
+          ...prev,
+          [fieldName]: { ...prev[fieldName], value }
+        }));
+      }
     },
     setFieldVisible: (fieldName: string, visible: boolean) => {
       setCustomizationState(prev => ({

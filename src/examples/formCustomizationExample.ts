@@ -179,7 +179,7 @@ export function setupFormCustomizations() {
     }
   });
 
-  // Example 3: Demonstrate embedded section customization
+  // Example 3: Demonstrate embedded section customization with setFieldData examples
   registerFormCustomization("serie", {
     // Section-level customization for the "director" embedded object
     director: {
@@ -202,6 +202,13 @@ export function setupFormCustomizations() {
         // Auto-capitalize director name
         if (value && typeof value === 'string') {
           const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
+          
+          // Example: Auto-fill related fields when director name changes
+          if (capitalized.toLowerCase().includes('gilligan')) {
+            setFieldData('director.country', 'United States');
+            setFieldData('director.genre', 'Drama');
+          }
+          
           return { value: capitalized, error: undefined };
         }
         return { value, error: undefined };
@@ -215,6 +222,16 @@ export function setupFormCustomizations() {
           return "Director country is required";
         }
         return undefined;
+      },
+      onChange: (fieldName, value, formData, setFieldData) => {
+        // Example: Auto-fill production company based on country
+        if (value === 'United States') {
+          setFieldData('production.company', 'AMC Networks');
+        } else if (value === 'United Kingdom') {
+          setFieldData('production.company', 'BBC Studios');
+        }
+        
+        return { value, error: undefined };
       }
     },
     
@@ -257,6 +274,70 @@ export function setupFormCustomizations() {
           return "Budget must be a positive number";
         }
         return undefined;
+      }
+    }
+  });
+
+  // Example 4: Demonstrate setFieldData with different field types
+  registerFormCustomization("episode", {
+    name: {
+      onChange: (fieldName, value, formData, setFieldData) => {
+        // Example: Auto-fill episode number based on name pattern
+        if (value && typeof value === 'string') {
+          const match = value.match(/Episode (\d+)/);
+          if (match) {
+            setFieldData('number', parseInt(match[1]));
+          }
+        }
+        
+        return { value, error: undefined };
+      }
+    },
+    
+    // Example: Object field (ObjectFieldSelector) - setting the selected object ID
+    serie: {
+      onChange: (fieldName, value, formData, setFieldData) => {
+        // When a serie is selected, auto-fill related fields
+        if (value) {
+          // Example: Fetch serie details and auto-fill fields
+          // In a real app, you might call an API here
+          setFieldData('season', 1);
+          setFieldData('airDate', '2023-01-15');
+          
+          // You can also set embedded field values
+          setFieldData('production.company', 'AMC Networks');
+          setFieldData('production.year', 2023);
+        }
+        
+        return { value, error: undefined };
+      }
+    },
+    
+    // Example: Embedded field with complex logic
+    "production.budget": {
+      onChange: (fieldName, value, formData, setFieldData) => {
+        // Auto-calculate budget based on episode length and complexity
+        const formDataTyped = formData as Record<string, { value?: unknown }>;
+        const episodeNumber = formDataTyped.number?.value;
+        const season = formDataTyped.season?.value;
+        
+        if (episodeNumber && season) {
+          let baseBudget = 1000000; // Base budget
+          
+          // Increase budget for season finales
+          if (Number(episodeNumber) >= 10) {
+            baseBudget += 500000;
+          }
+          
+          // Increase budget for later seasons
+          if (Number(season) > 3) {
+            baseBudget += 200000;
+          }
+          
+          setFieldData('production.budget', baseBudget);
+        }
+        
+        return { value, error: undefined };
       }
     }
   });

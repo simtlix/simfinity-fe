@@ -193,6 +193,49 @@ onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEn
 - `setFieldVisible`: Function to show/hide a field
 - `setFieldEnabled`: Function to enable/disable a field
 
+#### setFieldData Usage Examples
+
+The `setFieldData` function supports setting values for different types of fields:
+
+**Regular Fields:**
+```typescript
+setFieldData('name', 'Breaking Bad');
+setFieldData('year', 2008);
+setFieldData('isActive', true);
+setFieldData('categories', ['Drama', 'Crime']);
+```
+
+**Embedded Object Fields (using dot notation):**
+```typescript
+setFieldData('director.name', 'Vince Gilligan');
+setFieldData('director.country', 'United States');
+setFieldData('production.company', 'AMC Networks');
+setFieldData('production.year', 2008);
+```
+
+**Object Fields (ObjectFieldSelector):**
+```typescript
+// Set the selected object ID
+setFieldData('serie', 'serie-123');
+setFieldData('category', 'category-456');
+```
+
+**Complex Auto-fill Examples:**
+```typescript
+onChange: (fieldName, value, formData, setFieldData) => {
+  // When director name changes, auto-fill related fields
+  if (value && typeof value === 'string') {
+    if (value.toLowerCase().includes('gilligan')) {
+      setFieldData('director.country', 'United States');
+      setFieldData('director.genre', 'Drama');
+      setFieldData('production.company', 'AMC Networks');
+    }
+  }
+  
+  return { value, error: undefined };
+}
+```
+
 #### onChange Return Value
 
 - `value`: The processed value (can be modified)
