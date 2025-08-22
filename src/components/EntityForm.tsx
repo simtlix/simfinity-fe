@@ -66,7 +66,10 @@ import {
   getFieldSize,
   isFieldVisible,
   isFieldEnabled,
-  getFieldOrder
+  getFieldOrder,
+  getEmbeddedFieldCustomization,
+  getEmbeddedSectionCustomization,
+  getEmbeddedFieldSize
 } from "@/lib/formCustomization";
 
 type EntityFormProps = {
@@ -771,8 +774,16 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     
     const sectionLabel = getFieldLabel(field.name);
     
+    // Get section-level customization (for the embedded object section itself)
+    const sectionCustomization = getEmbeddedSectionCustomization(customizationState.customization, field.name);
+    const sectionSize = sectionCustomization?.size || { xs: 12, sm: 6, md: 4 };
+    const isSectionVisible = sectionCustomization?.visible ?? true;
+    const isSectionEnabled = sectionCustomization?.enabled ?? true;
+    
+    if (!isSectionVisible) return null;
+    
     return (
-      <Grid key={field.name} size={{ xs: 12 }}>
+      <Grid key={field.name} size={sectionSize}>
         <Accordion defaultExpanded>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography variant="h6">{sectionLabel}</Typography>
@@ -785,14 +796,16 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                 
                 console.log(`Embedded field ${embeddedField.name}: original value =`, embeddedField.value, 'current value from formData =', currentValue);
                 
+                // Get field-level customization for this embedded field
+                const embeddedFieldName = embeddedField.name.replace(`${field.name}.`, '');
+                const fieldCustomization = getEmbeddedFieldCustomization(customizationState.customization, field.name, embeddedFieldName);
+                const fieldSize = getEmbeddedFieldSize(field.name, embeddedFieldName, customizationState.customization);
+                
                 // Create a modified field with the current value and correct onChange handler
                 const modifiedField = {
                   ...embeddedField,
                   value: currentValue !== undefined ? currentValue : embeddedField.value,
                   onChange: (value: string | number | boolean | string[] | null) => {
-                    // Check if there's a custom onChange for this embedded field
-                    const embeddedFieldName = embeddedField.name.replace(`${field.name}.`, '');
-                    const fieldCustomization = customizationState.customization[embeddedFieldName];
                     const customOnChange = fieldCustomization?.onChange;
                     
                     if (customOnChange) {
@@ -807,8 +820,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                 };
                 
                 return (
-                  <Grid key={embeddedField.name} size={{ xs: 12, sm: 6, md: 4 }}>
-                    {renderField(modifiedField, enabled)}
+                  <Grid key={embeddedField.name} size={fieldSize}>
+                    {renderField(modifiedField, isSectionEnabled && enabled)}
                   </Grid>
                 );
               })}
@@ -827,8 +840,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     
     // Get field customization for error message and custom onChange
     const fieldCustomization = customizationState.customization[field.name];
-    const customErrorMessage = fieldCustomization?.errorMessage;
-    const customOnChange = fieldCustomization?.onChange;
+    const customErrorMessage = fieldCustomization && 'errorMessage' in fieldCustomization ? fieldCustomization.errorMessage : undefined;
+    const customOnChange = fieldCustomization && 'onChange' in fieldCustomization ? fieldCustomization.onChange : undefined;
     
     // Use custom onChange if provided, otherwise use the default handleFieldChange
     const onChange = customOnChange 

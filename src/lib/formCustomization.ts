@@ -22,7 +22,14 @@ export type FieldCustomization = {
   ) => { value: string | number | boolean | string[] | null; error?: string };
 };
 
-export type FormCustomization = Record<string, FieldCustomization>;
+export type EmbeddedSectionCustomization = {
+  size?: FieldSize; // Controls the section's size in the main form
+  order?: number;   // Controls the section's order relative to other fields/sections
+  visible?: boolean; // Controls whether the entire section is visible
+  enabled?: boolean; // Controls whether the entire section is enabled
+};
+
+export type FormCustomization = Record<string, FieldCustomization | EmbeddedSectionCustomization>;
 
 export type FormCustomizationState = {
   customization: FormCustomization;
@@ -110,4 +117,51 @@ export function isFieldEnabled(fieldName: string, state: FormCustomizationState)
 
 export function getFieldOrder(state: FormCustomizationState): string[] {
   return state.fieldOrder;
+}
+
+// Helper function to get embedded field customization
+export function getEmbeddedFieldCustomization(
+  customization: FormCustomization,
+  sectionName: string,
+  fieldName: string
+): FieldCustomization | undefined {
+  const embeddedFieldKey = `${sectionName}.${fieldName}`;
+  const fieldCustomization = customization[embeddedFieldKey];
+  
+  if (fieldCustomization && 'onChange' in fieldCustomization) {
+    return fieldCustomization as FieldCustomization;
+  }
+  
+  return undefined;
+}
+
+// Helper function to get embedded section customization
+export function getEmbeddedSectionCustomization(
+  customization: FormCustomization,
+  sectionName: string
+): EmbeddedSectionCustomization | undefined {
+  const sectionCustomization = customization[sectionName];
+  
+  if (sectionCustomization && !('onChange' in sectionCustomization)) {
+    return sectionCustomization as EmbeddedSectionCustomization;
+  }
+  
+  return undefined;
+}
+
+// Helper function to get embedded field size relative to section
+export function getEmbeddedFieldSize(
+  sectionName: string,
+  fieldName: string,
+  customization: FormCustomization,
+  defaultSize: FieldSize = { xs: 12, sm: 6, md: 4 }
+): FieldSize {
+  const embeddedFieldKey = `${sectionName}.${fieldName}`;
+  const fieldCustomization = customization[embeddedFieldKey];
+  
+  if (fieldCustomization && 'size' in fieldCustomization && fieldCustomization.size) {
+    return fieldCustomization.size;
+  }
+  
+  return defaultSize;
 }

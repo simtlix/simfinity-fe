@@ -50,12 +50,6 @@ export function setupFormCustomizations() {
       enabled: true,
       visible: true,
       order: 2,
-      errorMessage: (value) => {
-        if (!value) {
-          return "Director is required for movies";
-        }
-        return undefined;
-      },
       onChange: (fieldName, value, formData, setFieldData) => {
         // Example: Auto-fill country field when director is selected
         if (value && typeof value === 'string') {
@@ -181,6 +175,88 @@ export function setupFormCustomizations() {
         }
         
         return { value, error: undefined };
+      }
+    }
+  });
+
+  // Example 3: Demonstrate embedded section customization
+  registerFormCustomization("serie", {
+    // Section-level customization for the "director" embedded object
+    director: {
+      size: { xs: 12, sm: 6, md: 6 }, // Section takes half the screen on medium+ devices
+      order: 3, // Appears after name and categories
+      visible: true,
+      enabled: true
+    },
+    
+    // Field-level customization for fields within the "director" embedded object
+    "director.name": {
+      size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
+      errorMessage: (value) => {
+        if (!value || String(value).trim() === '') {
+          return "Director name is required";
+        }
+        return undefined;
+      },
+      onChange: (fieldName, value, formData, setFieldData) => {
+        // Auto-capitalize director name
+        if (value && typeof value === 'string') {
+          const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
+          return { value: capitalized, error: undefined };
+        }
+        return { value, error: undefined };
+      }
+    },
+    
+    "director.country": {
+      size: { xs: 12, sm: 6, md: 6 }, // Field takes the other half of the section width
+      errorMessage: (value) => {
+        if (!value || String(value).trim() === '') {
+          return "Director country is required";
+        }
+        return undefined;
+      }
+    },
+    
+    // Another section that can appear in the same row
+    "production": {
+      size: { xs: 12, sm: 6, md: 6 }, // Section takes the other half of the screen
+      order: 4, // Appears after director section
+      visible: true,
+      enabled: true
+    },
+    
+    "production.company": {
+      size: { xs: 12, sm: 12, md: 12 }, // Field takes full width of its section
+      errorMessage: (value) => {
+        if (!value || String(value).trim() === '') {
+          return "Production company is required";
+        }
+        return undefined;
+      }
+    },
+    
+    "production.year": {
+      size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
+      errorMessage: (value) => {
+        if (!value) return undefined;
+        const year = Number(value);
+        if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
+          return `Year must be between 1900 and ${new Date().getFullYear()}`;
+        }
+        return undefined;
+      }
+    },
+    
+    "production.budget": {
+      size: { xs: 12, sm: 6, md: 6 }, // Field takes the other half of the section width
+      errorMessage: (value) => {
+        if (!value) return undefined;
+        const budget = Number(value);
+        if (isNaN(budget) || budget < 0) {
+          return "Budget must be a positive number";
+        }
+        return undefined;
       }
     }
   });

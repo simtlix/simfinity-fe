@@ -65,6 +65,36 @@ size: {
 
 **Default**: `{ xs: 12, sm: 6, md: 4 }`
 
+### Embedded Object Sections
+
+For embedded objects, you can customize both the section and individual fields:
+
+#### Section-Level Customization
+Control the embedded object section's size and position in the main form:
+
+```typescript
+director: {
+  size: { xs: 12, sm: 6, md: 6 }, // Section takes half the screen
+  order: 3,                        // Section appears after other fields
+  visible: true,                   // Section is visible
+  enabled: true                    // Section is enabled
+}
+```
+
+#### Field-Level Customization
+Control individual fields within the embedded object, with sizes relative to the section:
+
+```typescript
+"director.name": {
+  size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
+  errorMessage: (value) => { /* validation logic */ },
+  onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+    // Custom logic for this specific field
+    return { value, error: undefined };
+  }
+}
+```
+
 ### Field Order (`order`)
 
 Control the sequence of fields in the form. Lower numbers appear first:
@@ -168,7 +198,9 @@ onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEn
 - `value`: The processed value (can be modified)
 - `error`: Optional error message
 
-## Complete Example
+## Complete Examples
+
+### Basic Field Customization
 
 ```typescript
 registerFormCustomization("serie", {
@@ -220,25 +252,99 @@ registerFormCustomization("serie", {
       }
       return undefined;
     }
+  }
+});
+```
+
+### Advanced Embedded Object Customization
+
+```typescript
+registerFormCustomization("serie", {
+  // Section-level customization for embedded objects
+  director: {
+    size: { xs: 12, sm: 6, md: 6 }, // Section takes half the screen
+    order: 3,                        // Appears after name and categories
+    visible: true,
+    enabled: true
   },
   
-  description: {
-    size: { xs: 12, sm: 12, md: 8 }, // Larger field
-    order: 4,
-    enabled: false, // Initially disabled
-    onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
-      // Enable description field when name is long enough
-      if (String(formData.name?.value).length > 10) {
-        setFieldEnabled('description', true);
-      } else {
-        setFieldEnabled('description', false);
+  // Field-level customization within the director section
+  "director.name": {
+    size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
+    errorMessage: (value) => {
+      if (!value || String(value).trim() === '') {
+        return "Director name is required";
       }
-      
+      return undefined;
+    },
+    onChange: (fieldName, value, formData, setFieldData) => {
+      // Auto-capitalize director name
+      if (value && typeof value === 'string') {
+        const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
+        return { value: capitalized, error: undefined };
+      }
       return { value, error: undefined };
+    }
+  },
+  
+  "director.country": {
+    size: { xs: 12, sm: 6, md: 6 }, // Field takes the other half of the section
+    errorMessage: (value) => {
+      if (!value || String(value).trim() === '') {
+        return "Director country is required";
+      }
+      return undefined;
+    }
+  },
+  
+  // Another section that can appear in the same row
+  production: {
+    size: { xs: 12, sm: 6, md: 6 }, // Section takes the other half of the screen
+    order: 4,                        // Appears after director section
+    visible: true,
+    enabled: true
+  },
+  
+  "production.company": {
+    size: { xs: 12, sm: 12, md: 12 }, // Field takes full width of its section
+    errorMessage: (value) => {
+      if (!value || String(value).trim() === '') {
+        return "Production company is required";
+      }
+      return undefined;
+    }
+  },
+  
+  "production.year": {
+    size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
+    errorMessage: (value) => {
+      if (!value) return undefined;
+      const year = Number(value);
+      if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
+        return `Year must be between 1900 and ${new Date().getFullYear()}`;
+      }
+      return undefined;
+    }
+  },
+  
+  "production.budget": {
+    size: { xs: 12, sm: 6, md: 6 }, // Field takes the other half of the section
+    errorMessage: (value) => {
+      if (!value) return undefined;
+      const budget = Number(value);
+      if (isNaN(budget) || budget < 0) {
+        return "Budget must be a positive number";
+      }
+      return undefined;
     }
   }
 });
 ```
+
+This creates a layout where:
+- **Name and Categories** take full width
+- **Director section** (left half) contains name and country fields side by side
+- **Production section** (right half) contains company (full width), year and budget side by side
 
 ## Integration with EntityForm
 
