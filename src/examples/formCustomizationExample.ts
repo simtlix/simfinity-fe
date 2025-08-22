@@ -56,7 +56,7 @@ export function setupFormCustomizations() {
         }
         return undefined;
       },
-      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+      onChange: (fieldName, value, formData, setFieldData) => {
         // Example: Auto-fill country field when director is selected
         if (value && typeof value === 'string') {
           // Simulate fetching director info and setting related fields
@@ -87,7 +87,7 @@ export function setupFormCustomizations() {
       enabled: true,
       visible: true,
       order: 4,
-      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible) => {
         // Example: Show genre-specific fields based on categories
         if (Array.isArray(value) && value.includes('Horror')) {
           setFieldVisible('rating', true);
@@ -172,7 +172,7 @@ export function setupFormCustomizations() {
     season: {
       size: { xs: 12, sm: 6, md: 4 },
       order: 4,
-      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+      onChange: (fieldName, value, formData, setFieldData) => {
         // Example: Auto-fill series field based on season
         const serieData = formData as Record<string, { value?: unknown }>;
         if (value && serieData.serie?.value) {

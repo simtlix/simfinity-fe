@@ -670,26 +670,26 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   }, [entityData, listField, action, formFields]);
 
   // Handle field changes
-  const handleFieldChange = (fieldName: string, value: string | number | boolean | string[] | null) => {
+  const handleFieldChange = (fieldName: string, value: string | number | boolean | string[] | null, error?: string) => {
     setFormData(prev => ({
       ...prev,
       [fieldName]: {
         ...prev[fieldName],
         value: value === null ? "" : value,
-        error: undefined,
+        error: error,
       },
     }));
   };
 
   // Handle embedded field changes
-  const handleEmbeddedFieldChange = (parentFieldName: string, embeddedFieldName: string, value: string | number | boolean | string[] | null) => {
+  const handleEmbeddedFieldChange = (parentFieldName: string, embeddedFieldName: string, value: string | number | boolean | string[] | null, error?: string) => {
     const fullFieldName = `${parentFieldName}.${embeddedFieldName}`;
     setFormData(prev => ({
       ...prev,
       [fullFieldName]: {
         ...prev[fullFieldName],
         value: value === null ? "" : value,
-        error: undefined,
+        error: error,
       },
     }));
   };
@@ -789,8 +789,21 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                 const modifiedField = {
                   ...embeddedField,
                   value: currentValue !== undefined ? currentValue : embeddedField.value,
-                  onChange: (value: string | number | boolean | string[] | null) => 
-                    handleEmbeddedFieldChange(field.name, embeddedField.name.replace(`${field.name}.`, ''), value)
+                  onChange: (value: string | number | boolean | string[] | null) => {
+                    // Check if there's a custom onChange for this embedded field
+                    const embeddedFieldName = embeddedField.name.replace(`${field.name}.`, '');
+                    const fieldCustomization = customizationState.customization[embeddedFieldName];
+                    const customOnChange = fieldCustomization?.onChange;
+                    
+                    if (customOnChange) {
+                      const result = customOnChange(embeddedFieldName, value, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled);
+                      // Pass both value and error to handleEmbeddedFieldChange
+                      handleEmbeddedFieldChange(field.name, embeddedFieldName, result.value as string | number | boolean | string[] | null, result.error);
+                    } else {
+                      // Use default handler
+                      handleEmbeddedFieldChange(field.name, embeddedFieldName, value);
+                    }
+                  }
                 };
                 
                 return (
@@ -821,15 +834,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     const onChange = customOnChange 
       ? (value: string | number | boolean | string[] | null) => {
           const result = customOnChange(field.name, value, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled);
-          if (result.error) {
-            // Set error on the field
-            setFormData(prev => ({
-              ...prev,
-              [field.name]: { ...prev[field.name], error: result.error }
-            }));
-          }
-          // Use the returned value (which might be modified by the custom onChange)
-          handleFieldChange(field.name, result.value as string | number | boolean | string[] | null);
+          // Pass both value and error to handleFieldChange to handle state properly
+          handleFieldChange(field.name, result.value as string | number | boolean | string[] | null, result.error);
         }
       : ((value: string | number | boolean | string[] | null) => handleFieldChange(field.name, value));
     
