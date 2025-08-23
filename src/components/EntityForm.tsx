@@ -19,9 +19,9 @@ import {
   Autocomplete,
   Select,
   MenuItem,
-  FormControl,
+    FormControl,
   InputLabel,
-
+  FormHelperText,
 } from "@mui/material";
 
 // GraphQL queries and mutations
@@ -888,22 +888,27 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     
     if (field.isEnum && field.enumValues) {
       return (
-        <FormControl fullWidth error={!!field.error}>
-          <InputLabel>{fieldLabel}</InputLabel>
-          <Select
-            value={field.value as string}
-            onChange={(e) => onChange(e.target.value)}
-            label={fieldLabel}
-            required={field.required}
-            disabled={isViewMode || !enabled}
-          >
-            {field.enumValues.map((enumValue) => (
-              <MenuItem key={enumValue} value={enumValue}>
-                {enumValue}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <>
+          <FormControl fullWidth error={!!field.error}>
+            <InputLabel>{fieldLabel}</InputLabel>
+            <Select
+              value={field.value as string}
+              onChange={(e) => onChange(e.target.value)}
+              label={fieldLabel}
+              required={field.required}
+              disabled={isViewMode || !enabled}
+            >
+              {field.enumValues.map((enumValue) => (
+                <MenuItem key={enumValue} value={enumValue}>
+                  {enumValue}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {field.error && (
+            <FormHelperText error>{field.error}</FormHelperText>
+          )}
+        </>
       );
     }
     
@@ -950,6 +955,9 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             }
             label={fieldLabel}
           />
+          {field.error && (
+            <FormHelperText error>{field.error}</FormHelperText>
+          )}
         </>
       );
     }
