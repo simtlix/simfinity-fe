@@ -17,9 +17,11 @@ export function setupEpisodeFormCustomization() {
           setFieldEnabled('season', true);
           setFieldData('number', 1);
         } else {
-          // If name is empty, disable number and season fields
+          // If name is empty, disable number and season fields and clear their values
           setFieldEnabled('number', false);
           setFieldEnabled('season', false);
+          setFieldData('number', null);
+          setFieldData('season', null);
         }
         
         return { value, error: undefined };
