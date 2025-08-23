@@ -23,11 +23,20 @@ export function setupEpisodeFormCustomization() {
       }
     },
     
-    airDate: {
-      size: { xs: 12, sm: 12, md: 12 }, // Full width (second row)
+    date: {
+      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices (second row)
       order: 3, // Third in order (second row)
       onChange: (fieldName, value, formData) => {
         console.log('Episode air date changed:', { fieldName, value, formData });
+        return { value, error: undefined };
+      }
+    },
+    
+    season: {
+      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices (second row)
+      order: 4, // Fourth in order (second row, at the end)
+      onChange: (fieldName, value, formData) => {
+        console.log('Episode season changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
     }
