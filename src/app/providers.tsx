@@ -10,6 +10,12 @@ import { I18nProvider } from "@/lib/i18n";
 import "@/i18n/en";
 import "@/i18n/es";
 
+// Import and setup form customizations
+import { setupEpisodeFormCustomization } from "@/examples/episodeFormCustomization";
+
+// Setup form customizations
+setupEpisodeFormCustomization();
+
 const theme = createTheme({
   palette: { mode: "light" },
 });
