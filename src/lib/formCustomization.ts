@@ -8,8 +8,8 @@ export type FieldSize = {
 
 export type FieldCustomization = {
   size?: FieldSize;
-  enabled?: boolean;
-  visible?: boolean;
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
+  visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
   order?: number;
   onChange?: (
     fieldName: string,
@@ -24,8 +24,8 @@ export type FieldCustomization = {
 export type EmbeddedSectionCustomization = {
   size?: FieldSize; // Controls the section's size in the main form
   order?: number;   // Controls the section's order relative to other fields/sections
-  visible?: boolean; // Controls whether the entire section is visible
-  enabled?: boolean; // Controls whether the entire section is enabled
+  visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire section is visible
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire section is enabled
 };
 
 export type FormCustomization = Record<string, FieldCustomization | EmbeddedSectionCustomization>;
@@ -76,8 +76,14 @@ export function createFormCustomizationState(
   
   fieldNames.forEach(fieldName => {
     const fieldCustomization = customization[fieldName];
-    fieldVisibility[fieldName] = fieldCustomization?.visible ?? true;
-    fieldEnabled[fieldName] = fieldCustomization?.enabled ?? true;
+    
+    // Handle dynamic visible/enabled values
+    const visible = fieldCustomization?.visible;
+    const enabled = fieldCustomization?.enabled;
+    
+    // For static values, store them; for dynamic functions, store default true
+    fieldVisibility[fieldName] = typeof visible === 'function' ? true : (visible ?? true);
+    fieldEnabled[fieldName] = typeof enabled === 'function' ? true : (enabled ?? true);
   });
   
   // Create field order based on customization or default order
@@ -111,12 +117,26 @@ export function getFieldSize(fieldName: string, customization: FormCustomization
   return fieldCustomization?.size || { xs: 12, sm: 6, md: 4 };
 }
 
-export function isFieldVisible(fieldName: string, state: FormCustomizationState): boolean {
-  return state.fieldVisibility[fieldName] ?? true;
+export function isFieldVisible(fieldName: string, state: FormCustomizationState, currentValue?: unknown, formData?: Record<string, unknown>): boolean {
+  const fieldCustomization = state.customization[fieldName];
+  const visible = fieldCustomization?.visible;
+  
+  if (typeof visible === 'function') {
+    return visible(fieldName, currentValue, formData || {});
+  }
+  
+  return state.fieldVisibility[fieldName] ?? (visible ?? true);
 }
 
-export function isFieldEnabled(fieldName: string, state: FormCustomizationState): boolean {
-  return state.fieldEnabled[fieldName] ?? true;
+export function isFieldEnabled(fieldName: string, state: FormCustomizationState, currentValue?: unknown, formData?: Record<string, unknown>): boolean {
+  const fieldCustomization = state.customization[fieldName];
+  const enabled = fieldCustomization?.enabled;
+  
+  if (typeof enabled === 'function') {
+    return enabled(fieldName, currentValue, formData || {});
+  }
+  
+  return state.fieldEnabled[fieldName] ?? (enabled ?? true);
 }
 
 export function getFieldOrder(state: FormCustomizationState): string[] {

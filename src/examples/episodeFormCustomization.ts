@@ -32,7 +32,12 @@ export function setupEpisodeFormCustomization() {
     number: {
       size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices
       order: 2, // Second in the row (same row as name)
-      enabled: false, // Initially disabled until name is entered
+      // Dynamic enabled: only enabled when name has a value
+      enabled: (fieldName, value, formData) => {
+        const formDataTyped = formData as Record<string, { value?: unknown }>;
+        const nameValue = formDataTyped.name?.value;
+        return !!(nameValue && String(nameValue).trim() !== '');
+      },
       onChange: (fieldName, value, formData) => {
         console.log('Episode number changed:', { fieldName, value, formData });
         return { value, error: undefined };
@@ -51,7 +56,12 @@ export function setupEpisodeFormCustomization() {
     season: {
       size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices (second row)
       order: 4, // Fourth in order (second row, at the end)
-      enabled: false, // Initially disabled until name is entered
+      // Dynamic enabled: only enabled when name has a value
+      enabled: (fieldName, value, formData) => {
+        const formDataTyped = formData as Record<string, { value?: unknown }>;
+        const nameValue = formDataTyped.name?.value;
+        return !!(nameValue && String(nameValue).trim() !== '');
+      },
       onChange: (fieldName, value, formData) => {
         console.log('Episode season changed:', { fieldName, value, formData });
         return { value, error: undefined };

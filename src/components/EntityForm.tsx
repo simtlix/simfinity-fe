@@ -792,8 +792,18 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     // Get section-level customization (for the embedded object section itself)
     const sectionCustomization = getEmbeddedSectionCustomization(customizationState.customization, field.name);
     const sectionSize = sectionCustomization?.size || { xs: 12, sm: 12, md: 12 }; // Default to full width
-    const isSectionVisible = sectionCustomization?.visible ?? true;
-    const isSectionEnabled = sectionCustomization?.enabled ?? true;
+    
+    // Handle dynamic visible/enabled values for sections
+    const sectionVisible = sectionCustomization?.visible;
+    const sectionEnabled = sectionCustomization?.enabled;
+    
+    const isSectionVisible = typeof sectionVisible === 'function' 
+      ? sectionVisible(field.name, field.value, formData)
+      : (sectionVisible ?? true);
+      
+    const isSectionEnabled = typeof sectionEnabled === 'function'
+      ? sectionEnabled(field.name, field.value, formData)
+      : (sectionEnabled ?? true);
     
     if (!isSectionVisible) return null;
     
@@ -1097,7 +1107,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                   
                   // Get ordered fields based on customization
                   const orderedFields = getFieldOrder(customizationState);
-                  const visibleFields = mainFormFields.filter(field => isFieldVisible(field.name, customizationState));
+                  const visibleFields = mainFormFields.filter(field => isFieldVisible(field.name, customizationState, field.value, formData));
                   
                   // Sort fields according to customization order
                   const sortedFields = visibleFields.sort((a, b) => {
@@ -1112,7 +1122,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                   return sortedFields.map(field => {
                     // Get field customization properties
                     const fieldSize = getFieldSize(field.name, customizationState.customization);
-                    const isEnabled = isFieldEnabled(field.name, customizationState);
+                    const isEnabled = isFieldEnabled(field.name, customizationState, field.value, formData);
                     
                     // Handle embedded object fields as sections - these will be rendered separately at the bottom
                     if (field.isEmbedded) {
