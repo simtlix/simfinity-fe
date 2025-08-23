@@ -4,8 +4,8 @@ import { registerFormCustomization } from '@/lib/formCustomization';
 // This should be called early in your application, typically in a layout or main component
 
 export function setupFormCustomizations() {
-  // Example 1: Customize a "serie" entity form
-  registerFormCustomization("serie", {
+  // Example 1: Customize a "serie" entity form (create mode)
+  registerFormCustomization("serie", "create", {
     name: {
       size: { xs: 12, sm: 6, md: 4 },
       enabled: true, // default is true
@@ -100,8 +100,8 @@ export function setupFormCustomizations() {
     }
   });
 
-  // Example 2: Customize an "episode" entity form
-  registerFormCustomization("episode", {
+  // Example 2: Customize an "episode" entity form (create mode)
+  registerFormCustomization("episode", "create", {
     number: {
       size: { xs: 12, sm: 6, md: 3 },
       order: 1
@@ -133,8 +133,8 @@ export function setupFormCustomizations() {
     }
   });
 
-  // Example 3: Demonstrate embedded section customization with setFieldData examples
-  registerFormCustomization("serie", {
+  // Example 3: Demonstrate embedded section customization with setFieldData examples (create mode)
+  registerFormCustomization("serie", "create", {
     // Section-level customization for the "director" embedded object
     director: {
       size: { xs: 12, sm: 6, md: 6 }, // Section takes half the screen on medium+ devices
@@ -198,8 +198,8 @@ export function setupFormCustomizations() {
     }
   });
 
-  // Example 4: Demonstrate setFieldData with different field types
-  registerFormCustomization("episode", {
+  // Example 4: Demonstrate setFieldData with different field types (create mode)
+  registerFormCustomization("episode", "create", {
     name: {
       onChange: (fieldName, value, formData, setFieldData) => {
         // Example: Auto-fill episode number based on name pattern

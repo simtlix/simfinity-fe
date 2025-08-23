@@ -488,7 +488,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, listField);
       if (entityTypeName) {
         const fieldNames = formFields.map(field => field.name);
-        const newCustomizationState = createFormCustomizationState(entityTypeName, fieldNames);
+        const newCustomizationState = createFormCustomizationState(entityTypeName, action, fieldNames);
         setCustomizationState(newCustomizationState);
         console.log('Initialized customization state for', entityTypeName, ':', newCustomizationState);
       }

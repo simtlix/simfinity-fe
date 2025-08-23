@@ -4,7 +4,8 @@ import { registerFormCustomization } from '@/lib/formCustomization';
 // This should be called early in your application, typically in a layout or main component
 
 export function setupEpisodeFormCustomization() {
-  registerFormCustomization("episode", {
+  // Register customization for create mode
+  registerFormCustomization("episode", "create", {
     name: {
       size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices
       order: 1, // First in the row
@@ -20,8 +21,8 @@ export function setupEpisodeFormCustomization() {
           // If name is empty, disable number and season fields and clear their values
           setFieldEnabled('number', false);
           setFieldEnabled('season', false);
-          setFieldData('number', null);
-          setFieldData('season', null);
+          setFieldData('number', "");
+          setFieldData('season', "");
         }
         
         return { value, error: undefined };
@@ -55,6 +56,42 @@ export function setupEpisodeFormCustomization() {
         console.log('Episode season changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
+    }
+  });
+
+  // Register customization for edit mode (different behavior)
+  registerFormCustomization("episode", "edit", {
+    name: {
+      size: { xs: 12, sm: 6, md: 6 },
+      order: 1,
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+        console.log('Episode name changed in edit mode:', { fieldName, value, formData });
+        
+        // In edit mode, we don't auto-fill or disable fields as aggressively
+        if (value && String(value).trim() !== '') {
+          setFieldEnabled('number', true);
+          setFieldEnabled('season', true);
+        }
+        
+        return { value, error: undefined };
+      }
+    },
+    
+    number: {
+      size: { xs: 12, sm: 6, md: 6 },
+      order: 2,
+      enabled: true // Always enabled in edit mode
+    },
+    
+    date: {
+      size: { xs: 12, sm: 6, md: 6 },
+      order: 3
+    },
+    
+    season: {
+      size: { xs: 12, sm: 6, md: 6 },
+      order: 4,
+      enabled: true // Always enabled in edit mode
     }
   });
 }

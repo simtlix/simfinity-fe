@@ -45,25 +45,30 @@ export type FormCustomizationActions = {
 };
 
 // Global registry for form customizations
+// Key format: "entityType:mode" (e.g., "episode:create", "episode:edit")
 const formCustomizations = new Map<string, FormCustomization>();
 
 export function registerFormCustomization(
   entityType: string,
+  mode: "create" | "edit" | "view",
   customization: FormCustomization
 ): void {
-  console.log(`Registering form customization for ${entityType}:`, customization);
-  formCustomizations.set(entityType, customization);
+  const key = `${entityType}:${mode}`;
+  console.log(`Registering form customization for ${entityType} in ${mode} mode:`, customization);
+  formCustomizations.set(key, customization);
 }
 
-export function getFormCustomization(entityType: string): FormCustomization | undefined {
-  return formCustomizations.get(entityType);
+export function getFormCustomization(entityType: string, mode: "create" | "edit" | "view"): FormCustomization | undefined {
+  const key = `${entityType}:${mode}`;
+  return formCustomizations.get(key);
 }
 
 export function createFormCustomizationState(
   entityType: string,
+  mode: "create" | "edit" | "view",
   fieldNames: string[]
 ): FormCustomizationState {
-  const customization = getFormCustomization(entityType) || {};
+  const customization = getFormCustomization(entityType, mode) || {};
   
   // Initialize field visibility and enabled state
   const fieldVisibility: Record<string, boolean> = {};
