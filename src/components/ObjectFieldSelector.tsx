@@ -14,6 +14,7 @@ import {
   ListItemButton,
   CircularProgress,
 } from "@mui/material";
+import { useI18n } from "@/lib/i18n";
 
 type ObjectFieldSelectorProps = {
   label: string;
@@ -44,6 +45,7 @@ export default function ObjectFieldSelector({
   listQueryName,
   singleQueryName,
 }: ObjectFieldSelectorProps) {
+  const { resolveLabel } = useI18n();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isOpen, setIsOpen] = React.useState(false);
   const [selectedObject, setSelectedObject] = React.useState<{ id: string; description: string } | null>(null);
@@ -231,7 +233,7 @@ export default function ObjectFieldSelector({
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         error={!!error || (required && !selectedObject)}
-        helperText={error || (required && !selectedObject ? "This field is required" : "")}
+        helperText={error || (required && !selectedObject ? resolveLabel(["form.required"], { entity: objectTypeName }, "This field is required") : "")}
         required={required}
         disabled={disabled}
         placeholder={selectedObject ? "Search for another..." : `Search ${objectTypeName}...`}
