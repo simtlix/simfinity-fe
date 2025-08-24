@@ -236,7 +236,7 @@ export default function ObjectFieldSelector({
         helperText={error || (required && !selectedObject ? resolveLabel(["form.required"], { entity: objectTypeName }, "This field is required") : "")}
         required={required}
         disabled={disabled}
-        placeholder={selectedObject ? "Search for another..." : `Search ${objectTypeName}...`}
+        placeholder={selectedObject ? resolveLabel(["form.searchAnother"], { entity: objectTypeName }, "Search for another...") : resolveLabel(["form.searchObject"], { entity: objectTypeName }, "Search {entity}...")}
       />
       
       {/* Selected object chip */}

@@ -71,6 +71,8 @@
   "form.successCreated": "¡Entidad creada exitosamente!",
   "form.successUpdated": "¡Entidad actualizada exitosamente!",
   "form.errorOccurred": "Ocurrió un error",
+  "form.searchAnother": "Buscar otro...",
+  "form.searchObject": "Buscar {entity}...",
 
   "actions.view": "Ver",
   "actions.edit": "Editar",
