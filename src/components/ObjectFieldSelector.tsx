@@ -51,6 +51,21 @@ export default function ObjectFieldSelector({
   const [selectedObject, setSelectedObject] = React.useState<{ id: string; description: string } | null>(null);
   const anchorRef = React.useRef<HTMLDivElement>(null);
 
+  // Initialize selectedObject when value prop changes
+  React.useEffect(() => {
+    if (value && !selectedObject) {
+      // If we have a value but no selectedObject, we need to fetch the object data
+      // For now, we'll create a minimal object to prevent validation errors
+      setSelectedObject({
+        id: value,
+        description: value // Temporary description until we fetch the real data
+      });
+    } else if (!value && selectedObject) {
+      // If value is cleared, clear selectedObject
+      setSelectedObject(null);
+    }
+  }, [value, selectedObject]);
+
   // Helper function to cast search term to proper type
   const castSearchTerm = React.useCallback((term: string, fieldType: string) => {
     if (!term) return term;
