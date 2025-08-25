@@ -53,7 +53,11 @@ export type CollectionFieldCustomization = {
   order?: number;   // Controls the collection section's order relative to other fields/sections
   visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire collection section is visible
   enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire collection section is enabled
-  items?: Record<string, CollectionItemCustomization>; // Customization for individual items within the collection
+  // Mode-specific customizations for collection items
+  onEdit?: Record<string, FieldCustomization>;    // Edit mode customizations for collection item fields
+  onCreate?: Record<string, FieldCustomization>;  // Create mode customizations for collection item fields
+  // Legacy support - will be deprecated
+  items?: Record<string, CollectionItemCustomization>;
 };
 
 export type FormCustomization = Record<string, FieldCustomization | EmbeddedSectionCustomization | CollectionFieldCustomization>;
@@ -242,26 +246,38 @@ export function getCollectionItemFieldCustomization(
 ): FieldCustomization | undefined {
   const collectionCustomization = getCollectionFieldCustomization(customization, collectionFieldName);
   
-  if (collectionCustomization?.items && collectionCustomization.items[itemTypeName]) {
-    const itemCustomization = collectionCustomization.items[itemTypeName];
-    
-    // First check mode-specific customizations
-    if (mode === "edit" && itemCustomization.onEdit && itemCustomization.onEdit[fieldName]) {
-      return itemCustomization.onEdit[fieldName];
+  if (collectionCustomization) {
+    // First check mode-specific customizations at collection level
+    if (mode === "edit" && collectionCustomization.onEdit && collectionCustomization.onEdit[fieldName]) {
+      return collectionCustomization.onEdit[fieldName];
     }
     
-    if (mode === "create" && itemCustomization.onCreate && itemCustomization.onCreate[fieldName]) {
-      return itemCustomization.onCreate[fieldName];
+    if (mode === "create" && collectionCustomization.onCreate && collectionCustomization.onCreate[fieldName]) {
+      return collectionCustomization.onCreate[fieldName];
     }
     
-    // Fallback to legacy fields format
-    if (itemCustomization.fields && itemCustomization.fields[fieldName]) {
-      return itemCustomization.fields[fieldName];
-    }
-    
-    // Fallback to the old format for backward compatibility
-    if (itemCustomization && 'onChange' in itemCustomization) {
-      return itemCustomization as FieldCustomization;
+    // Fallback to legacy items structure
+    if (collectionCustomization.items && collectionCustomization.items[itemTypeName]) {
+      const itemCustomization = collectionCustomization.items[itemTypeName];
+      
+      // Check mode-specific customizations in legacy structure
+      if (mode === "edit" && itemCustomization.onEdit && itemCustomization.onEdit[fieldName]) {
+        return itemCustomization.onEdit[fieldName];
+      }
+      
+      if (mode === "create" && itemCustomization.onCreate && itemCustomization.onCreate[fieldName]) {
+        return itemCustomization.onCreate[fieldName];
+      }
+      
+      // Fallback to legacy fields format
+      if (itemCustomization.fields && itemCustomization.fields[fieldName]) {
+        return itemCustomization.fields[fieldName];
+      }
+      
+      // Fallback to the old format for backward compatibility
+      if (itemCustomization && 'onChange' in itemCustomization) {
+        return itemCustomization as FieldCustomization;
+      }
     }
   }
   
