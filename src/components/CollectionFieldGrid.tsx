@@ -2,12 +2,50 @@
 
 import * as React from "react";
 import { gql, useQuery } from "@apollo/client";
-import { Box, CircularProgress, Typography, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
+import { 
+  Box, 
+  CircularProgress, 
+  Typography, 
+  Accordion, 
+  AccordionSummary, 
+  AccordionDetails,
+  Button,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Tooltip
+} from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import RestoreIcon from "@mui/icons-material/Restore";
+import AddIcon from "@mui/icons-material/Add";
 import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getListEntityFieldNamesOfType, buildSelectionSetForObjectType, ValueResolver } from "@/lib/introspection";
 import { resolveColumnRenderer } from "@/lib/columnRenderers";
 import { useI18n } from "@/lib/i18n";
+
+// Types for collection item management
+export type CollectionItemStatus = 'original' | 'added' | 'modified' | 'deleted';
+
+export interface CollectionItem {
+  id: string;
+  [key: string]: unknown;
+  __status?: CollectionItemStatus;
+  __originalData?: Record<string, unknown>;
+}
+
+export interface CollectionFieldState {
+  added: CollectionItem[];
+  modified: CollectionItem[];
+  deleted: CollectionItem[];
+}
 
 type CollectionFieldGridProps = {
   collectionField: {
@@ -17,12 +55,42 @@ type CollectionFieldGridProps = {
   };
   parentEntityId: string;
   parentEntityType: string;
+  isEditMode?: boolean;
+  collectionState?: CollectionFieldState;
+  onCollectionStateChange?: (fieldName: string, newState: CollectionFieldState) => void;
 };
 
-export default function CollectionFieldGrid({parentEntityType, collectionField, parentEntityId }: CollectionFieldGridProps) {
+export default function CollectionFieldGrid({
+  parentEntityType, 
+  collectionField, 
+  parentEntityId,
+  isEditMode = false,
+  collectionState,
+  onCollectionStateChange
+}: CollectionFieldGridProps) {
   const { data: schemaData } = useQuery(INTROSPECTION_QUERY);
   const { resolveLabel } = useI18n();
   
+  // Local state for collection management
+  const [localCollectionState, setLocalCollectionState] = React.useState<CollectionFieldState>({
+    added: [],
+    modified: [],
+    deleted: []
+  });
+
+  // Use provided state or local state
+  const currentState = collectionState || localCollectionState;
+  const setCurrentState = onCollectionStateChange 
+    ? (newState: CollectionFieldState | ((prev: CollectionFieldState) => CollectionFieldState)) => {
+        if (typeof newState === 'function') {
+          const updatedState = newState(currentState);
+          onCollectionStateChange(collectionField.name, updatedState);
+        } else {
+          onCollectionStateChange(collectionField.name, newState);
+        }
+      }
+    : setLocalCollectionState;
+
   // Pagination and sorting state
   const [page, setPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<number>(5);
@@ -53,7 +121,7 @@ export default function CollectionFieldGrid({parentEntityType, collectionField, 
     return { ...buildSelectionSetForObjectType(schema, collectionTypeName), entityTypeName: collectionTypeName } as const;
   }, [schemaData, collectionField.objectTypeName]);
 
-  // Generate the collection query
+  // Generate the collection query with NIN filter for modified/deleted items
   const collectionQuery = React.useMemo(() => {
     if (!schemaData) return null;
     
@@ -82,10 +150,27 @@ export default function CollectionFieldGrid({parentEntityType, collectionField, 
         })()
       : `sort: { terms: [{ field: "id", order: ASC }] }`;
 
+    // Build filter to exclude modified and deleted items
+    const excludeFilter = isEditMode && (currentState.modified.length > 0 || currentState.deleted.length > 0)
+      ? (() => {
+          const excludeIds = [
+            ...currentState.modified.map(item => item.id),
+            ...currentState.deleted.map(item => item.id)
+          ];
+          
+          if (excludeIds.length === 0) return '';
+          
+          return `
+            id: { terms: { path: "id", operator: NIN, value: [${excludeIds.map(id => `"${id}"`).join(', ')}] } }
+          `;
+        })()
+      : '';
+
     const queryString = `
       query Get${collectionField.objectTypeName.charAt(0).toUpperCase() + collectionField.objectTypeName.slice(1)}s($parentId: QLValue!, $page: Int!, $size: Int!, $count: Boolean!) {
         ${listQueryName}(
           ${collectionField.connectionField}: { terms: { path: "id", operator: EQ, value: $parentId } }
+          ${excludeFilter ? excludeFilter : ''}
           pagination: { page: $page, size: $size, count: $count }
           ${sortBlock}
         ) {
@@ -100,7 +185,7 @@ export default function CollectionFieldGrid({parentEntityType, collectionField, 
       console.error('Error generating collection query:', error);
       return null;
     }
-  }, [collectionField, selection, schemaData, sortModel, sortFieldByColumn]);
+  }, [collectionField, selection, schemaData, sortModel, sortFieldByColumn, isEditMode, currentState.modified, currentState.deleted]);
 
   // Execute the collection query
   const { data: collectionData, loading: collectionLoading, error: collectionError } = useQuery(collectionQuery!, {
@@ -120,10 +205,11 @@ export default function CollectionFieldGrid({parentEntityType, collectionField, 
         parentId: parentEntityId,
         page: page + 1,
         size: rowsPerPage,
+        excludeIds: [...currentState.modified.map(item => item.id), ...currentState.deleted.map(item => item.id)],
         query: collectionQuery.loc?.source.body
       });
     }
-  }, [collectionQuery, parentEntityId, page, rowsPerPage, collectionField.name]);
+  }, [collectionQuery, parentEntityId, page, rowsPerPage, collectionField.name, currentState.modified, currentState.deleted]);
 
   // Process the collection data
   const rows = React.useMemo(() => {
@@ -170,9 +256,88 @@ export default function CollectionFieldGrid({parentEntityType, collectionField, 
     return items.length;
   }, [collectionData, collectionField.objectTypeName, schemaData]);
 
-  // Build grid columns
+
+
+  // Collection item management functions
+  const handleEditItem = React.useCallback((item: Record<string, unknown>) => {
+    const itemToEdit: CollectionItem = { 
+      ...item, 
+      __status: 'modified' as CollectionItemStatus, 
+      __originalData: { ...item } 
+    } as CollectionItem;
+    
+    setCurrentState(prev => ({
+      ...prev,
+      modified: [...prev.modified.filter(i => i.id !== item.id), itemToEdit]
+    }));
+  }, [setCurrentState]);
+
+  const handleDeleteItem = React.useCallback((item: Record<string, unknown>) => {
+    // If item was added, remove it completely
+    if (currentState.added.some(i => i.id === item.id)) {
+      setCurrentState(prev => ({
+        ...prev,
+        added: prev.added.filter(i => i.id !== item.id)
+      }));
+      return;
+    }
+
+    // If item was modified, move it to deleted
+    if (currentState.modified.some(i => i.id === item.id)) {
+      const modifiedItem = currentState.modified.find(i => i.id === item.id);
+      if (modifiedItem) {
+        const deletedItem: CollectionItem = { 
+          ...modifiedItem, 
+          __status: 'deleted' as CollectionItemStatus 
+        };
+        setCurrentState(prev => ({
+          ...prev,
+          modified: prev.modified.filter(i => i.id !== item.id),
+          deleted: [...prev.deleted, deletedItem]
+        }));
+      }
+      return;
+    }
+
+    // If item is original, move it to deleted
+    const deletedItem: CollectionItem = { 
+      ...item, 
+      __status: 'deleted' as CollectionItemStatus 
+    } as CollectionItem;
+    setCurrentState(prev => ({
+      ...prev,
+      deleted: [...prev.deleted, deletedItem]
+    }));
+  }, [currentState.added, currentState.modified, setCurrentState]);
+
+  const handleRestoreItem = React.useCallback((item: CollectionItem) => {
+    if (item.__status === 'deleted') {
+      // Restore to original state
+      setCurrentState(prev => ({
+        ...prev,
+        deleted: prev.deleted.filter(i => i.id !== item.id)
+      }));
+    }
+  }, [setCurrentState]);
+
+  const handleAddItem = React.useCallback(() => {
+    // Create a new item with a temporary ID
+    const newItem: CollectionItem = {
+      id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      __status: 'added',
+      // Add default values for required fields
+      ...Object.fromEntries(columns.map(col => [col, col === 'id' ? undefined : '']))
+    };
+
+    setCurrentState(prev => ({
+      ...prev,
+      added: [...prev.added, newItem]
+    }));
+  }, [columns, setCurrentState]);
+
+  // Build grid columns (moved here after function definitions)
   const gridColumns: GridColDef[] = React.useMemo(() => {
-    return columns.map(column => {
+    const baseColumns = columns.map(column => {
       const columnDef: GridColDef = {
         field: column,
         headerName: resolveLabel([`${collectionField.objectTypeName}.${column}`], { entity: collectionField.name, field: column }, column),
@@ -200,7 +365,41 @@ export default function CollectionFieldGrid({parentEntityType, collectionField, 
 
       return columnDef;
     });
-  }, [columns, collectionField.objectTypeName, collectionField.name, resolveLabel, valueResolvers]);
+
+    // Add action column for edit mode
+    if (isEditMode) {
+      baseColumns.push({
+        field: 'actions',
+        headerName: 'Actions',
+        width: 120,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                onClick={() => handleEditItem(params.row)}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDeleteItem(params.row)}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      });
+    }
+
+    return baseColumns;
+  }, [columns, collectionField.objectTypeName, collectionField.name, resolveLabel, valueResolvers, isEditMode, handleEditItem, handleDeleteItem]);
 
   // Handle pagination change
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {
@@ -235,42 +434,164 @@ export default function CollectionFieldGrid({parentEntityType, collectionField, 
         <Typography variant="h6">{sectionLabel}</Typography>
       </AccordionSummary>
       <AccordionDetails>
-        <Box sx={{ height: 400, width: '100%' }}>
-          {collectionLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <CircularProgress />
-              <Typography sx={{ ml: 2 }}>{resolveLabel(['collection.loading'], { entity: collectionField.objectTypeName }, 'Loading...')}</Typography>
+        <Box sx={{ width: '100%' }}>
+          {/* Main collection grid */}
+          <Box sx={{ height: 400, width: '100%', mb: 3 }}>
+            {collectionLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <CircularProgress />
+                <Typography sx={{ ml: 2 }}>{resolveLabel(['collection.loading'], { entity: collectionField.objectTypeName }, 'Loading...')}</Typography>
+              </Box>
+            ) : collectionError ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <Typography color="error">{resolveLabel(['collection.error'], { entity: collectionField.objectTypeName }, 'Error loading collection data')}</Typography>
+              </Box>
+            ) : rows.length === 0 && currentState.added.length === 0 ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <Typography color="text.secondary">{resolveLabel(['collection.noData'], { entity: collectionField.objectTypeName }, 'No data available')}</Typography>
+              </Box>
+            ) : (
+              <>
+                {isEditMode && (
+                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={handleAddItem}
+                      size="small"
+                    >
+                      Add {collectionField.objectTypeName}
+                    </Button>
+                  </Box>
+                )}
+                <DataGrid
+                  rows={[...rows, ...currentState.added]}
+                  columns={gridColumns}
+                  pagination
+                  paginationModel={{ page, pageSize: rowsPerPage }}
+                  onPaginationModelChange={handlePaginationModelChange}
+                  pageSizeOptions={[5, 10, 25]}
+                  rowCount={totalCount + currentState.added.length}
+                  paginationMode="server"
+                  sortingMode="server"
+                  sortModel={sortModel}
+                  onSortModelChange={(model) => {
+                    const norm = (Array.isArray(model) ? model : [])
+                      .filter((m) => m.field && m.sort)
+                      .map((m) => ({ field: String(m.field), sort: m.sort as 'asc' | 'desc' }));
+                    setSortModel(norm);
+                  }}
+                  loading={collectionLoading}
+                  disableRowSelectionOnClick
+                  autoHeight
+                />
+              </>
+            )}
+          </Box>
+
+          {/* Local state tables for edit mode */}
+          {isEditMode && (
+            <Box sx={{ mt: 3 }}>
+              {/* Modified items table */}
+              {currentState.modified.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Modified Items
+                    <Chip 
+                      label={currentState.modified.length} 
+                      size="small" 
+                      color="warning" 
+                      sx={{ ml: 1 }} 
+                    />
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          {columns.map(column => (
+                            <TableCell key={column}>
+                              {resolveLabel([`${collectionField.objectTypeName}.${column}`], { entity: collectionField.name, field: column }, column)}
+                            </TableCell>
+                          ))}
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {currentState.modified.map((item) => (
+                          <TableRow key={item.id}>
+                            {columns.map(column => (
+                              <TableCell key={column}>
+                                {item[column]?.toString() || ''}
+                              </TableCell>
+                            ))}
+                            <TableCell>
+                              <Tooltip title="Restore">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleRestoreItem(item)}
+                                >
+                                  <RestoreIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+
+              {/* Deleted items table */}
+              {currentState.deleted.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Deleted Items
+                    <Chip 
+                      label={currentState.deleted.length} 
+                      size="small" 
+                      color="error" 
+                      sx={{ ml: 1 }} 
+                    />
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          {columns.map(column => (
+                            <TableCell key={column}>
+                              {resolveLabel([`${collectionField.objectTypeName}.${column}`], { entity: collectionField.name, field: column }, column)}
+                            </TableCell>
+                          ))}
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {currentState.deleted.map((item) => (
+                          <TableRow key={item.id}>
+                            {columns.map(column => (
+                              <TableCell key={column}>
+                                {item[column]?.toString() || ''}
+                              </TableCell>
+                            ))}
+                            <TableCell>
+                              <Tooltip title="Restore">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleRestoreItem(item)}
+                                >
+                                  <RestoreIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
             </Box>
-          ) : collectionError ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <Typography color="error">{resolveLabel(['collection.error'], { entity: collectionField.objectTypeName }, 'Error loading collection data')}</Typography>
-            </Box>
-          ) : rows.length === 0 ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <Typography color="text.secondary">{resolveLabel(['collection.noData'], { entity: collectionField.objectTypeName }, 'No data available')}</Typography>
-            </Box>
-          ) : (
-            <DataGrid
-              rows={rows}
-              columns={gridColumns}
-              pagination
-              paginationModel={{ page, pageSize: rowsPerPage }}
-              onPaginationModelChange={handlePaginationModelChange}
-              pageSizeOptions={[5, 10, 25]}
-              rowCount={totalCount}
-              paginationMode="server"
-              sortingMode="server"
-              sortModel={sortModel}
-              onSortModelChange={(model) => {
-                const norm = (Array.isArray(model) ? model : [])
-                  .filter((m) => m.field && m.sort)
-                  .map((m) => ({ field: String(m.field), sort: m.sort as 'asc' | 'desc' }));
-                setSortModel(norm);
-              }}
-              loading={collectionLoading}
-              disableRowSelectionOnClick
-              autoHeight
-            />
           )}
         </Box>
       </AccordionDetails>
