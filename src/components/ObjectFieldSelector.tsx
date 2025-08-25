@@ -251,7 +251,10 @@ export default function ObjectFieldSelector({
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
           disabled={disabled}
-          placeholder={selectedObject ? resolveLabel(["form.searchAnother"], { entity: objectTypeName }, "Search for another...") : resolveLabel(["form.searchObject"], { entity: objectTypeName }, "Search {entity}...")}
+          placeholder={selectedObject ? 
+            resolveLabel(["form.searchAnother"], { entity: objectTypeName }, "Search for another...") : 
+            resolveLabel(["form.searchObject"], { entity: objectTypeName }, "Search {entity}...").replace("{entity}", objectTypeName)
+          }
           variant="outlined"
         />
         
