@@ -24,7 +24,8 @@ export function setupCollectionFieldCustomizations() {
       items: {
         // Customization for season items within the seasons collection
         season: {
-          fields: {
+          // Edit mode customizations for collection items
+          onEdit: {
             name: {
               size: { xs: 12, sm: 6, md: 6 },
               order: 1,
@@ -38,6 +39,25 @@ export function setupCollectionFieldCustomizations() {
               order: 2,
               onChange: (fieldName, value, formData, setFieldData) => {
                 console.log('Season number changed in serie edit:', { fieldName, value, formData });
+                return { value, error: undefined };
+              }
+            }
+          },
+          // Create mode customizations for collection items
+          onCreate: {
+            name: {
+              size: { xs: 12, sm: 6, md: 6 },
+              order: 1,
+              onChange: (fieldName, value, formData, setFieldData) => {
+                console.log('Season name changed in serie create:', { fieldName, value, formData });
+                return { value, error: undefined };
+              }
+            },
+            number: {
+              size: { xs: 12, sm: 6, md: 6 },
+              order: 2,
+              onChange: (fieldName, value, formData, setFieldData) => {
+                console.log('Season number changed in serie create:', { fieldName, value, formData });
                 return { value, error: undefined };
               }
             }
@@ -55,7 +75,8 @@ export function setupCollectionFieldCustomizations() {
       items: {
         // Customization for episode items within the episodes collection
         episode: {
-          fields: {
+          // Edit mode customizations for collection items
+          onEdit: {
             name: {
               size: { xs: 12, sm: 6, md: 6 },
               order: 1,
@@ -88,6 +109,25 @@ export function setupCollectionFieldCustomizations() {
                 return { value, error: undefined };
               }
             }
+          },
+          // Create mode customizations for collection items
+          onCreate: {
+            name: {
+              size: { xs: 12, sm: 6, md: 6 },
+              order: 1
+            },
+            number: {
+              size: { xs: 12, sm: 6, md: 6 },
+              order: 2
+            },
+            date: {
+              size: { xs: 12, sm: 6, md: 6 },
+              order: 3
+            },
+            season: {
+              size: { xs: 12, sm: 6, md: 6 },
+              order: 4
+            }
           }
         }
       }
@@ -110,7 +150,7 @@ export function setupCollectionFieldCustomizations() {
       items: {
         // Customization for star items within the stars collection
         star: {
-          fields: {
+          onEdit: {
             name: {
               size: { xs: 12, sm: 6, md: 6 },
               order: 1,
@@ -149,7 +189,7 @@ export function setupCollectionFieldCustomizations() {
       items: {
         // Customization for assigned star and serie items
         assignedStarAndSerie: {
-          fields: {
+          onEdit: {
             serie: {
               size: { xs: 12, sm: 6, md: 6 },
               order: 1,
@@ -195,7 +235,7 @@ export function setupCollectionFieldCustomizations() {
       enabled: true,
       items: {
         season: {
-          fields: {
+          onEdit: {
             name: {
               size: { xs: 12, sm: 6, md: 6 },
               order: 1,
@@ -233,7 +273,7 @@ export function setupCollectionFieldCustomizations() {
       enabled: true,
       items: {
         episode: {
-          fields: {
+          onEdit: {
             name: {
               size: { xs: 12, sm: 6, md: 6 },
               order: 1

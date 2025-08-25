@@ -239,7 +239,8 @@ export default function CollectionItemEditForm({
           parentCustomization || {},
           collectionFieldName,
           objectTypeName,
-          fieldName
+          fieldName,
+          "edit" // We're in edit mode for collection items
         );
         
         if (collectionItemCustomization) {
@@ -387,6 +388,7 @@ export default function CollectionItemEditForm({
       objectTypeName,
       field.name,
       getFormCustomization(parentEntityType, "edit") || {},
+      "edit", // We're in edit mode for collection items
       { xs: 12, sm: 6, md: 4 }
     );
     const isVisible = isFieldVisible(field.name, customizationState, field.value, formData);

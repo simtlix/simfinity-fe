@@ -41,7 +41,10 @@ export type CollectionItemCustomization = {
     setFieldVisible: (fieldName: string, visible: boolean) => void,
     setFieldEnabled: (fieldName: string, enabled: boolean) => void
   ) => { value: string | number | boolean | string[] | null; error?: string };
-  // Support for nested field customizations within collection items
+  // Mode-specific customizations for collection items
+  onEdit?: Record<string, FieldCustomization>;
+  onCreate?: Record<string, FieldCustomization>;
+  // Legacy support - will be deprecated
   fields?: Record<string, FieldCustomization>;
 };
 
@@ -234,14 +237,24 @@ export function getCollectionItemFieldCustomization(
   customization: FormCustomization,
   collectionFieldName: string,
   itemTypeName: string,
-  fieldName: string
+  fieldName: string,
+  mode: "edit" | "create" = "edit"
 ): FieldCustomization | undefined {
   const collectionCustomization = getCollectionFieldCustomization(customization, collectionFieldName);
   
   if (collectionCustomization?.items && collectionCustomization.items[itemTypeName]) {
     const itemCustomization = collectionCustomization.items[itemTypeName];
     
-    // First check if the field has direct customization
+    // First check mode-specific customizations
+    if (mode === "edit" && itemCustomization.onEdit && itemCustomization.onEdit[fieldName]) {
+      return itemCustomization.onEdit[fieldName];
+    }
+    
+    if (mode === "create" && itemCustomization.onCreate && itemCustomization.onCreate[fieldName]) {
+      return itemCustomization.onCreate[fieldName];
+    }
+    
+    // Fallback to legacy fields format
     if (itemCustomization.fields && itemCustomization.fields[fieldName]) {
       return itemCustomization.fields[fieldName];
     }
@@ -261,9 +274,10 @@ export function getCollectionItemFieldSize(
   itemTypeName: string,
   fieldName: string,
   customization: FormCustomization,
+  mode: "edit" | "create" = "edit",
   defaultSize: FieldSize = { xs: 12, sm: 6, md: 4 }
 ): FieldSize {
-  const itemCustomization = getCollectionItemFieldCustomization(customization, collectionFieldName, itemTypeName, fieldName);
+  const itemCustomization = getCollectionItemFieldCustomization(customization, collectionFieldName, itemTypeName, fieldName, mode);
   
   if (itemCustomization && itemCustomization.size) {
     return itemCustomization.size;
