@@ -78,6 +78,8 @@ export default function CollectionFieldGrid({
     deleted: []
   });
 
+
+
   // Use provided state or local state
   const currentState = collectionState || localCollectionState;
   const setCurrentState = onCollectionStateChange 
@@ -334,6 +336,8 @@ export default function CollectionFieldGrid({
       added: [...prev.added, newItem]
     }));
   }, [columns, setCurrentState]);
+
+
 
   // Build grid columns (moved here after function definitions)
   const gridColumns: GridColDef[] = React.useMemo(() => {
