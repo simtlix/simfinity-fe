@@ -28,7 +28,32 @@ export type EmbeddedSectionCustomization = {
   enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire section is enabled
 };
 
-export type FormCustomization = Record<string, FieldCustomization | EmbeddedSectionCustomization>;
+export type CollectionItemCustomization = {
+  size?: FieldSize;
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
+  visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
+  order?: number;
+  onChange?: (
+    fieldName: string,
+    value: string | number | boolean | string[] | null,
+    formData: Record<string, unknown>,
+    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => void,
+    setFieldVisible: (fieldName: string, visible: boolean) => void,
+    setFieldEnabled: (fieldName: string, enabled: boolean) => void
+  ) => { value: string | number | boolean | string[] | null; error?: string };
+  // Support for nested field customizations within collection items
+  fields?: Record<string, FieldCustomization>;
+};
+
+export type CollectionFieldCustomization = {
+  size?: FieldSize; // Controls the collection section's size in the main form
+  order?: number;   // Controls the collection section's order relative to other fields/sections
+  visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire collection section is visible
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire collection section is enabled
+  items?: Record<string, CollectionItemCustomization>; // Customization for individual items within the collection
+};
+
+export type FormCustomization = Record<string, FieldCustomization | EmbeddedSectionCustomization | CollectionFieldCustomization>;
 
 export type FormCustomizationState = {
   customization: FormCustomization;
@@ -188,4 +213,70 @@ export function getEmbeddedFieldSize(
   }
   
   return defaultSize;
+}
+
+// Helper function to get collection field customization
+export function getCollectionFieldCustomization(
+  customization: FormCustomization,
+  collectionFieldName: string
+): CollectionFieldCustomization | undefined {
+  const collectionCustomization = customization[collectionFieldName];
+  
+  if (collectionCustomization && 'items' in collectionCustomization) {
+    return collectionCustomization as CollectionFieldCustomization;
+  }
+  
+  return undefined;
+}
+
+// Helper function to get collection item field customization
+export function getCollectionItemFieldCustomization(
+  customization: FormCustomization,
+  collectionFieldName: string,
+  itemTypeName: string,
+  fieldName: string
+): FieldCustomization | undefined {
+  const collectionCustomization = getCollectionFieldCustomization(customization, collectionFieldName);
+  
+  if (collectionCustomization?.items && collectionCustomization.items[itemTypeName]) {
+    const itemCustomization = collectionCustomization.items[itemTypeName];
+    
+    // First check if the field has direct customization
+    if (itemCustomization.fields && itemCustomization.fields[fieldName]) {
+      return itemCustomization.fields[fieldName];
+    }
+    
+    // Fallback to the old format for backward compatibility
+    if (itemCustomization && 'onChange' in itemCustomization) {
+      return itemCustomization as FieldCustomization;
+    }
+  }
+  
+  return undefined;
+}
+
+// Helper function to get collection item field size
+export function getCollectionItemFieldSize(
+  collectionFieldName: string,
+  itemTypeName: string,
+  fieldName: string,
+  customization: FormCustomization,
+  defaultSize: FieldSize = { xs: 12, sm: 6, md: 4 }
+): FieldSize {
+  const itemCustomization = getCollectionItemFieldCustomization(customization, collectionFieldName, itemTypeName, fieldName);
+  
+  if (itemCustomization && itemCustomization.size) {
+    return itemCustomization.size;
+  }
+  
+  return defaultSize;
+}
+
+// Helper function to check if a field is a collection field
+export function isCollectionField(
+  customization: FormCustomization,
+  fieldName: string
+): boolean {
+  const fieldCustomization = customization[fieldName];
+  return fieldCustomization && 'items' in fieldCustomization;
 }

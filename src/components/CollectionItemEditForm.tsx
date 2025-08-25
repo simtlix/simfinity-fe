@@ -49,6 +49,10 @@ import {
   getEmbeddedFieldCustomization,
   getEmbeddedSectionCustomization,
   getEmbeddedFieldSize,
+  getCollectionItemFieldCustomization,
+  getCollectionItemFieldSize,
+  getFormCustomization,
+  FormCustomization,
 } from "@/lib/formCustomization";
 import { CollectionItem } from "./CollectionFieldGrid";
 
@@ -219,18 +223,66 @@ export default function CollectionItemEditForm({
     }
   }, [schemaData, objectTypeName, item, parentEntityType]);
 
-  // Initialize form customization
+  // Initialize form customization from parent entity
   React.useEffect(() => {
     if (formFields.length > 0) {
       const fieldNames = formFields.map(field => field.name);
-      const newCustomizationState = createFormCustomizationState(
-        `${collectionFieldName}.${objectTypeName}`,
-        "edit",
-        fieldNames
-      );
+      
+      // Get the parent entity's customization
+      const parentCustomization = getFormCustomization(parentEntityType, "edit");
+      
+      // Create a flattened customization state for the collection item fields
+      const flattenedCustomization: FormCustomization = {};
+      
+      fieldNames.forEach(fieldName => {
+        const collectionItemCustomization = getCollectionItemFieldCustomization(
+          parentCustomization || {},
+          collectionFieldName,
+          objectTypeName,
+          fieldName
+        );
+        
+        if (collectionItemCustomization) {
+          flattenedCustomization[fieldName] = collectionItemCustomization;
+        }
+      });
+      
+      const newCustomizationState: FormCustomizationState = {
+        customization: flattenedCustomization,
+        fieldVisibility: {},
+        fieldEnabled: {},
+        fieldOrder: [],
+      };
+      
+      // Initialize field visibility and enabled state
+      fieldNames.forEach(fieldName => {
+        const fieldCustomization = flattenedCustomization[fieldName];
+        const visible = fieldCustomization?.visible;
+        const enabled = fieldCustomization?.enabled;
+        
+        newCustomizationState.fieldVisibility[fieldName] = typeof visible === 'function' ? true : (visible ?? true);
+        newCustomizationState.fieldEnabled[fieldName] = typeof enabled === 'function' ? true : (enabled ?? true);
+      });
+      
+      // Create field order
+      const fieldOrder = fieldNames.sort((a, b) => {
+        const aCustomization = flattenedCustomization[a];
+        const bCustomization = flattenedCustomization[b];
+        
+        if (aCustomization?.order !== undefined && bCustomization?.order !== undefined) {
+          return aCustomization.order - bCustomization.order;
+        }
+        
+        if (aCustomization?.order !== undefined) return -1;
+        if (bCustomization?.order !== undefined) return 1;
+        
+        return 0;
+      });
+      
+      newCustomizationState.fieldOrder = fieldOrder;
       setCustomizationState(newCustomizationState);
     }
-  }, [formFields, collectionFieldName, objectTypeName]);
+  }, [formFields, collectionFieldName, objectTypeName, parentEntityType]);
 
   // Form customization actions
   const customizationActions: FormCustomizationActions = React.useMemo(() => ({
@@ -330,7 +382,13 @@ export default function CollectionItemEditForm({
   // Render form field
   const renderFormField = (field: FormField) => {
     const fieldCustomization = customizationState.customization[field.name];
-    const fieldSize = getFieldSize(field.name, customizationState.customization);
+    const fieldSize = getCollectionItemFieldSize(
+      collectionFieldName,
+      objectTypeName,
+      field.name,
+      getFormCustomization(parentEntityType, "edit") || {},
+      { xs: 12, sm: 6, md: 4 }
+    );
     const isVisible = isFieldVisible(field.name, customizationState, field.value, formData);
     const isEnabled = isFieldEnabled(field.name, customizationState, field.value, formData);
 
