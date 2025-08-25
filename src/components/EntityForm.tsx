@@ -56,6 +56,7 @@ import { useRouter } from "next/navigation";
 import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getTypeByName, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName, isScalarOrEnum, unwrapNamedType, getListEntityFieldNamesOfType } from "@/lib/introspection";
 import ObjectFieldSelector from "./ObjectFieldSelector";
 import CollectionFieldGrid from "./CollectionFieldGrid";
+import { useCollectionState } from "@/hooks/useCollectionState";
 import { useI18n } from "@/lib/i18n";
 import { Accordion, AccordionDetails, AccordionSummary } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -235,6 +236,14 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
   // Get schema data to understand entity structure
   const { data: schemaData, loading: schemaLoading } = useQuery(INTROSPECTION_QUERY);
+
+  // Collection state management
+  const { 
+    collectionStates, 
+    updateCollectionState, 
+    getCollectionState,
+    getCollectionChanges 
+  } = useCollectionState();
 
   // Helper function to get entity name from i18n
   const getEntityName = React.useCallback((pluralName: string, form: 'single' | 'plural'): string => {
@@ -757,6 +766,15 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         inputData[field.name] = field.value;
       });
 
+      // Get collection changes if in edit mode
+      const collectionChanges = action === "edit" ? getCollectionChanges() : {};
+      
+      if (Object.keys(collectionChanges).length > 0) {
+        console.log('Collection changes to be processed:', collectionChanges);
+        // TODO: Process collection changes here
+        // This would involve creating, updating, and deleting collection items
+      }
+
       if (action === "create") {
         const result = await createEntity({
           variables: { input: inputData }
@@ -1219,6 +1237,9 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               }}
               parentEntityId={entityId || ""}
               parentEntityType={getElementTypeNameOfListField(schemaData, listField) || "" }
+              isEditMode={action === "edit"}
+              collectionState={getCollectionState(field.name)}
+              onCollectionStateChange={updateCollectionState}
             />
           </Box>
         ));
