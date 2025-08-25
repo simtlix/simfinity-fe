@@ -38,6 +38,7 @@ import {
 import { resolveColumnRenderer } from "@/lib/columnRenderers";
 import { useI18n } from "@/lib/i18n";
 import ObjectFieldSelector from "./ObjectFieldSelector";
+import FormFieldRenderer from "./FormFieldRenderer";
 import {
   FormCustomizationState,
   FormCustomizationActions,
@@ -538,7 +539,47 @@ export default function CollectionItemEditForm({
         <Box sx={{ mt: 2 }}>
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
-              {sortedFields.map(field => renderFormField(field))}
+              {sortedFields.map(field => {
+                const fieldSize = getCollectionItemFieldSize(
+                  collectionFieldName,
+                  objectTypeName,
+                  field.name,
+                  getFormCustomization(parentEntityType, "edit") || {},
+                  "edit", // We're in edit mode for collection items
+                  { xs: 12, sm: 6, md: 4 }
+                );
+                const isVisible = isFieldVisible(field.name, customizationState, field.value, formData);
+                const isEnabled = isFieldEnabled(field.name, customizationState, field.value, formData);
+
+                if (!isVisible) return null;
+
+                const formField = formData[field.name] || field;
+
+                // Convert FormField to the format expected by FormFieldRenderer
+                const fieldForRenderer = {
+                  name: field.name,
+                  type: field.type,
+                  isNonNull: field.required,
+                  isList: field.isList,
+                  extensions: field.isEmbedded ? { embedded: true } : undefined
+                };
+
+                return (
+                  <Grid key={field.name} size={fieldSize}>
+                    <FormFieldRenderer
+                      field={fieldForRenderer}
+                      value={formField.value}
+                      onChange={(fieldName, value) => handleFieldChange(field.name, value as string | number | boolean | string[] | null)}
+                      error={formField.error}
+                      disabled={!isEnabled}
+                      schemaData={schemaData}
+                      entityTypeName={objectTypeName}
+                      customizationState={customizationState}
+                      hideIdField={true}
+                    />
+                  </Grid>
+                );
+              })}
             </Grid>
           </form>
         </Box>

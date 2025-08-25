@@ -58,6 +58,7 @@ import ObjectFieldSelector from "./ObjectFieldSelector";
 import CollectionFieldGrid from "./CollectionFieldGrid";
 import { useCollectionState } from "@/hooks/useCollectionState";
 import { useI18n } from "@/lib/i18n";
+import FormFieldRenderer from "./FormFieldRenderer";
 import { Accordion, AccordionDetails, AccordionSummary } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { 
@@ -236,6 +237,12 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
   // Get schema data to understand entity structure
   const { data: schemaData, loading: schemaLoading } = useQuery(INTROSPECTION_QUERY);
+
+  // Get entity type name for use throughout the component
+  const entityTypeName = React.useMemo(() => {
+    if (!schemaData) return null;
+    return getElementTypeNameOfListField(schemaData as SchemaData, listField);
+  }, [schemaData, listField]);
 
   // Collection state management
   const { 
@@ -801,7 +808,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     }
   };
 
-  // Render embedded object section
+  // Render embedded object section using shared FormFieldRenderer
   const renderEmbeddedSection = (field: FormField, enabled: boolean = true) => {
     if (!field.isEmbedded || !field.embeddedFields) return null;
     
@@ -844,27 +851,44 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                 const fieldCustomization = getEmbeddedFieldCustomization(customizationState.customization, field.name, embeddedFieldName);
                 const fieldSize = getEmbeddedFieldSize(field.name, embeddedFieldName, customizationState.customization);
                 
-                // Create a modified field with the current value and correct onChange handler
-                const modifiedField = {
-                  ...embeddedField,
-                  value: currentValue !== undefined ? currentValue : embeddedField.value,
-                  onChange: (value: string | number | boolean | string[] | null) => {
-                    const customOnChange = fieldCustomization?.onChange;
-                    
-                    if (customOnChange) {
-                      const result = customOnChange(embeddedFieldName, value, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled);
-                      // Pass both value and error to handleEmbeddedFieldChange
-                      handleEmbeddedFieldChange(field.name, embeddedFieldName, result.value as string | number | boolean | string[] | null, result.error);
-                    } else {
-                      // Use default handler
-                      handleEmbeddedFieldChange(field.name, embeddedFieldName, value);
-                    }
-                  }
+                // Convert embedded field to the format expected by FormFieldRenderer
+                const fieldForRenderer = {
+                  name: embeddedFieldName,
+                  type: embeddedField.type,
+                  isNonNull: embeddedField.required,
+                  isList: embeddedField.isList,
+                  extensions: { embedded: true }
                 };
                 
                 return (
                   <Grid key={embeddedField.name} size={fieldSize}>
-                    {renderField(modifiedField, isSectionEnabled && enabled)}
+                    <FormFieldRenderer
+                      field={fieldForRenderer}
+                      value={currentValue !== undefined ? currentValue : embeddedField.value}
+                      onChange={(fieldName, value) => {
+                        const customOnChange = fieldCustomization?.onChange;
+                        
+                        if (customOnChange) {
+                          // Convert unknown value to the expected type
+                          const typedValue = value as string | number | boolean | string[] | null;
+                          const result = customOnChange(embeddedFieldName, typedValue, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled);
+                          // Pass both value and error to handleEmbeddedFieldChange
+                          handleEmbeddedFieldChange(field.name, embeddedFieldName, result.value as string | number | boolean | string[] | null, result.error);
+                        } else {
+                          // Use default handler - ensure value is properly typed
+                          const typedValue = value as string | number | boolean | string[] | null;
+                          handleEmbeddedFieldChange(field.name, embeddedFieldName, typedValue);
+                        }
+                      }}
+                      error={embeddedField.error}
+                      disabled={action === "view" || !isSectionEnabled || !enabled}
+                      schemaData={schemaData}
+                      entityTypeName={entityTypeName || ''}
+                      customizationState={customizationState}
+                      parentFieldPath={field.name}
+                      isEmbedded={true}
+                      hideIdField={true}
+                    />
                   </Grid>
                 );
               })}
