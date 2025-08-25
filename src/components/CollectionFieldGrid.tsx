@@ -380,8 +380,8 @@ export default function CollectionFieldGrid({
   const getDisplayValue = React.useCallback((item: Record<string, unknown>, column: string): string => {
     if (column === 'id') return item[column]?.toString() || '';
     
-    // For modified/deleted items, try to use the original data if available
-    const dataToUse = (item.__originalData as Record<string, unknown>) || item;
+    // Use the current item data (new value) instead of original data
+    const dataToUse = item;
     
     if (valueResolvers[column]) {
       const resolvedValue = valueResolvers[column](dataToUse);
