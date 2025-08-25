@@ -30,6 +30,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getListEntityFieldNamesOfType, buildSelectionSetForObjectType, ValueResolver } from "@/lib/introspection";
 import { resolveColumnRenderer } from "@/lib/columnRenderers";
 import { useI18n } from "@/lib/i18n";
+import CollectionItemEditForm from "./CollectionItemEditForm";
 
 // Types for collection item management
 export type CollectionItemStatus = 'original' | 'added' | 'modified' | 'deleted';
@@ -77,6 +78,10 @@ export default function CollectionFieldGrid({
     modified: [],
     deleted: []
   });
+
+  // Edit form state
+  const [editFormOpen, setEditFormOpen] = React.useState(false);
+  const [editingItem, setEditingItem] = React.useState<CollectionItem | null>(null);
 
 
 
@@ -262,17 +267,9 @@ export default function CollectionFieldGrid({
 
   // Collection item management functions
   const handleEditItem = React.useCallback((item: Record<string, unknown>) => {
-    const itemToEdit: CollectionItem = { 
-      ...item, 
-      __status: 'modified' as CollectionItemStatus, 
-      __originalData: { ...item } 
-    } as CollectionItem;
-    
-    setCurrentState(prev => ({
-      ...prev,
-      modified: [...prev.modified.filter(i => i.id !== item.id), itemToEdit]
-    }));
-  }, [setCurrentState]);
+    setEditingItem(item as CollectionItem);
+    setEditFormOpen(true);
+  }, []);
 
   const handleDeleteItem = React.useCallback((item: Record<string, unknown>) => {
     // If item was added, remove it completely
@@ -336,6 +333,16 @@ export default function CollectionFieldGrid({
       added: [...prev.added, newItem]
     }));
   }, [columns, setCurrentState]);
+
+  // Handle saving edited item
+  const handleSaveEditedItem = React.useCallback((updatedItem: CollectionItem) => {
+    setCurrentState(prev => ({
+      ...prev,
+      modified: [...prev.modified.filter(i => i.id !== updatedItem.id), updatedItem]
+    }));
+    setEditFormOpen(false);
+    setEditingItem(null);
+  }, [setCurrentState]);
 
 
 
@@ -433,11 +440,12 @@ export default function CollectionFieldGrid({
   }
 
   return (
-    <Accordion defaultExpanded>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography variant="h6">{sectionLabel}</Typography>
-      </AccordionSummary>
-      <AccordionDetails>
+    <Box>
+      <Accordion defaultExpanded>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">{sectionLabel}</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
         <Box sx={{ width: '100%' }}>
           {/* Main collection grid */}
           <Box sx={{ height: 400, width: '100%', mb: 3 }}>
@@ -600,5 +608,23 @@ export default function CollectionFieldGrid({
         </Box>
       </AccordionDetails>
     </Accordion>
+
+    {/* Edit form dialog */}
+    {editingItem && editFormOpen && (
+      <CollectionItemEditForm
+        open={editFormOpen}
+        onClose={() => {
+          setEditFormOpen(false);
+          setEditingItem(null);
+        }}
+        item={editingItem}
+        collectionFieldName={collectionField.name}
+        objectTypeName={collectionField.objectTypeName}
+        parentEntityId={parentEntityId}
+        parentEntityType={parentEntityType}
+        onSave={handleSaveEditedItem}
+      />
+    )}
+  </Box>
   );
 }
