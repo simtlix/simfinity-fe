@@ -13,12 +13,12 @@ export type FieldCustomization = {
   order?: number;
   onChange?: (
     fieldName: string,
-    value: string | number | boolean | string[] | null,
+    value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown },
     formData: Record<string, unknown>,
-    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => void,
+    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
     setFieldVisible: (fieldName: string, visible: boolean) => void,
     setFieldEnabled: (fieldName: string, enabled: boolean) => void
-  ) => { value: string | number | boolean | string[] | null; error?: string };
+  ) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
 };
 
 export type EmbeddedSectionCustomization = {
@@ -35,12 +35,12 @@ export type CollectionItemCustomization = {
   order?: number;
   onChange?: (
     fieldName: string,
-    value: string | number | boolean | string[] | null,
+    value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown },
     formData: Record<string, unknown>,
-    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => void,
+    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
     setFieldVisible: (fieldName: string, visible: boolean) => void,
     setFieldEnabled: (fieldName: string, enabled: boolean) => void
-  ) => { value: string | number | boolean | string[] | null; error?: string };
+  ) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
   // Mode-specific customizations for collection items
   onEdit?: Record<string, FieldCustomization>;
   onCreate?: Record<string, FieldCustomization>;
@@ -70,7 +70,7 @@ export type FormCustomizationState = {
 };
 
 export type FormCustomizationActions = {
-  setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => void;
+  setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void;
   setFieldVisible: (fieldName: string, visible: boolean) => void;
   setFieldEnabled: (fieldName: string, enabled: boolean) => void;
   setFieldOrder: (fieldOrder: string[]) => void;

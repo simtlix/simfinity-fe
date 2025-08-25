@@ -20,8 +20,8 @@ import { useI18n } from "@/lib/i18n";
 
 type ObjectFieldSelectorProps = {
   label: string;
-  value: string | null;
-  onChange: (value: string | null) => void;
+  value: string | null | { id: string; [key: string]: unknown };
+  onChange: (value: string | null | { id: string; [key: string]: unknown }) => void;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -50,18 +50,23 @@ export default function ObjectFieldSelector({
   const { resolveLabel } = useI18n();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isOpen, setIsOpen] = React.useState(false);
-  const [selectedObject, setSelectedObject] = React.useState<{ id: string; description: string } | null>(null);
+  const [selectedObject, setSelectedObject] = React.useState<{ id: string; [key: string]: unknown } | null>(null);
   const anchorRef = React.useRef<HTMLDivElement>(null);
 
   // Initialize selectedObject when value prop changes
   React.useEffect(() => {
     if (value && !selectedObject) {
       // If we have a value but no selectedObject, we need to fetch the object data
-      // For now, we'll create a minimal object to prevent validation errors
-      setSelectedObject({
-        id: value,
-        description: value // Temporary description until we fetch the real data
-      });
+      if (typeof value === 'string') {
+        // If value is a string (ID), create a minimal object
+        setSelectedObject({
+          id: value,
+          description: value // Temporary description until we fetch the real data
+        });
+      } else if (typeof value === 'object' && value !== null && 'id' in value) {
+        // If value is already an object, use it directly
+        setSelectedObject(value);
+      }
     } else if (!value && selectedObject) {
       // If value is cleared, clear selectedObject
       setSelectedObject(null);
@@ -168,7 +173,7 @@ export default function ObjectFieldSelector({
   const { data: selectedData, error: selectedError } = useQuery(
     generateSelectedObjectQuery!,
     {
-      variables: { id: value },
+      variables: { id: typeof value === 'string' ? value : (value as { id: string; [key: string]: unknown })?.id },
       skip: !value || !generateSelectedObjectQuery,
     }
   );
@@ -208,7 +213,7 @@ export default function ObjectFieldSelector({
 
   const handleSelectObject = (object: { id: string; description: string }) => {
     setSelectedObject(object);
-    onChange(object.id);
+    onChange(object);
     setSearchTerm("");
     setIsOpen(false);
   };
@@ -262,7 +267,7 @@ export default function ObjectFieldSelector({
         {selectedObject && (
           <Box sx={{ mt: 1 }}>
             <Chip
-              label={selectedObject.description}
+              label={selectedObject.description as string}
               onDelete={disabled ? undefined : handleRemoveObject}
               variant="outlined"
               color="primary"

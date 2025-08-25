@@ -84,7 +84,7 @@ type FormField = {
   name: string;
   type: string;
   required: boolean;
-  value: string | number | boolean | string[] | null;
+  value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown };
   error?: string;
   isNumeric: boolean;
   isBoolean: boolean;
@@ -268,7 +268,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
   // Form customization actions
   const customizationActions: FormCustomizationActions = React.useMemo(() => ({
-    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => {
+    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => {
       // Check if this is an embedded field (contains a dot)
       if (fieldName.includes('.')) {
         const [parentField, embeddedField] = fieldName.split('.');
@@ -482,7 +482,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             collectionObjectTypeName,
             connectionField,
             required: isObject ? isObjectRequired : isRequired,
-            value: getDefaultValue(typeName, isBoolean, isList, isObject),
+            value: getDefaultValue(typeName || "String", isBoolean, isList, isObject),
             error: undefined,
           };
         } catch (error) {
@@ -509,7 +509,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         console.log('Initialized customization state for', entityTypeName, ':', newCustomizationState);
       }
     }
-  }, [formFields, schemaData, listField]);
+  }, [formFields, schemaData, listField, action]);
 
   // For now, we'll skip the dynamic GraphQL queries and just show the form
   // The actual GraphQL integration can be added later once the form rendering works
@@ -704,7 +704,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   }, [entityData, listField, action, formFields]);
 
   // Handle field changes
-  const handleFieldChange = (fieldName: string, value: string | number | boolean | string[] | null, error?: string) => {
+  const handleFieldChange = (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, error?: string) => {
     setFormData(prev => ({
       ...prev,
       [fieldName]: {
@@ -770,7 +770,13 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     try {
       const inputData: Record<string, string | number | boolean | string[] | null> = {};
       formFields.forEach(field => {
-        inputData[field.name] = field.value;
+        // For object fields, extract the ID for submission
+        if (field.isObject && typeof field.value === 'object' && field.value !== null && 'id' in field.value) {
+          const objValue = field.value as unknown as { id: string; [key: string]: unknown };
+          inputData[field.name] = objValue.id;
+        } else {
+          inputData[field.name] = field.value;
+        }
       });
 
       // Get collection changes if in edit mode
@@ -911,19 +917,19 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     
     // Use custom onChange if provided, otherwise use the default handleFieldChange
     const onChange = customOnChange 
-      ? (value: string | number | boolean | string[] | null) => {
+      ? (value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => {
           const result = customOnChange(field.name, value, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled);
           // Pass both value and error to handleFieldChange to handle state properly
-          handleFieldChange(field.name, result.value as string | number | boolean | string[] | null, result.error);
+          handleFieldChange(field.name, result.value as string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, result.error);
         }
-      : ((value: string | number | boolean | string[] | null) => handleFieldChange(field.name, value));
+      : ((value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => handleFieldChange(field.name, value));
     
     if (field.isObject && field.objectTypeName && field.descriptionField && field.descriptionFieldType && field.listQueryName && field.singleQueryName) {
       return (
         <>
           <ObjectFieldSelector
             label={fieldLabel}
-            value={field.value as string}
+            value={field.value as string | null | { id: string; [key: string]: unknown }}
             onChange={onChange}
             error={field.error}
             required={field.required}
@@ -1016,7 +1022,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
     if (field.isDate) {
       // Format date value for date input (YYYY-MM-DD)
-      const formatDateForInput = (dateValue: string | number | boolean | string[] | null): string => {
+      const formatDateForInput = (dateValue: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }): string => {
         if (!dateValue || typeof dateValue !== 'string') return '';
         try {
           const date = new Date(dateValue);
@@ -1033,8 +1039,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             fullWidth
             label={fieldLabel}
             type="date"
-            value={formatDateForInput(field.value)}
-            onChange={(e) => onChange(e.target.value)}
+            value={formatDateForInput(field.value as string | number | boolean | string[] | null | { id: string; [key: string]: unknown })}
+            onChange={(e) => onChange(e.target.value as string | number | boolean | string[] | null | { id: string; [key: string]: unknown })}
             error={!!field.error}
             helperText={field.error}
             required={field.required}
@@ -1052,7 +1058,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           label={fieldLabel}
           type={field.isNumeric ? "number" : "text"}
           value={field.value as string}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value as string | number | boolean | string[] | null | { id: string; [key: string]: unknown })}
           error={!!field.error}
           helperText={field.error}
           required={field.required}

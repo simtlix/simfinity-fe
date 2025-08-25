@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { gql, useQuery, useMutation } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import {
   Dialog,
   DialogTitle,
@@ -19,37 +19,23 @@ import {
   Box,
   Grid,
   Typography,
-  CircularProgress,
-  Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
+  CircularProgress
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   INTROSPECTION_QUERY,
   SchemaData,
-  getElementTypeNameOfListField,
   getTypeByName,
   getListEntityFieldNamesOfType,
-  buildSelectionSetForObjectType,
-  ValueResolver,
 } from "@/lib/introspection";
-import { resolveColumnRenderer } from "@/lib/columnRenderers";
 import { useI18n } from "@/lib/i18n";
 import ObjectFieldSelector from "./ObjectFieldSelector";
 import FormFieldRenderer from "./FormFieldRenderer";
 import {
   FormCustomizationState,
   FormCustomizationActions,
-  createFormCustomizationState,
-  getFieldSize,
   isFieldVisible,
   isFieldEnabled,
   getFieldOrder,
-  getEmbeddedFieldCustomization,
-  getEmbeddedSectionCustomization,
-  getEmbeddedFieldSize,
   getCollectionItemFieldCustomization,
   getCollectionItemFieldSize,
   getFormCustomization,
@@ -72,7 +58,7 @@ type FormField = {
   name: string;
   type: string;
   required: boolean;
-  value: string | number | boolean | string[] | null;
+  value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown };
   error?: string;
   isNumeric: boolean;
   isBoolean: boolean;
@@ -145,21 +131,28 @@ export default function CollectionItemEditForm({
         })
         .map(field => {
           const fieldType = field.type;
+          const typeName = unwrapNamedType(fieldType);
           const isNonNull = isNonNullField(fieldType);
-          const actualType = getActualScalarType(fieldType);
           const isList = fieldType.kind === "LIST";
-          const isObject = fieldType.kind === "OBJECT" || fieldType.kind === "INTERFACE";
-          const isEnum = fieldType.kind === "ENUM";
+          
+          // Check if this is an ENUM type
+          let current = fieldType as { kind?: string; ofType?: unknown; name?: string };
+          while (current && current.kind && (current.kind === "NON_NULL" || current.kind === "LIST")) {
+            current = current.ofType as { kind?: string; ofType?: unknown; name?: string };
+          }
+          const isEnum = current?.kind === "ENUM";
+          
+          // Check if this is an OBJECT type (non-list)
+          const isObject = current?.kind === "OBJECT" && !isList;
+          const objectTypeName = isObject && typeName ? typeName : undefined;
+          const descriptionField = isObject ? "name" : undefined; // Default to "name" for object fields
           
           // Get object type info if it's an object field
-          let objectTypeName: string | undefined;
-          let descriptionField: string | undefined;
           let descriptionFieldType: string | undefined;
           let listQueryName: string | undefined;
           let singleQueryName: string | undefined;
           
-          if (isObject && fieldType.name) {
-            objectTypeName = fieldType.name;
+          if (isObject && objectTypeName) {
             // Get description field from schema extensions
             const objectType = getTypeByName(schema, objectTypeName);
             if (objectType?.fields) {
@@ -168,8 +161,7 @@ export default function CollectionItemEditForm({
                 f.name === 'name' || f.name === 'title' || f.name === 'description'
               );
               if (descField) {
-                descriptionField = descField.name;
-                descriptionFieldType = getActualScalarType(descField.type);
+                descriptionFieldType = unwrapNamedType(descField.type) || undefined;
               }
             }
             
@@ -183,25 +175,45 @@ export default function CollectionItemEditForm({
           
           // Get enum values if it's an enum field
           let enumValues: string[] | undefined;
-          if (isEnum && fieldType.name) {
-            enumValues = getEnumValues(schema, fieldType.name);
+          if (isEnum && typeName) {
+            enumValues = getEnumValues(schema, typeName);
           }
           
           // Get current value from item
           const itemValue = item[field.name];
-          const currentValue = (itemValue !== undefined && itemValue !== null && typeof itemValue !== 'object') 
-            ? itemValue as string | number | boolean | string[]
-            : getDefaultValue(actualType, actualType === "Boolean", isList, isObject);
+          let currentValue: string | number | boolean | string[] | null;
+          
+          if (itemValue !== undefined && itemValue !== null) {
+            if (typeof itemValue === 'object') {
+              // Handle object fields - extract the ID for non-embedded objects
+              if (isObject && 'id' in itemValue) {
+                currentValue = itemValue.id as string;
+                console.log(`Object field ${field.name}: extracted ID from object:`, currentValue);
+              } else {
+                // For other object types, use default value
+                currentValue = getDefaultValue(typeName || "String", isBooleanScalarName(typeName), isList, isObject);
+                console.log(`Object field ${field.name}: using default value for non-ID object:`, currentValue);
+              }
+            } else {
+              // For scalar values, use the item value directly
+              currentValue = itemValue as string | number | boolean | string[];
+              console.log(`Scalar field ${field.name}: using item value directly:`, currentValue);
+            }
+          } else {
+            // Use default value when item value is undefined or null
+            currentValue = getDefaultValue(typeName || "String", isBooleanScalarName(typeName), isList, isObject);
+            console.log(`Field ${field.name}: using default value (item value was undefined/null):`, currentValue);
+          }
           
           return {
             name: field.name,
-            type: actualType,
+            type: typeName || "String",
             required: isNonNull,
             value: currentValue,
             error: undefined,
-            isNumeric: actualType === "Int" || actualType === "Float",
-            isBoolean: actualType === "Boolean",
-            isDate: actualType === "Date" || actualType === "DateTime",
+            isNumeric: isNumericScalarName(typeName),
+            isBoolean: isBooleanScalarName(typeName),
+            isDate: isDateTimeScalarName(typeName),
             isList,
             isEnum,
             enumValues,
@@ -288,7 +300,7 @@ export default function CollectionItemEditForm({
 
   // Form customization actions
   const customizationActions: FormCustomizationActions = React.useMemo(() => ({
-    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => {
+    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => {
       setFormData(prev => ({
         ...prev,
         [fieldName]: { ...prev[fieldName], value }
@@ -315,13 +327,13 @@ export default function CollectionItemEditForm({
   }), []);
 
   // Handle field change
-  const handleFieldChange = (fieldName: string, value: string | number | boolean | string[] | null) => {
+  const handleFieldChange = (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => {
     const field = formFields.find(f => f.name === fieldName);
     if (!field) return;
 
     // Get field customization
     const fieldCustomization = customizationState.customization[fieldName];
-    const customOnChange = 'onChange' in fieldCustomization ? fieldCustomization.onChange : undefined;
+    const customOnChange = fieldCustomization && 'onChange' in fieldCustomization ? fieldCustomization.onChange : undefined;
 
     if (customOnChange) {
       const result = customOnChange(fieldName, value, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled);
@@ -340,7 +352,12 @@ export default function CollectionItemEditForm({
         }));
       }
     } else {
-      customizationActions.setFieldData(fieldName, value);
+      // For object fields, store the complete object data
+      if (field.isObject && typeof value === 'object' && value !== null && 'id' in value) {
+        customizationActions.setFieldData(fieldName, value);
+      } else {
+        customizationActions.setFieldData(fieldName, value);
+      }
     }
   };
 
@@ -362,7 +379,12 @@ export default function CollectionItemEditForm({
       formFields.forEach(field => {
         const formField = formData[field.name];
         if (formField) {
-          updatedItem[field.name] = formField.value;
+          // For object fields, extract the ID for submission
+          if (field.isObject && typeof formField.value === 'object' && formField.value !== null && 'id' in formField.value) {
+            updatedItem[field.name] = (formField.value as { id: string; [key: string]: unknown }).id;
+          } else {
+            updatedItem[field.name] = formField.value;
+          }
         }
       });
 
@@ -383,7 +405,6 @@ export default function CollectionItemEditForm({
 
   // Render form field
   const renderFormField = (field: FormField) => {
-    const fieldCustomization = customizationState.customization[field.name];
     const fieldSize = getCollectionItemFieldSize(
       collectionFieldName,
       objectTypeName,
@@ -640,25 +661,40 @@ function getEnumValues(schema: SchemaData, enumTypeName: string): string[] {
   return [];
 }
 
-// Helper function to extract actual scalar type from validated scalar names
-function getActualScalarType(typeRef: unknown): string {
-  const current = typeRef as { kind?: string; name?: string; ofType?: unknown };
+// Helper function to unwrap named type from complex type references
+function unwrapNamedType(typeRef: unknown): string | null {
+  let current = typeRef as { kind?: string; ofType?: unknown; name?: string };
   
-  // Unwrap NON_NULL and LIST types
-  let unwrapped = current;
-  while (unwrapped && (unwrapped.kind === "NON_NULL" || unwrapped.kind === "LIST")) {
-    unwrapped = unwrapped.ofType as { kind?: string; name?: string; ofType?: unknown };
+  // Unwrap NON_NULL and LIST types to get to the underlying named type
+  while (current && current.kind && (current.kind === "NON_NULL" || current.kind === "LIST")) {
+    current = current.ofType as { kind?: string; ofType?: unknown; name?: string };
   }
   
-  const typeName = unwrapped?.name;
-  if (!typeName) return "String";
-  
-  // Handle Simfinity validated scalars (e.g., "SeasonNumber_Int" -> "Int")
-  return typeName.includes('_') ? typeName.split('_').pop() || typeName : typeName;
+  return current?.name || null;
+}
+
+// Helper function to check if a type is a scalar or enum
+function isScalarOrEnum(kind: string): boolean {
+  return kind === "SCALAR" || kind === "ENUM";
+}
+
+// Helper function to check if a scalar name is numeric
+function isNumericScalarName(typeName: string | null): boolean {
+  return typeName === "Int" || typeName === "Float";
+}
+
+// Helper function to check if a scalar name is boolean
+function isBooleanScalarName(typeName: string | null): boolean {
+  return typeName === "Boolean";
+}
+
+// Helper function to check if a scalar name is a date/time
+function isDateTimeScalarName(typeName: string | null): boolean {
+  return typeName === "Date" || typeName === "DateTime";
 }
 
 // Helper function to get default values
-function getDefaultValue(typeName: string | null, isBoolean: boolean, isList: boolean, isObject: boolean): string | number | boolean | string[] | null {
+function getDefaultValue(typeName: string, isBoolean: boolean, isList: boolean, isObject: boolean): string | number | boolean | string[] | null {
   if (isObject) return null;
   if (isList) return [];
   if (isBoolean) return false;

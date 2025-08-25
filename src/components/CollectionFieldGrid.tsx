@@ -87,16 +87,19 @@ export default function CollectionFieldGrid({
 
   // Use provided state or local state
   const currentState = collectionState || localCollectionState;
-  const setCurrentState = onCollectionStateChange 
-    ? (newState: CollectionFieldState | ((prev: CollectionFieldState) => CollectionFieldState)) => {
-        if (typeof newState === 'function') {
-          const updatedState = newState(currentState);
-          onCollectionStateChange(collectionField.name, updatedState);
-        } else {
-          onCollectionStateChange(collectionField.name, newState);
+  const setCurrentState = React.useMemo(() => 
+    onCollectionStateChange 
+      ? (newState: CollectionFieldState | ((prev: CollectionFieldState) => CollectionFieldState)) => {
+          if (typeof newState === 'function') {
+            const updatedState = newState(currentState);
+            onCollectionStateChange(collectionField.name, updatedState);
+          } else {
+            onCollectionStateChange(collectionField.name, newState);
+          }
         }
-      }
-    : setLocalCollectionState;
+      : setLocalCollectionState,
+    [onCollectionStateChange, collectionField.name, currentState]
+  );
 
   // Pagination and sorting state
   const [page, setPage] = React.useState<number>(0);
@@ -233,7 +236,7 @@ export default function CollectionFieldGrid({
     return items.map((item: Record<string, unknown>) => {
       const processedRow: Record<string, unknown> = { id: item.id };
       
-      // Apply value resolvers for each column
+      // Apply value resolvers for each column for display purposes
       columns.forEach(column => {
         if (column !== 'id' && valueResolvers[column]) {
           processedRow[column] = valueResolvers[column](item);
@@ -241,6 +244,9 @@ export default function CollectionFieldGrid({
           processedRow[column] = item[column];
         }
       });
+      
+      // Store the original item data for editing (preserving object structure with IDs)
+      processedRow.__originalData = item;
       
       return processedRow;
     });
@@ -267,7 +273,15 @@ export default function CollectionFieldGrid({
 
   // Collection item management functions
   const handleEditItem = React.useCallback((item: Record<string, unknown>) => {
-    setEditingItem(item as CollectionItem);
+    // Use the original data for editing to preserve object structure with IDs
+    const originalData = item.__originalData as Record<string, unknown>;
+    const editingItemData = originalData || item;
+    
+    console.log('handleEditItem: original item:', item);
+    console.log('handleEditItem: original data:', originalData);
+    console.log('handleEditItem: editing item data:', editingItemData);
+    
+    setEditingItem(editingItemData as CollectionItem);
     setEditFormOpen(true);
   }, []);
 
@@ -311,10 +325,16 @@ export default function CollectionFieldGrid({
 
   const handleRestoreItem = React.useCallback((item: CollectionItem) => {
     if (item.__status === 'deleted') {
-      // Restore to original state
+      // Restore deleted item to original state
       setCurrentState(prev => ({
         ...prev,
         deleted: prev.deleted.filter(i => i.id !== item.id)
+      }));
+    } else if (item.__status === 'modified') {
+      // Restore modified item to original state
+      setCurrentState(prev => ({
+        ...prev,
+        modified: prev.modified.filter(i => i.id !== item.id)
       }));
     }
   }, [setCurrentState]);
@@ -328,6 +348,9 @@ export default function CollectionFieldGrid({
       ...Object.fromEntries(columns.map(col => [col, col === 'id' ? undefined : '']))
     };
 
+    // Store the new item as its own original data
+    newItem.__originalData = { ...newItem };
+
     setCurrentState(prev => ({
       ...prev,
       added: [...prev.added, newItem]
@@ -336,13 +359,37 @@ export default function CollectionFieldGrid({
 
   // Handle saving edited item
   const handleSaveEditedItem = React.useCallback((updatedItem: CollectionItem) => {
+    // Preserve the original data when saving
+    const savedItem = {
+      ...updatedItem,
+      __originalData: updatedItem.__originalData || editingItem?.__originalData
+    };
+    
+    console.log('handleSaveEditedItem: updated item:', updatedItem);
+    console.log('handleSaveEditedItem: saved item with original data:', savedItem);
+    
     setCurrentState(prev => ({
       ...prev,
-      modified: [...prev.modified.filter(i => i.id !== updatedItem.id), updatedItem]
+      modified: [...prev.modified.filter(i => i.id !== updatedItem.id), savedItem]
     }));
     setEditFormOpen(false);
     setEditingItem(null);
-  }, [setCurrentState]);
+  }, [setCurrentState, editingItem]);
+
+  // Helper function to get display value for a column using valueResolvers
+  const getDisplayValue = React.useCallback((item: Record<string, unknown>, column: string): string => {
+    if (column === 'id') return item[column]?.toString() || '';
+    
+    // For modified/deleted items, try to use the original data if available
+    const dataToUse = (item.__originalData as Record<string, unknown>) || item;
+    
+    if (valueResolvers[column]) {
+      const resolvedValue = valueResolvers[column](dataToUse);
+      return resolvedValue?.toString() || '';
+    }
+    
+    return dataToUse[column]?.toString() || '';
+  }, [valueResolvers]);
 
 
 
@@ -533,11 +580,11 @@ export default function CollectionFieldGrid({
                           <TableRow key={item.id}>
                             {columns.map(column => (
                               <TableCell key={column}>
-                                {item[column]?.toString() || ''}
+                                {getDisplayValue(item, column)}
                               </TableCell>
                             ))}
                             <TableCell>
-                              <Tooltip title="Restore">
+                              <Tooltip title="Revert Changes">
                                 <IconButton
                                   size="small"
                                   onClick={() => handleRestoreItem(item)}
@@ -583,7 +630,7 @@ export default function CollectionFieldGrid({
                           <TableRow key={item.id}>
                             {columns.map(column => (
                               <TableCell key={column}>
-                                {item[column]?.toString() || ''}
+                                {getDisplayValue(item, column)}
                               </TableCell>
                             ))}
                             <TableCell>
@@ -593,6 +640,57 @@ export default function CollectionFieldGrid({
                                   onClick={() => handleRestoreItem(item)}
                                 >
                                   <RestoreIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+
+              {/* Added items table */}
+              {currentState.added.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Added Items
+                    <Chip 
+                      label={currentState.added.length} 
+                      size="small" 
+                      color="success" 
+                      sx={{ mb: 1 }} 
+                    />
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          {columns.map(column => (
+                            <TableCell key={column}>
+                              {resolveLabel([`${collectionField.objectTypeName}.${column}`], { entity: collectionField.name, field: column }, column)}
+                            </TableCell>
+                          ))}
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {currentState.added.map((item) => (
+                          <TableRow key={item.id}>
+                            {columns.map(column => (
+                              <TableCell key={column}>
+                                {getDisplayValue(item, column)}
+                              </TableCell>
+                            ))}
+                            <TableCell>
+                              <Tooltip title="Remove">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteItem(item)}
+                                  color="error"
+                                >
+                                  <DeleteIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
                             </TableCell>
