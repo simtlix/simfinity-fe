@@ -15,7 +15,6 @@ import {
   CircularProgress,
   FormControl,
   FormHelperText,
-  InputLabel,
 } from "@mui/material";
 import { useI18n } from "@/lib/i18n";
 
@@ -243,39 +242,37 @@ export default function ObjectFieldSelector({
   return (
     <Box>
       <FormControl fullWidth error={!!error || (required && !selectedObject)} required={required}>
-        <InputLabel>{label}</InputLabel>
-        <Box>
-          <TextField
-            ref={anchorRef}
-            fullWidth
-            value={searchTerm}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            disabled={disabled}
-            placeholder={selectedObject ? resolveLabel(["form.searchAnother"], { entity: objectTypeName }, "Search for another...") : resolveLabel(["form.searchObject"], { entity: objectTypeName }, "Search {entity}...")}
-            variant="outlined"
-          />
-          
-          {/* Selected object chip */}
-          {selectedObject && (
-            <Box sx={{ mt: 1 }}>
-              <Chip
-                label={selectedObject.description}
-                onDelete={disabled ? undefined : handleRemoveObject}
-                variant="outlined"
-                color="primary"
-              />
-            </Box>
-          )}
-          
-          {/* Error message */}
-          {(error || (required && !selectedObject)) && (
-            <FormHelperText>
-              {error || resolveLabel(["form.required"], { entity: objectTypeName }, "This field is required")}
-            </FormHelperText>
-          )}
-        </Box>
+        <TextField
+          ref={anchorRef}
+          fullWidth
+          label={label}
+          value={searchTerm}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          disabled={disabled}
+          placeholder={selectedObject ? resolveLabel(["form.searchAnother"], { entity: objectTypeName }, "Search for another...") : resolveLabel(["form.searchObject"], { entity: objectTypeName }, "Search {entity}...")}
+          variant="outlined"
+        />
+        
+        {/* Selected object chip */}
+        {selectedObject && (
+          <Box sx={{ mt: 1 }}>
+            <Chip
+              label={selectedObject.description}
+              onDelete={disabled ? undefined : handleRemoveObject}
+              variant="outlined"
+              color="primary"
+            />
+          </Box>
+        )}
+        
+        {/* Error message */}
+        {(error || (required && !selectedObject)) && (
+          <FormHelperText>
+            {error || resolveLabel(["form.required"], { entity: objectTypeName }, "This field is required")}
+          </FormHelperText>
+        )}
       </FormControl>
 
       {/* Search results popup */}
