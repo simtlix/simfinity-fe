@@ -161,7 +161,7 @@ export default function CollectionFieldGrid({
           if (excludeIds.length === 0) return '';
           
           return `
-            id: { terms: { path: "id", operator: NIN, value: [${excludeIds.map(id => `"${id}"`).join(', ')}] } }
+            id: { operator: NIN, value: [${excludeIds.map(id => `"${id}"`).join(', ')}] }
           `;
         })()
       : '';
