@@ -570,7 +570,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     `;
     
     const createMutation = gql`
-      mutation Create${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: ${entityName}Input!) {
+      mutation Create${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: ${entityName}InputForCreate!) {
         create${entityName}(input: $input) {
           id
           ${fieldNames}
@@ -579,7 +579,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     `;
     
     const updateMutation = gql`
-      mutation Update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: ${entityName}Input!) {
+      mutation Update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: ${entityName}InputForUpdate!) {
         update${entityName}(input: $input) {
           id
           ${fieldNames}
@@ -800,12 +800,20 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           console.log(`Field ${fieldName}: isObject=${isObject}, isEmbedded=${isEmbedded}, type=${current?.name}`);
           
           if (isObject && !isEmbedded && 'id' in fieldValue) {
-            // For non-embedded object fields, only keep the ID
-            cleanItem[fieldName] = { id: (fieldValue as { id: string }).id };
+            // For non-embedded object fields, only keep the ID and remove _typename
+            const cleanedObject = { id: (fieldValue as { id: string }).id };
+            
+            // Remove _typename if it exists
+            if ('_typename' in fieldValue) {
+              console.log(`🗑️ Removed _typename from object field ${fieldName}`);
+            }
+            
+            cleanItem[fieldName] = cleanedObject;
             console.log(`✅ Cleaned object field ${fieldName} in collection item:`, { 
               fieldName, 
               originalValue: fieldValue, 
-              cleanedValue: { id: (fieldValue as { id: string }).id },
+              cleanedValue: cleanedObject,
+              removedTypename: '_typename' in fieldValue,
               isNonNull: fieldDef.type.kind === "NON_NULL",
               underlyingType: current?.name
             });
