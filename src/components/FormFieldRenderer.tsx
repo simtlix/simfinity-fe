@@ -16,7 +16,6 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { SchemaData, getTypeByName } from "@/lib/introspection";
-import ObjectFieldSelector from "./ObjectFieldSelector";
 import { useI18n } from "@/lib/i18n";
 import { FormCustomizationState } from "@/lib/formCustomization";
 
@@ -92,7 +91,6 @@ export default function FormFieldRenderer({
   entityTypeName,
   customizationState,
   parentFieldPath = "",
-  isEmbedded = false,
   hideIdField = false
 }: FormFieldRendererProps) {
   const { resolveLabel } = useI18n();

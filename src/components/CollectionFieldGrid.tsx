@@ -227,7 +227,7 @@ export default function CollectionFieldGrid({
         query: collectionQuery.loc?.source.body
       });
     }
-  }, [collectionQuery, parentEntityId, page, rowsPerPage, collectionField.name, currentState.modified, currentState.deleted]);
+  }, [collectionQuery, parentEntityId, page, rowsPerPage, collectionField.name, currentState.modified, currentState.deleted, currentState.added]);
 
   // Process the collection data
   const rows = React.useMemo(() => {
@@ -492,7 +492,7 @@ export default function CollectionFieldGrid({
     }
 
     return baseColumns;
-  }, [columns, collectionField.objectTypeName, collectionField.name, resolveLabel, valueResolvers, isEditMode, handleEditItem, handleDeleteItem]);
+  }, [collectionField.objectTypeName, collectionField.name, resolveLabel, valueResolvers, isEditMode, handleEditItem, handleDeleteItem, displayColumns]);
 
   // Handle pagination change
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {

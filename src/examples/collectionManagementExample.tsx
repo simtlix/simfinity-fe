@@ -4,7 +4,6 @@ import CollectionFieldGrid from '@/components/CollectionFieldGrid';
 // Example of how to use the enhanced CollectionFieldGrid in a form
 export function CollectionManagementExample() {
   const { 
-    collectionStates, 
     updateCollectionState, 
     getCollectionState,
     getCollectionChanges 

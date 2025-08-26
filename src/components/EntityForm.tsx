@@ -246,7 +246,6 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
   // Collection state management
   const { 
-    collectionStates, 
     updateCollectionState, 
     getCollectionState,
     getCollectionChanges 

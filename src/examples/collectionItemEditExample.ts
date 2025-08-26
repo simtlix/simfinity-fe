@@ -9,7 +9,7 @@ export function setupCollectionItemEditCustomizations() {
     name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
-      onChange: (fieldName, value, formData, setFieldData) => {
+      onChange: (fieldName, value, formData) => {
         console.log('Star name changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
@@ -17,7 +17,7 @@ export function setupCollectionItemEditCustomizations() {
     country: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 2,
-      onChange: (fieldName, value, formData, setFieldData) => {
+      onChange: (fieldName, value, formData) => {
         console.log('Star country changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
@@ -29,7 +29,7 @@ export function setupCollectionItemEditCustomizations() {
     name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
-      onChange: (fieldName, value, formData, setFieldData) => {
+      onChange: (fieldName, value, formData) => {
         console.log('Episode name changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
@@ -37,7 +37,7 @@ export function setupCollectionItemEditCustomizations() {
     number: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 2,
-      onChange: (fieldName, value, formData, setFieldData) => {
+      onChange: (fieldName, value, formData) => {
         console.log('Episode number changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
@@ -45,7 +45,7 @@ export function setupCollectionItemEditCustomizations() {
     date: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 3,
-      onChange: (fieldName, value, formData, setFieldData) => {
+      onChange: (fieldName, value, formData) => {
         console.log('Episode date changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
@@ -53,7 +53,7 @@ export function setupCollectionItemEditCustomizations() {
     season: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 4,
-      onChange: (fieldName, value, formData, setFieldData) => {
+      onChange: (fieldName, value, formData) => {
         console.log('Episode season changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
@@ -65,7 +65,7 @@ export function setupCollectionItemEditCustomizations() {
     serie: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
-      onChange: (fieldName, value, formData, setFieldData) => {
+      onChange: (fieldName, value, formData) => {
         console.log('Assigned serie changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
@@ -73,7 +73,7 @@ export function setupCollectionItemEditCustomizations() {
     star: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 2,
-      onChange: (fieldName, value, formData, setFieldData) => {
+      onChange: (fieldName, value, formData) => {
         console.log('Assigned star changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
@@ -85,7 +85,7 @@ export function setupCollectionItemEditCustomizations() {
     name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
-      onChange: (fieldName, value, formData, setFieldData) => {
+      onChange: (fieldName, value, _formData, setFieldData) => {
         // Enable number field only when name has a value
         if (value && String(value).trim() !== '') {
           setFieldData('number', 1);

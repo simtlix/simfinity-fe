@@ -8,14 +8,6 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TextField,
-  FormControl,
-  FormControlLabel,
-  FormHelperText,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
   Box,
   Grid,
   Typography,
@@ -28,7 +20,6 @@ import {
   getListEntityFieldNamesOfType,
 } from "@/lib/introspection";
 import { useI18n } from "@/lib/i18n";
-import ObjectFieldSelector from "./ObjectFieldSelector";
 import FormFieldRenderer from "./FormFieldRenderer";
 import {
   FormCustomizationState,
@@ -88,7 +79,6 @@ export default function CollectionItemEditForm({
   item,
   collectionFieldName,
   objectTypeName,
-  parentEntityId,
   parentEntityType,
   onSave,
   isAddingNew = false,
@@ -409,149 +399,7 @@ export default function CollectionItemEditForm({
     }
   };
 
-  // Get field label
-  const getFieldLabel = (fieldName: string): string => {
-    return resolveLabel([`${objectTypeName}.${fieldName}`], { entity: objectTypeName, field: fieldName }, fieldName);
-  };
-
-  // Render form field
-  const renderFormField = (field: FormField) => {
-    const fieldSize = getCollectionItemFieldSize(
-      collectionFieldName,
-      objectTypeName,
-      field.name,
-      getFormCustomization(parentEntityType, "edit") || {},
-      "edit", // We're in edit mode for collection items
-      { xs: 12, sm: 6, md: 4 }
-    );
-    const isVisible = isFieldVisible(field.name, customizationState, field.value, formData);
-    const isEnabled = isFieldEnabled(field.name, customizationState, field.value, formData);
-
-    if (!isVisible) return null;
-
-    const fieldLabel = getFieldLabel(field.name);
-    const formField = formData[field.name] || field;
-
-    if (field.isObject && field.objectTypeName && field.descriptionField && field.listQueryName && field.singleQueryName) {
-      return (
-        <Grid key={field.name} size={fieldSize}>
-          <ObjectFieldSelector
-            label={fieldLabel}
-            value={formField.value as string | null}
-            onChange={(value) => handleFieldChange(field.name, value)}
-            error={formField.error}
-            required={field.required}
-            disabled={!isEnabled}
-            objectTypeName={field.objectTypeName}
-            descriptionField={field.descriptionField}
-            descriptionFieldType={field.descriptionFieldType || "String"}
-            listQueryName={field.listQueryName}
-            singleQueryName={field.singleQueryName}
-          />
-        </Grid>
-      );
-    }
-
-    if (field.isEnum && field.enumValues) {
-      return (
-        <Grid key={field.name} size={fieldSize}>
-          <FormControl fullWidth error={!!formField.error} required={field.required} disabled={!isEnabled}>
-            <InputLabel>{fieldLabel}</InputLabel>
-            <Select
-              value={formField.value || ""}
-              onChange={(e) => handleFieldChange(field.name, e.target.value)}
-              label={fieldLabel}
-            >
-              {field.enumValues.map((enumValue) => (
-                <MenuItem key={enumValue} value={enumValue}>
-                  {enumValue}
-                </MenuItem>
-              ))}
-            </Select>
-            {formField.error && (
-              <FormHelperText error>{formField.error}</FormHelperText>
-            )}
-          </FormControl>
-        </Grid>
-      );
-    }
-
-    if (field.isBoolean) {
-      return (
-        <Grid key={field.name} size={fieldSize}>
-          <FormControl error={!!formField.error}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formField.value as boolean || false}
-                  onChange={(e) => handleFieldChange(field.name, e.target.checked)}
-                  disabled={!isEnabled}
-                />
-              }
-              label={fieldLabel}
-            />
-            {formField.error && (
-              <FormHelperText error>{formField.error}</FormHelperText>
-            )}
-          </FormControl>
-        </Grid>
-      );
-    }
-
-    if (field.isDate) {
-      return (
-        <Grid key={field.name} size={fieldSize}>
-          <TextField
-            fullWidth
-            label={fieldLabel}
-            type="date"
-            value={formField.value as string || ""}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            error={!!formField.error}
-            helperText={formField.error}
-            required={field.required}
-            disabled={!isEnabled}
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-      );
-    }
-
-    if (field.isNumeric) {
-      return (
-        <Grid key={field.name} size={fieldSize}>
-          <TextField
-            fullWidth
-            label={fieldLabel}
-            type="number"
-            value={formField.value as number || ""}
-            onChange={(e) => handleFieldChange(field.name, parseFloat(e.target.value) || 0)}
-            error={!!formField.error}
-            helperText={formField.error}
-            required={field.required}
-            disabled={!isEnabled}
-          />
-        </Grid>
-      );
-    }
-
-    // Default text field
-    return (
-      <Grid key={field.name} size={fieldSize}>
-        <TextField
-          fullWidth
-          label={fieldLabel}
-          value={formField.value as string || ""}
-          onChange={(e) => handleFieldChange(field.name, e.target.value)}
-          error={!!formField.error}
-          helperText={formField.error}
-          required={field.required}
-          disabled={!isEnabled}
-        />
-      </Grid>
-    );
-  };
-
+  
   // Sort fields by order
   const sortedFields = React.useMemo(() => {
     const fieldOrder = getFieldOrder(customizationState);
@@ -682,11 +530,6 @@ function unwrapNamedType(typeRef: unknown): string | null {
   }
   
   return current?.name || null;
-}
-
-// Helper function to check if a type is a scalar or enum
-function isScalarOrEnum(kind: string): boolean {
-  return kind === "SCALAR" || kind === "ENUM";
 }
 
 // Helper function to check if a scalar name is numeric
