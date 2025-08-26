@@ -761,6 +761,48 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     return isValid;
   };
 
+  // Clean object fields within collection items to only keep ID for non-embedded objects
+  const cleanCollectionItemObjectFields = React.useCallback((item: CollectionItem, schema: SchemaData): CollectionItem => {
+    const cleanItem = { ...item };
+    
+    // Get the collection object type to understand its field structure
+    const itemTypeName = Object.getPrototypeOf(item).constructor.name || 'unknown';
+    
+    // Find the actual object type from schema
+    const objectType = schema.__schema.types.find(type => 
+      type.name && type.name.toLowerCase() === itemTypeName.toLowerCase()
+    );
+    
+    if (objectType && objectType.fields) {
+      objectType.fields.forEach(fieldDef => {
+        const fieldName = fieldDef.name;
+        const fieldValue = cleanItem[fieldName];
+        
+        if (fieldValue && typeof fieldValue === 'object' && fieldValue !== null) {
+          // Check if this is an object field (not embedded)
+          const fieldType = fieldDef.type;
+          let current = fieldType as { kind?: string; ofType?: unknown; name?: string };
+          
+          // Unwrap NON_NULL and LIST wrappers
+          while (current && current.kind && (current.kind === "NON_NULL" || current.kind === "LIST")) {
+            current = current.ofType as { kind?: string; ofType?: unknown; name?: string };
+          }
+          
+          const isObject = current?.kind === "OBJECT";
+          const isEmbedded = fieldDef.extensions?.relation?.embedded === true;
+          
+          if (isObject && !isEmbedded && 'id' in fieldValue) {
+            // For non-embedded object fields, only keep the ID
+            cleanItem[fieldName] = { id: (fieldValue as { id: string }).id };
+            console.log(`Cleaned object field ${fieldName} in collection item:`, { id: (fieldValue as { id: string }).id });
+          }
+        }
+      });
+    }
+    
+    return cleanItem;
+  }, []);
+
   // Transform collection data for Simfinity mutation
   const transformCollectionDataForMutation = React.useCallback((collectionChanges: Record<string, CollectionFieldState>): Record<string, unknown> => {
     const transformedCollections: Record<string, unknown> = {};
@@ -770,10 +812,10 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       if (field && field.isCollection) {
         const transformedCollection: Record<string, unknown> = {};
         
-        // Handle added items - remove connection field and __status metadata
+        // Handle added items - remove connection field and __status metadata, clean object fields
         if (changes.added && changes.added.length > 0) {
           transformedCollection.added = changes.added.map((item: CollectionItem) => {
-            const cleanItem = { ...item };
+            let cleanItem = { ...item };
             // Remove metadata fields
             delete cleanItem.__status;
             delete cleanItem.__originalData;
@@ -781,14 +823,16 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             if (field.connectionField && cleanItem[field.connectionField] !== undefined) {
               delete cleanItem[field.connectionField];
             }
+            // Clean object fields within the item
+            cleanItem = cleanCollectionItemObjectFields(cleanItem, schemaData as SchemaData);
             return cleanItem;
           });
         }
         
-        // Handle updated items - remove connection field and __status metadata
+        // Handle updated items - remove connection field and __status metadata, clean object fields
         if (changes.modified && changes.modified.length > 0) {
           transformedCollection.updated = changes.modified.map((item: CollectionItem) => {
-            const cleanItem = { ...item };
+            let cleanItem = { ...item };
             // Remove metadata fields
             delete cleanItem.__status;
             delete cleanItem.__originalData;
@@ -796,6 +840,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             if (field.connectionField && cleanItem[field.connectionField] !== undefined) {
               delete cleanItem[field.connectionField];
             }
+            // Clean object fields within the item
+            cleanItem = cleanCollectionItemObjectFields(cleanItem, schemaData as SchemaData);
             return cleanItem;
           });
         }
@@ -813,7 +859,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     });
     
     return transformedCollections;
-  }, [formFields]);
+  }, [formFields, cleanCollectionItemObjectFields, schemaData]);
 
   // Transform form data for Simfinity mutation submission
   const transformFormDataForMutation = React.useCallback((formData: FormData, collectionChanges?: Record<string, CollectionFieldState>): Record<string, unknown> => {
