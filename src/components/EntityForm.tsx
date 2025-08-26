@@ -831,6 +831,37 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     return cleanItem;
   }, []);
 
+  // Recursively clean object fields and remove _typename from nested structures
+  const deepCleanCollectionItem = React.useCallback((item: unknown): unknown => {
+    if (typeof item !== 'object' || item === null) {
+      return item;
+    }
+    
+    // If it's an array, clean each item
+    if (Array.isArray(item)) {
+      return item.map(deepCleanCollectionItem);
+    }
+    
+    // If it's an object, clean it recursively
+    const cleanedItem = { ...item } as Record<string, unknown>;
+    
+    // Remove _typename from the current level
+    if ('_typename' in cleanedItem) {
+      console.log(`🗑️ Removed _typename from collection item level`);
+      delete cleanedItem._typename;
+    }
+    
+    // Recursively clean nested properties
+    Object.keys(cleanedItem).forEach(key => {
+      const value = cleanedItem[key];
+      if (typeof value === 'object' && value !== null) {
+        cleanedItem[key] = deepCleanCollectionItem(value);
+      }
+    });
+    
+    return cleanedItem;
+  }, []);
+
   // Transform collection data for Simfinity mutation
   const transformCollectionDataForMutation = React.useCallback((collectionChanges: Record<string, CollectionFieldState>): Record<string, unknown> => {
     const transformedCollections: Record<string, unknown> = {};
@@ -853,6 +884,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             }
             // Clean object fields within the item
             cleanItem = cleanCollectionItemObjectFields(cleanItem, field, schemaData as SchemaData);
+            // Also do deep cleaning to remove _typename from nested structures
+            cleanItem = deepCleanCollectionItem(cleanItem) as CollectionItem;
             return cleanItem;
           });
         }
@@ -870,7 +903,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             }
             // Clean object fields within the item
             cleanItem = cleanCollectionItemObjectFields(cleanItem, field, schemaData as SchemaData);
-            return cleanItem;
+            // Also do deep cleaning to remove _typename from nested structures
+            cleanItem = deepCleanCollectionItem(cleanItem) as CollectionItem;
           });
         }
         
@@ -887,7 +921,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     });
     
     return transformedCollections;
-  }, [formFields, cleanCollectionItemObjectFields, schemaData]);
+  }, [formFields, cleanCollectionItemObjectFields, deepCleanCollectionItem, schemaData]);
 
   // Transform form data for Simfinity mutation submission
   const transformFormDataForMutation = React.useCallback((formData: FormData, collectionChanges?: Record<string, CollectionFieldState>): Record<string, unknown> => {
