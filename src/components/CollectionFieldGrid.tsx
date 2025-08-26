@@ -82,6 +82,7 @@ export default function CollectionFieldGrid({
   // Edit form state
   const [editFormOpen, setEditFormOpen] = React.useState(false);
   const [editingItem, setEditingItem] = React.useState<CollectionItem | null>(null);
+  const [isAddingNew, setIsAddingNew] = React.useState(false);
 
 
 
@@ -160,12 +161,13 @@ export default function CollectionFieldGrid({
         })()
       : `sort: { terms: [{ field: "id", order: ASC }] }`;
 
-    // Build filter to exclude modified and deleted items
+    // Build filter to exclude modified and deleted items (but NOT added items)
     const excludeFilter = isEditMode && (currentState.modified.length > 0 || currentState.deleted.length > 0)
       ? (() => {
           const excludeIds = [
             ...currentState.modified.map(item => item.id),
             ...currentState.deleted.map(item => item.id)
+            // Note: We do NOT exclude added items since they don't exist in the database yet
           ];
           
           if (excludeIds.length === 0) return '';
@@ -195,7 +197,7 @@ export default function CollectionFieldGrid({
       console.error('Error generating collection query:', error);
       return null;
     }
-  }, [collectionField, selection, schemaData, sortModel, sortFieldByColumn, isEditMode, currentState.modified, currentState.deleted]);
+  }, [collectionField, selection, schemaData, sortModel, sortFieldByColumn, isEditMode, currentState.modified, currentState.deleted]); // Note: currentState.added is intentionally NOT included since added items don't affect the query
 
   // Execute the collection query
   const { data: collectionData, loading: collectionLoading, error: collectionError } = useQuery(collectionQuery!, {
@@ -216,6 +218,7 @@ export default function CollectionFieldGrid({
         page: page + 1,
         size: rowsPerPage,
         excludeIds: [...currentState.modified.map(item => item.id), ...currentState.deleted.map(item => item.id)],
+        addedIds: currentState.added.map(item => item.id), // Added items are NOT excluded from query
         query: collectionQuery.loc?.source.body
       });
     }
@@ -282,6 +285,7 @@ export default function CollectionFieldGrid({
     console.log('handleEditItem: editing item data:', editingItemData);
     
     setEditingItem(editingItemData as CollectionItem);
+    setIsAddingNew(false); // This is editing an existing item, not adding new
     setEditFormOpen(true);
   }, []);
 
@@ -340,41 +344,67 @@ export default function CollectionFieldGrid({
   }, [setCurrentState]);
 
   const handleAddItem = React.useCallback(() => {
-    // Create a new item with a temporary ID
+    // Create a new empty item for the form
     const newItem: CollectionItem = {
       id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       __status: 'added',
-      // Add default values for required fields
+      // Initialize with empty values for all columns except id
       ...Object.fromEntries(columns.map(col => [col, col === 'id' ? undefined : '']))
     };
 
-    // Store the new item as its own original data
-    newItem.__originalData = { ...newItem };
-
-    setCurrentState(prev => ({
-      ...prev,
-      added: [...prev.added, newItem]
-    }));
-  }, [columns, setCurrentState]);
+    // Set the editing item and open the form
+    setEditingItem(newItem);
+    setIsAddingNew(true);
+    setEditFormOpen(true);
+  }, [columns]);
 
   // Handle saving edited item
   const handleSaveEditedItem = React.useCallback((updatedItem: CollectionItem) => {
-    // Preserve the original data when saving
-    const savedItem = {
-      ...updatedItem,
-      __originalData: updatedItem.__originalData || editingItem?.__originalData
-    };
+    if (isAddingNew) {
+      // This is a new item being added
+      const savedItem = {
+        ...updatedItem,
+        __status: 'added' as const,
+        __originalData: { ...updatedItem } // Store current state as original for new items
+      };
+      
+      console.log('handleSaveEditedItem: adding new item:', savedItem);
+      
+      setCurrentState(prev => ({
+        ...prev,
+        added: [...prev.added, savedItem]
+      }));
+    } else {
+      // This is an existing item being modified
+      const savedItem = {
+        ...updatedItem,
+        __originalData: updatedItem.__originalData || editingItem?.__originalData
+      };
+      
+      console.log('handleSaveEditedItem: updating existing item:', savedItem);
+      
+      // Check if the item being edited is an added item
+      const isEditingAddedItem = currentState.added.some(i => i.id === updatedItem.id);
+      
+      if (isEditingAddedItem) {
+        // If editing an added item, update it in the added list
+        setCurrentState(prev => ({
+          ...prev,
+          added: prev.added.map(i => i.id === updatedItem.id ? savedItem : i)
+        }));
+      } else {
+        // If editing an existing item, move it to modified list
+        setCurrentState(prev => ({
+          ...prev,
+          modified: [...prev.modified.filter(i => i.id !== updatedItem.id), savedItem]
+        }));
+      }
+    }
     
-    console.log('handleSaveEditedItem: updated item:', updatedItem);
-    console.log('handleSaveEditedItem: saved item with original data:', savedItem);
-    
-    setCurrentState(prev => ({
-      ...prev,
-      modified: [...prev.modified.filter(i => i.id !== updatedItem.id), savedItem]
-    }));
     setEditFormOpen(false);
     setEditingItem(null);
-  }, [setCurrentState, editingItem]);
+    setIsAddingNew(false);
+  }, [setCurrentState, editingItem, isAddingNew, currentState.added]);
 
   // Helper function to get display value for a column using valueResolvers
   const getDisplayValue = React.useCallback((item: Record<string, unknown>, column: string): string => {
@@ -524,13 +554,13 @@ export default function CollectionFieldGrid({
                   </Box>
                 )}
                 <DataGrid
-                  rows={[...rows, ...currentState.added]}
+                  rows={rows}
                   columns={gridColumns}
                   pagination
                   paginationModel={{ page, pageSize: rowsPerPage }}
                   onPaginationModelChange={handlePaginationModelChange}
                   pageSizeOptions={[5, 10, 25]}
-                  rowCount={totalCount + currentState.added.length}
+                  rowCount={totalCount}
                   paginationMode="server"
                   sortingMode="server"
                   sortModel={sortModel}
@@ -684,15 +714,26 @@ export default function CollectionFieldGrid({
                               </TableCell>
                             ))}
                             <TableCell>
-                              <Tooltip title="Remove">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleDeleteItem(item)}
-                                  color="error"
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
+                              <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Tooltip title="Edit">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleEditItem(item)}
+                                    color="primary"
+                                  >
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Remove">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteItem(item)}
+                                    color="error"
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -714,6 +755,7 @@ export default function CollectionFieldGrid({
         onClose={() => {
           setEditFormOpen(false);
           setEditingItem(null);
+          setIsAddingNew(false);
         }}
         item={editingItem}
         collectionFieldName={collectionField.name}
@@ -721,6 +763,7 @@ export default function CollectionFieldGrid({
         parentEntityId={parentEntityId}
         parentEntityType={parentEntityType}
         onSave={handleSaveEditedItem}
+        isAddingNew={isAddingNew}
       />
     )}
   </Box>
