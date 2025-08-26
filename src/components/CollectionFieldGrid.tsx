@@ -132,6 +132,11 @@ export default function CollectionFieldGrid({
     return { ...buildSelectionSetForObjectType(schema, collectionTypeName), entityTypeName: collectionTypeName } as const;
   }, [schemaData, collectionField.objectTypeName]);
 
+  // Filter out the connection field from display columns
+  const displayColumns = React.useMemo(() => {
+    return columns.filter(column => column !== collectionField.connectionField);
+  }, [columns, collectionField.connectionField]);
+
   // Generate the collection query with NIN filter for modified/deleted items
   const collectionQuery = React.useMemo(() => {
     if (!schemaData) return null;
@@ -348,15 +353,15 @@ export default function CollectionFieldGrid({
     const newItem: CollectionItem = {
       id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       __status: 'added',
-      // Initialize with empty values for all columns except id
-      ...Object.fromEntries(columns.map(col => [col, col === 'id' ? undefined : '']))
+      // Initialize with empty values for all display columns except id
+      ...Object.fromEntries(displayColumns.map(col => [col, col === 'id' ? undefined : '']))
     };
 
     // Set the editing item and open the form
     setEditingItem(newItem);
     setIsAddingNew(true);
     setEditFormOpen(true);
-  }, [columns]);
+  }, [displayColumns]);
 
   // Handle saving edited item
   const handleSaveEditedItem = React.useCallback((updatedItem: CollectionItem) => {
@@ -425,7 +430,7 @@ export default function CollectionFieldGrid({
 
   // Build grid columns (moved here after function definitions)
   const gridColumns: GridColDef[] = React.useMemo(() => {
-    const baseColumns = columns.map(column => {
+    const baseColumns = displayColumns.map(column => {
       const columnDef: GridColDef = {
         field: column,
         headerName: resolveLabel([`${collectionField.objectTypeName}.${column}`], { entity: collectionField.name, field: column }, column),
@@ -597,7 +602,7 @@ export default function CollectionFieldGrid({
                     <Table size="small">
                       <TableHead>
                         <TableRow>
-                          {columns.map(column => (
+                          {displayColumns.map(column => (
                             <TableCell key={column}>
                               {resolveLabel([`${collectionField.objectTypeName}.${column}`], { entity: collectionField.name, field: column }, column)}
                             </TableCell>
@@ -608,7 +613,7 @@ export default function CollectionFieldGrid({
                       <TableBody>
                         {currentState.modified.map((item) => (
                           <TableRow key={item.id}>
-                            {columns.map(column => (
+                            {displayColumns.map(column => (
                               <TableCell key={column}>
                                 {getDisplayValue(item, column)}
                               </TableCell>
@@ -647,7 +652,7 @@ export default function CollectionFieldGrid({
                     <Table size="small">
                       <TableHead>
                         <TableRow>
-                          {columns.map(column => (
+                          {displayColumns.map(column => (
                             <TableCell key={column}>
                               {resolveLabel([`${collectionField.objectTypeName}.${column}`], { entity: collectionField.name, field: column }, column)}
                             </TableCell>
@@ -658,7 +663,7 @@ export default function CollectionFieldGrid({
                       <TableBody>
                         {currentState.deleted.map((item) => (
                           <TableRow key={item.id}>
-                            {columns.map(column => (
+                            {displayColumns.map(column => (
                               <TableCell key={column}>
                                 {getDisplayValue(item, column)}
                               </TableCell>
@@ -697,7 +702,7 @@ export default function CollectionFieldGrid({
                     <Table size="small">
                       <TableHead>
                         <TableRow>
-                          {columns.map(column => (
+                          {displayColumns.map(column => (
                             <TableCell key={column}>
                               {resolveLabel([`${collectionField.objectTypeName}.${column}`], { entity: collectionField.name, field: column }, column)}
                             </TableCell>
@@ -708,7 +713,7 @@ export default function CollectionFieldGrid({
                       <TableBody>
                         {currentState.added.map((item) => (
                           <TableRow key={item.id}>
-                            {columns.map(column => (
+                            {displayColumns.map(column => (
                               <TableCell key={column}>
                                 {getDisplayValue(item, column)}
                               </TableCell>
