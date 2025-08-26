@@ -117,6 +117,11 @@ export default function CollectionItemEditForm({
       
       return entityType.fields
         .filter(field => {
+          // Exclude ID field (system-generated, not user-editable)
+          if (field.name === "id") {
+            return false;
+          }
+          
           // Exclude connection fields to parent entity
           if (field.name === parentEntityType.toLowerCase() || 
               field.name === parentEntityType.toLowerCase() + 's') {
