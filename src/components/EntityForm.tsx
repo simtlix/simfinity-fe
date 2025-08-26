@@ -571,7 +571,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     
     const createMutation = gql`
       mutation Create${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: Create${entityName.charAt(0).toUpperCase() + entityName.slice(1)}Input!) {
-        create${entityName.charAt(0).toUpperCase() + entityName.slice(1)}(input: $input) {
+        create${entityName}(input: $input) {
           id
           ${fieldNames}
         }
@@ -579,8 +579,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     `;
     
     const updateMutation = gql`
-      mutation Update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($id: ID!, $input: Update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}Input!) {
-        update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}(id: $id, input: $input) {
+      mutation Update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: Update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}Input!) {
+        update${entityName}(input: $input) {
           id
           ${fieldNames}
         }
@@ -847,27 +847,44 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           }
         } else if (field.isObject) {
           // Handle object reference fields (like genre in the example: {id: "idofrelatedobject"})
-          if (field.value && typeof field.value === 'object' && 'id' in field.value) {
+          const currentValue = formData[field.name]?.value;
+          if (currentValue && typeof currentValue === 'object' && 'id' in currentValue) {
             // Extract ID from object value
-            transformedData[field.name] = { id: (field.value as { id: string }).id };
-            console.log(`Object field ${field.name}:`, { id: (field.value as { id: string }).id });
-          } else if (typeof field.value === 'string' && field.value) {
+            transformedData[field.name] = { id: (currentValue as { id: string }).id };
+            console.log(`Object field ${field.name}:`, { id: (currentValue as { id: string }).id });
+          } else if (typeof currentValue === 'string' && currentValue) {
             // Direct ID string
-            transformedData[field.name] = { id: field.value };
-            console.log(`Object field ${field.name}:`, { id: field.value });
+            transformedData[field.name] = { id: currentValue };
+            console.log(`Object field ${field.name}:`, { id: currentValue });
           }
         } else {
           // Handle scalar fields (string, number, boolean, list of scalars)
-          if (field.value !== undefined && field.value !== null && field.value !== '') {
-            transformedData[field.name] = field.value;
-            console.log(`Scalar field ${field.name}:`, field.value);
+          const currentValue = formData[field.name]?.value;
+          if (currentValue !== undefined && currentValue !== null && currentValue !== '') {
+            // For list fields, only include if they actually changed from the original value
+            if (field.isList && action === "edit") {
+              // In edit mode, compare with original entity data to see if changed
+              const originalValue = field.value; // This is the original value from the entity
+              
+              // Only include list field if it actually changed
+              if (JSON.stringify(originalValue) !== JSON.stringify(currentValue)) {
+                transformedData[field.name] = currentValue;
+                console.log(`List field ${field.name} changed:`, { original: originalValue, current: currentValue });
+              } else {
+                console.log(`List field ${field.name} unchanged, skipping:`, currentValue);
+              }
+            } else {
+              // For non-list fields or create mode, include if they have a value
+              transformedData[field.name] = currentValue;
+              console.log(`Scalar field ${field.name}:`, currentValue);
+            }
           }
         }
       }
     });
     
     return transformedData;
-  }, [formFields, transformCollectionDataForMutation]);
+  }, [formFields, transformCollectionDataForMutation, action]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -900,8 +917,10 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         console.log('Entity created:', result.data);
         setSuccessMessage(resolveLabel(["form.successCreated"], { entity: listField }, "Entity created successfully!"));
       } else if (action === "edit") {
+        // For update mutations, include the ID inside the input
+        const updateInput = { id: entityId, ...transformedData };
         const result = await updateEntity({
-          variables: { id: entityId, input: transformedData }
+          variables: { input: updateInput }
         });
         console.log('Entity updated:', result.data);
         setSuccessMessage(resolveLabel(["form.successUpdated"], { entity: listField }, "Entity updated successfully!"));
