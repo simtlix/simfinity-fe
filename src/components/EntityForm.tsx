@@ -783,7 +783,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           const fieldType = fieldDef.type;
           let current = fieldType as { kind?: string; ofType?: unknown; name?: string };
           
-          // Unwrap NON_NULL and LIST wrappers
+          // Unwrap NON_NULL and LIST wrappers to get the underlying type
           while (current && current.kind && (current.kind === "NON_NULL" || current.kind === "LIST")) {
             current = current.ofType as { kind?: string; ofType?: unknown; name?: string };
           }
@@ -794,7 +794,13 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           if (isObject && !isEmbedded && 'id' in fieldValue) {
             // For non-embedded object fields, only keep the ID
             cleanItem[fieldName] = { id: (fieldValue as { id: string }).id };
-            console.log(`Cleaned object field ${fieldName} in collection item:`, { id: (fieldValue as { id: string }).id });
+            console.log(`Cleaned object field ${fieldName} in collection item:`, { 
+              fieldName, 
+              originalValue: fieldValue, 
+              cleanedValue: { id: (fieldValue as { id: string }).id },
+              isNonNull: fieldDef.type.kind === "NON_NULL",
+              underlyingType: current?.name
+            });
           }
         }
       });
