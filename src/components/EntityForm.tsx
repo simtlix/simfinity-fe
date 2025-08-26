@@ -55,7 +55,7 @@ const UPDATE_ENTITY_MUTATION = gql`
 import { useRouter } from "next/navigation";
 import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getTypeByName, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName, isScalarOrEnum, unwrapNamedType, getListEntityFieldNamesOfType } from "@/lib/introspection";
 import ObjectFieldSelector from "./ObjectFieldSelector";
-import CollectionFieldGrid from "./CollectionFieldGrid";
+import CollectionFieldGrid, { CollectionFieldState, CollectionItem } from "./CollectionFieldGrid";
 import { useCollectionState } from "@/hooks/useCollectionState";
 import { useI18n } from "@/lib/i18n";
 import FormFieldRenderer from "./FormFieldRenderer";
@@ -755,6 +755,114 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     return isValid;
   };
 
+  // Transform collection data for Simfinity mutation
+  const transformCollectionDataForMutation = React.useCallback((collectionChanges: Record<string, CollectionFieldState>): Record<string, unknown> => {
+    const transformedCollections: Record<string, unknown> = {};
+    
+    Object.entries(collectionChanges).forEach(([fieldName, changes]) => {
+      const field = formFields.find(f => f.name === fieldName);
+      if (field && field.isCollection) {
+        const transformedCollection: Record<string, unknown> = {};
+        
+        // Handle added items - remove connection field and __status metadata
+        if (changes.added && changes.added.length > 0) {
+          transformedCollection.added = changes.added.map((item: CollectionItem) => {
+            const cleanItem = { ...item };
+            // Remove metadata fields
+            delete cleanItem.__status;
+            delete cleanItem.__originalData;
+            // Remove connection field if present
+            if (field.connectionField && cleanItem[field.connectionField] !== undefined) {
+              delete cleanItem[field.connectionField];
+            }
+            return cleanItem;
+          });
+        }
+        
+        // Handle updated items - remove connection field and __status metadata
+        if (changes.modified && changes.modified.length > 0) {
+          transformedCollection.updated = changes.modified.map((item: CollectionItem) => {
+            const cleanItem = { ...item };
+            // Remove metadata fields
+            delete cleanItem.__status;
+            delete cleanItem.__originalData;
+            // Remove connection field if present
+            if (field.connectionField && cleanItem[field.connectionField] !== undefined) {
+              delete cleanItem[field.connectionField];
+            }
+            return cleanItem;
+          });
+        }
+        
+        // Handle deleted items - just the IDs
+        if (changes.deleted && changes.deleted.length > 0) {
+          transformedCollection.deleted = changes.deleted;
+        }
+        
+        // Only include collection if there are changes
+        if (Object.keys(transformedCollection).length > 0) {
+          transformedCollections[fieldName] = transformedCollection;
+        }
+      }
+    });
+    
+    return transformedCollections;
+  }, [formFields]);
+
+  // Transform form data for Simfinity mutation submission
+  const transformFormDataForMutation = React.useCallback((formData: FormData, collectionChanges?: Record<string, CollectionFieldState>): Record<string, unknown> => {
+    const transformedData: Record<string, unknown> = {};
+    
+    // First, transform collection fields using the dedicated function
+    if (collectionChanges) {
+      const transformedCollections = transformCollectionDataForMutation(collectionChanges);
+      Object.assign(transformedData, transformedCollections);
+    }
+    
+    // Then transform non-collection fields
+    formFields.forEach(field => {
+      if (!field.isCollection) { // Skip collection fields as they're already processed
+        if (field.isEmbedded) {
+          // Handle embedded object fields (like director in the example)
+          const embeddedData: Record<string, unknown> = {};
+          if (field.embeddedFields) {
+            field.embeddedFields.forEach(embeddedField => {
+              const embeddedFieldName = embeddedField.name.replace(`${field.name}.`, '');
+              const embeddedFieldValue = formData[embeddedField.name]?.value;
+              if (embeddedFieldValue !== undefined && embeddedFieldValue !== null && embeddedFieldValue !== '') {
+                embeddedData[embeddedFieldName] = embeddedFieldValue;
+              }
+            });
+          }
+          // Only include embedded object if it has data
+          if (Object.keys(embeddedData).length > 0) {
+            transformedData[field.name] = embeddedData;
+            console.log(`Embedded object ${field.name}:`, embeddedData);
+          }
+        } else if (field.isObject) {
+          // Handle object reference fields (like genre in the example: {id: "idofrelatedobject"})
+          if (field.value && typeof field.value === 'object' && 'id' in field.value) {
+            // Extract ID from object value
+            transformedData[field.name] = { id: (field.value as { id: string }).id };
+            console.log(`Object field ${field.name}:`, { id: (field.value as { id: string }).id });
+          } else if (typeof field.value === 'string' && field.value) {
+            // Direct ID string
+            transformedData[field.name] = { id: field.value };
+            console.log(`Object field ${field.name}:`, { id: field.value });
+          }
+        } else {
+          // Handle scalar fields (string, number, boolean, list of scalars)
+          if (field.value !== undefined && field.value !== null && field.value !== '') {
+            transformedData[field.name] = field.value;
+            console.log(`Scalar field ${field.name}:`, field.value);
+          }
+        }
+      }
+    });
+    
+    return transformedData;
+  }, [formFields, transformCollectionDataForMutation]);
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -767,35 +875,27 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     setError(null);
 
     try {
-      const inputData: Record<string, string | number | boolean | string[] | null> = {};
-      formFields.forEach(field => {
-        // For object fields, extract the ID for submission
-        if (field.isObject && typeof field.value === 'object' && field.value !== null && 'id' in field.value) {
-          const objValue = field.value as unknown as { id: string; [key: string]: unknown };
-          inputData[field.name] = objValue.id;
-        } else {
-          inputData[field.name] = field.value;
-        }
-      });
-
       // Get collection changes if in edit mode
       const collectionChanges = action === "edit" ? getCollectionChanges() : {};
       
       if (Object.keys(collectionChanges).length > 0) {
         console.log('Collection changes to be processed:', collectionChanges);
-        // TODO: Process collection changes here
-        // This would involve creating, updating, and deleting collection items
       }
+
+      // Transform form data for mutation using the new transformation functions
+      const transformedData = transformFormDataForMutation(formData, collectionChanges);
+      
+      console.log('Transformed data for Simfinity mutation:', transformedData);
 
       if (action === "create") {
         const result = await createEntity({
-          variables: { input: inputData }
+          variables: { input: transformedData }
         });
         console.log('Entity created:', result.data);
         setSuccessMessage(resolveLabel(["form.successCreated"], { entity: listField }, "Entity created successfully!"));
       } else if (action === "edit") {
         const result = await updateEntity({
-          variables: { id: entityId, input: inputData }
+          variables: { id: entityId, input: transformedData }
         });
         console.log('Entity updated:', result.data);
         setSuccessMessage(resolveLabel(["form.successUpdated"], { entity: listField }, "Entity updated successfully!"));
