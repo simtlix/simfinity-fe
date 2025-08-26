@@ -61,7 +61,7 @@ export default function ObjectFieldSelector({
         // If value is a string (ID), create a minimal object
         setSelectedObject({
           id: value,
-          description: value // Temporary description until we fetch the real data
+          [descriptionField]: value // Temporary description until we fetch the real data
         });
       } else if (typeof value === 'object' && value !== null && 'id' in value) {
         // If value is already an object, use it directly
@@ -71,7 +71,7 @@ export default function ObjectFieldSelector({
       // If value is cleared, clear selectedObject
       setSelectedObject(null);
     }
-  }, [value, selectedObject]);
+  }, [value, selectedObject, descriptionField]);
 
   // Helper function to cast search term to proper type
   const castSearchTerm = React.useCallback((term: string, fieldType: string) => {
@@ -192,7 +192,7 @@ export default function ObjectFieldSelector({
       if (object) {
         setSelectedObject({
           id: object.id,
-          description: object[descriptionField],
+          [descriptionField]: object[descriptionField],
         });
       }
     } else {
@@ -211,7 +211,7 @@ export default function ObjectFieldSelector({
     }
   };
 
-  const handleSelectObject = (object: { id: string; description: string }) => {
+  const handleSelectObject = (object: { id: string; [key: string]: unknown }) => {
     setSelectedObject(object);
     onChange(object);
     setSearchTerm("");
@@ -267,7 +267,7 @@ export default function ObjectFieldSelector({
         {selectedObject && (
           <Box sx={{ mt: 1 }}>
             <Chip
-              label={selectedObject.description as string}
+              label={selectedObject[descriptionField] as string}
               onDelete={disabled ? undefined : handleRemoveObject}
               variant="outlined"
               color="primary"
@@ -300,10 +300,7 @@ export default function ObjectFieldSelector({
               {searchResults.map((object: { id: string; [key: string]: string }) => (
                 <ListItem key={object.id} disablePadding>
                   <ListItemButton
-                    onClick={() => handleSelectObject({
-                      id: object.id,
-                      description: object[descriptionField] || object.id
-                    })}
+                    onClick={() => handleSelectObject(object)}
                     selected={selectedObject?.id === object.id}
                   >
                     <ListItemText

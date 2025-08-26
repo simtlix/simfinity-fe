@@ -52,6 +52,7 @@ type CollectionItemEditFormProps = {
   parentEntityId: string;
   parentEntityType: string;
   onSave: (updatedItem: CollectionItem) => void;
+  isAddingNew?: boolean; // Indicates if this is a new item being added
 };
 
 type FormField = {
@@ -90,6 +91,7 @@ export default function CollectionItemEditForm({
   parentEntityId,
   parentEntityType,
   onSave,
+  isAddingNew = false,
 }: CollectionItemEditFormProps) {
   const { data: schemaData } = useQuery(INTROSPECTION_QUERY);
   const { resolveLabel } = useI18n();
@@ -371,7 +373,7 @@ export default function CollectionItemEditForm({
       // Build updated item data
       const updatedItem: CollectionItem = {
         ...item,
-        __status: 'modified' as const,
+        __status: isAddingNew ? 'added' as const : 'modified' as const,
         __originalData: item.__originalData || { ...item },
       };
 
@@ -381,12 +383,21 @@ export default function CollectionItemEditForm({
         if (formField) {
           // For object fields, extract the ID for submission
           if (field.isObject && typeof formField.value === 'object' && formField.value !== null && 'id' in formField.value) {
-            updatedItem[field.name] = (formField.value as { id: string; [key: string]: unknown }).id;
+            updatedItem[field.name] = (formField.value as { id: string; [key: string]: unknown });
           } else {
             updatedItem[field.name] = formField.value;
           }
         }
       });
+
+      // For added items, ensure the connection field remains null
+      if (isAddingNew) {
+        // Find the connection field name (usually the parent entity type in lowercase)
+        const connectionFieldName = parentEntityType.toLowerCase();
+        if (connectionFieldName in updatedItem) {
+          updatedItem[connectionFieldName] = null;
+        }
+      }
 
       onSave(updatedItem);
       onClose();
@@ -554,7 +565,7 @@ export default function CollectionItemEditForm({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        Edit {resolveLabel([`entity.${objectTypeName}.single`], { entity: objectTypeName }, objectTypeName)}
+        {isAddingNew ? 'Add' : 'Edit'} {resolveLabel([`entity.${objectTypeName}.single`], { entity: objectTypeName }, objectTypeName)}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 2 }}>
@@ -619,7 +630,7 @@ export default function CollectionItemEditForm({
           variant="contained" 
           disabled={loading}
         >
-          {loading ? <CircularProgress size={20} /> : "Save"}
+          {loading ? <CircularProgress size={20} /> : (isAddingNew ? "Add" : "Save")}
         </Button>
       </DialogActions>
     </Dialog>
