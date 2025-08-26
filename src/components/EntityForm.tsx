@@ -762,18 +762,24 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   };
 
   // Clean object fields within collection items to only keep ID for non-embedded objects
-  const cleanCollectionItemObjectFields = React.useCallback((item: CollectionItem, schema: SchemaData): CollectionItem => {
+  const cleanCollectionItemObjectFields = React.useCallback((item: CollectionItem, collectionField: FormField, schema: SchemaData): CollectionItem => {
     const cleanItem = { ...item };
     
-    // Get the collection object type to understand its field structure
-    const itemTypeName = Object.getPrototypeOf(item).constructor.name || 'unknown';
+    // Use the collection field information to get the object type
+    const objectTypeName = collectionField.collectionObjectTypeName;
+    if (!objectTypeName) {
+      console.warn('No collection object type name found for field:', collectionField.name);
+      return cleanItem;
+    }
     
     // Find the actual object type from schema
     const objectType = schema.__schema.types.find(type => 
-      type.name && type.name.toLowerCase() === itemTypeName.toLowerCase()
+      type.name === objectTypeName
     );
     
     if (objectType && objectType.fields) {
+      console.log(`Cleaning object fields for collection item type: ${objectTypeName}`);
+      
       objectType.fields.forEach(fieldDef => {
         const fieldName = fieldDef.name;
         const fieldValue = cleanItem[fieldName];
@@ -791,19 +797,27 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           const isObject = current?.kind === "OBJECT";
           const isEmbedded = fieldDef.extensions?.relation?.embedded === true;
           
+          console.log(`Field ${fieldName}: isObject=${isObject}, isEmbedded=${isEmbedded}, type=${current?.name}`);
+          
           if (isObject && !isEmbedded && 'id' in fieldValue) {
             // For non-embedded object fields, only keep the ID
             cleanItem[fieldName] = { id: (fieldValue as { id: string }).id };
-            console.log(`Cleaned object field ${fieldName} in collection item:`, { 
+            console.log(`✅ Cleaned object field ${fieldName} in collection item:`, { 
               fieldName, 
               originalValue: fieldValue, 
               cleanedValue: { id: (fieldValue as { id: string }).id },
               isNonNull: fieldDef.type.kind === "NON_NULL",
               underlyingType: current?.name
             });
+          } else if (isObject && isEmbedded) {
+            console.log(`🔒 Keeping embedded object field ${fieldName} as-is:`, fieldValue);
+          } else if (!isObject) {
+            console.log(`📝 Field ${fieldName} is not an object type:`, current?.kind);
           }
         }
       });
+    } else {
+      console.warn(`Object type ${objectTypeName} not found in schema or has no fields`);
     }
     
     return cleanItem;
@@ -830,7 +844,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               delete cleanItem[field.connectionField];
             }
             // Clean object fields within the item
-            cleanItem = cleanCollectionItemObjectFields(cleanItem, schemaData as SchemaData);
+            cleanItem = cleanCollectionItemObjectFields(cleanItem, field, schemaData as SchemaData);
             return cleanItem;
           });
         }
@@ -847,7 +861,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               delete cleanItem[field.connectionField];
             }
             // Clean object fields within the item
-            cleanItem = cleanCollectionItemObjectFields(cleanItem, schemaData as SchemaData);
+            cleanItem = cleanCollectionItemObjectFields(cleanItem, field, schemaData as SchemaData);
             return cleanItem;
           });
         }
