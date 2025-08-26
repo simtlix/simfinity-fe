@@ -570,7 +570,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     `;
     
     const createMutation = gql`
-      mutation Create${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: Create${entityName.charAt(0).toUpperCase() + entityName.slice(1)}Input!) {
+      mutation Create${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: ${entityName}Input!) {
         create${entityName}(input: $input) {
           id
           ${fieldNames}
@@ -579,7 +579,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     `;
     
     const updateMutation = gql`
-      mutation Update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: Update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}Input!) {
+      mutation Update${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: ${entityName}Input!) {
         update${entityName}(input: $input) {
           id
           ${fieldNames}
