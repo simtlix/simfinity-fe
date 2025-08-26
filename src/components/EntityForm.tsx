@@ -733,19 +733,25 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     const newFormData = { ...formData };
 
     formFields.forEach(field => {
-      if (field.required && (field.value === "" || field.value === null || field.value === undefined)) {
+      // Get the actual field data from formData (user input) instead of the field definition
+      const fieldData = formData[field.name];
+      if (!fieldData) return; // Skip if field data not found
+      
+      const fieldValue = fieldData.value;
+      
+      if (field.required && (fieldValue === "" || fieldValue === null || fieldValue === undefined)) {
         newFormData[field.name] = { ...field, error: resolveLabel(["form.required"], { entity: listField }, "This field is required") };
         isValid = false;
-      } else if (field.isObject && field.required && (!field.value || field.value === "" || field.value === null)) {
-        newFormData[field.name] = { ...field, error: resolveLabel(["form.required"], { entity: listField }, "This field is required") };
+      } else if (field.isObject && field.required && (!fieldValue || fieldValue === "" || fieldValue === null)) {
+        newFormData[field.name] = { ...fieldData, error: resolveLabel(["form.required"], { entity: listField }, "This field is required") };
         isValid = false;
-      } else if (field.isNumeric && typeof field.value === "string" && isNaN(Number(field.value))) {
-        newFormData[field.name] = { ...field, error: resolveLabel(["form.invalidNumber"], { entity: listField }, "Must be a valid number") };
+      } else if (field.isNumeric && typeof fieldValue === "string" && isNaN(Number(fieldValue))) {
+        newFormData[field.name] = { ...fieldData, error: resolveLabel(["form.invalidNumber"], { entity: listField }, "Must be a valid number") };
         isValid = false;
-      } else if (field.isDate && typeof field.value === "string") {
-        const timestamp = new Date(String(field.value)).getTime();
+      } else if (field.isDate && typeof fieldValue === "string") {
+        const timestamp = new Date(String(fieldValue)).getTime();
         if (isNaN(timestamp)) {
-          newFormData[field.name] = { ...field, error: resolveLabel(["form.invalidDate"], { entity: listField }, "Must be a valid date") };
+          newFormData[field.name] = { ...fieldData, error: resolveLabel(["form.invalidDate"], { entity: listField }, "Must be a valid date") };
           isValid = false;
         }
       }
