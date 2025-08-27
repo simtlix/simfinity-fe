@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useMutation, gql } from "@apollo/client";
+import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
 import {
   Box,
   Breadcrumbs,
@@ -222,6 +222,7 @@ function processEmbeddedObjectFields(schema: SchemaData, objectTypeName: string,
 export default function EntityForm({ listField, entityId, action }: EntityFormProps) { 
   const router = useRouter();
   const { resolveLabel } = useI18n();
+  const client = useApolloClient();
   const [formData, setFormData] = React.useState<FormData>({} as FormData);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -924,6 +925,40 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     return transformedCollections;
   }, [formFields, cleanCollectionItemObjectFields, deepCleanCollectionItem, schemaData]);
 
+  // Cache invalidation functions
+  const invalidateEntityListCache = React.useCallback(async (entityType: string) => {
+    try {
+      // Evict all queries that contain the entity type name
+      await client.resetStore();
+      
+      console.log(`🗑️ Invalidated cache for entity type: ${entityType}`);
+    } catch (error) {
+      console.error(`Error invalidating cache for ${entityType}:`, error);
+    }
+  }, [client]);
+
+  const invalidateEntityCache = React.useCallback(async (entityId: string, entityType: string) => {
+    try {
+      // Get the entity name (singular form)
+      const entityName = entityType.slice(0, -1); // Remove 's' from end
+      
+      // Evict the specific entity from cache
+      client.cache.evict({ 
+        id: client.cache.identify({ 
+          __typename: entityName.charAt(0).toUpperCase() + entityName.slice(1), 
+          id: entityId 
+        }) 
+      });
+      
+      // Also evict any list queries that might contain this entity
+      client.cache.gc();
+      
+      console.log(`🗑️ Invalidated cache for entity ${entityId} of type ${entityType}`);
+    } catch (error) {
+      console.error(`Error invalidating cache for entity ${entityId}:`, error);
+    }
+  }, [client]);
+
   // Transform form data for Simfinity mutation submission
   const transformFormDataForMutation = React.useCallback((formData: FormData, collectionChanges?: Record<string, CollectionFieldState>): Record<string, unknown> => {
     const transformedData: Record<string, unknown> = {};
@@ -995,6 +1030,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     return transformedData;
   }, [formFields, transformCollectionDataForMutation, action]);
 
+
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1025,6 +1062,9 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         });
         console.log('Entity created:', result.data);
         setSuccessMessage(resolveLabel(["form.successCreated"], { entity: listField }, "Entity created successfully!"));
+        
+        // Invalidate and refetch list queries for the entity type
+        await invalidateEntityListCache(listField);
       } else if (action === "edit") {
         // For update mutations, include the ID inside the input
         const updateInput = { id: entityId, ...transformedData };
@@ -1033,6 +1073,10 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         });
         console.log('Entity updated:', result.data);
         setSuccessMessage(resolveLabel(["form.successUpdated"], { entity: listField }, "Entity updated successfully!"));
+        
+        // Invalidate and refetch both the specific entity and list queries
+        await invalidateEntityCache(entityId!, listField);
+        await invalidateEntityListCache(listField);
       }
 
       // Redirect back to list
