@@ -765,7 +765,6 @@ export default function CollectionFieldGrid({
         item={editingItem}
         collectionFieldName={collectionField.name}
         objectTypeName={collectionField.objectTypeName}
-        parentEntityId={parentEntityId}
         parentEntityType={parentEntityType}
         onSave={handleSaveEditedItem}
         isAddingNew={isAddingNew}

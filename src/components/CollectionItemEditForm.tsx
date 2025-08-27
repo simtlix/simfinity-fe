@@ -48,7 +48,6 @@ type CollectionItemEditFormProps = {
   item: CollectionItem;
   collectionFieldName: string;
   objectTypeName: string;
-  parentEntityId: string;
   parentEntityType: string;
   onSave: (updatedItem: CollectionItem) => void;
   isAddingNew?: boolean; // Indicates if this is a new item being added
@@ -87,7 +86,6 @@ export default function CollectionItemEditForm({
   item,
   collectionFieldName,
   objectTypeName,
-  parentEntityId,
   parentEntityType,
   onSave,
   isAddingNew = false,
