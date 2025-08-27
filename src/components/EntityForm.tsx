@@ -910,9 +910,27 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           });
         }
         
-        // Handle deleted items - just the IDs
+        // Handle deleted items - extract only the IDs
         if (changes.deleted && changes.deleted.length > 0) {
-          transformedCollection.deleted = changes.deleted;
+          transformedCollection.deleted = changes.deleted.map((item: CollectionItem) => {
+            // For deleted items, we only need the ID
+            if (typeof item === 'string') {
+              // If it's already a string ID, return as-is
+              return item;
+            } else if (typeof item === 'object' && item !== null && 'id' in item) {
+              // If it's an object with an ID, extract just the ID
+              return (item as { id: string }).id;
+            } else {
+              // Fallback: try to get ID from the item
+              console.warn('Deleted item does not have expected ID structure:', item);
+              return item;
+            }
+          });
+          
+          console.log(`🗑️ Transformed deleted items for ${fieldName}:`, {
+            original: changes.deleted,
+            transformed: transformedCollection.deleted
+          });
         }
         
         // Only include collection if there are changes
