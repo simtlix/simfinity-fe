@@ -540,10 +540,6 @@ export default function CollectionFieldGrid({
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <Typography color="error">{resolveLabel(['collection.error'], { entity: collectionField.objectTypeName }, 'Error loading collection data')}</Typography>
               </Box>
-            ) : rows.length === 0 && currentState.added.length === 0 ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                <Typography color="text.secondary">{resolveLabel(['collection.noData'], { entity: collectionField.objectTypeName }, 'No data available')}</Typography>
-              </Box>
             ) : (
               <>
                 {isEditMode && (
@@ -558,27 +554,34 @@ export default function CollectionFieldGrid({
                     </Button>
                   </Box>
                 )}
-                <DataGrid
-                  rows={rows}
-                  columns={gridColumns}
-                  pagination
-                  paginationModel={{ page, pageSize: rowsPerPage }}
-                  onPaginationModelChange={handlePaginationModelChange}
-                  pageSizeOptions={[5, 10, 25]}
-                  rowCount={totalCount}
-                  paginationMode="server"
-                  sortingMode="server"
-                  sortModel={sortModel}
-                  onSortModelChange={(model) => {
-                    const norm = (Array.isArray(model) ? model : [])
-                      .filter((m) => m.field && m.sort)
-                      .map((m) => ({ field: String(m.field), sort: m.sort as 'asc' | 'desc' }));
-                    setSortModel(norm);
-                  }}
-                  loading={collectionLoading}
-                  disableRowSelectionOnClick
-                  autoHeight
-                />
+                
+                {rows.length === 0 && currentState.added.length === 0 ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '200px' }}>
+                    <Typography color="text.secondary">{resolveLabel(['collection.noData'], { entity: collectionField.objectTypeName }, 'No data available')}</Typography>
+                  </Box>
+                ) : (
+                  <DataGrid
+                    rows={rows}
+                    columns={gridColumns}
+                    pagination
+                    paginationModel={{ page, pageSize: rowsPerPage }}
+                    onPaginationModelChange={handlePaginationModelChange}
+                    pageSizeOptions={[5, 10, 25]}
+                    rowCount={totalCount}
+                    paginationMode="server"
+                    sortingMode="server"
+                    sortModel={sortModel}
+                    onSortModelChange={(model) => {
+                      const norm = (Array.isArray(model) ? model : [])
+                        .filter((m) => m.field && m.sort)
+                        .map((m) => ({ field: String(m.field), sort: m.sort as 'asc' | 'desc' }));
+                      setSortModel(norm);
+                    }}
+                    loading={collectionLoading}
+                    disableRowSelectionOnClick
+                    autoHeight
+                  />
+                )}
               </>
             )}
           </Box>
