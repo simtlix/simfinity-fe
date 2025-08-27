@@ -423,13 +423,13 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           
           // Fallback: try to derive connectionField if not explicitly defined
           if (isCollection && !connectionField && collectionObjectTypeName) {
-            // Common patterns: if the collection is named 'seasons', the connection field might be 'serie'
-            // or if it's 'stars', it might be 'serie' as well
-            const entityName = listField.slice(0, -1); // Remove 's' from end (e.g., 'series' -> 'serie')
-            
-            // For now, let's use the entity name as a fallback
-            connectionField = entityName;
-            console.log(`Collection field ${field.name}: Using fallback connectionField: ${connectionField}`);
+            // Use the proper entity type name from introspection
+            const entityTypeName = getElementTypeNameOfListField(schema, listField);
+            if (entityTypeName) {
+              // Convert to lowercase for connection field (e.g., 'Serie' -> 'serie')
+              connectionField = entityTypeName.toLowerCase();
+              console.log(`Collection field ${field.name}: Using fallback connectionField: ${connectionField}`);
+            }
           }
           
           // Debug collection field detection
@@ -518,7 +518,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   // Helper function to get i18n label for form fields
   const getFieldLabel = (fieldName: string): string => {
     // Try to get the label using the entity.field pattern (e.g., "serie.name")
-    const entityKey = listField.slice(0, -1); // Remove 's' from end
+    const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, listField);
+    const entityKey = entityTypeName ? entityTypeName.toLowerCase() : listField.slice(0, -1); // Fallback to old method if introspection fails
     const fieldKey = `${entityKey}.${fieldName}`;
     
     return resolveLabel([fieldKey, fieldName], { entity: listField, field: fieldName }, fieldName);
@@ -552,10 +553,12 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       });
     
     const fieldNames = fieldSelections.join('\n      ');
-    const entityName = listField.slice(0, -1); // Remove 's' from end
+    const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, listField);
+    const entityName = entityTypeName || listField.slice(0, -1); // Use introspection result or fallback to old method
     
     console.log('Generating queries for:', { 
       entityName, 
+      entityTypeName,
       fieldNames, 
       includedFields: formFields.filter(f => !f.isCollection).map(f => ({ name: f.name, isObject: f.isObject, objectTypeName: f.objectTypeName })),
       excludedCollectionFields: formFields.filter(f => f.isCollection).map(f => ({ name: f.name, collectionObjectTypeName: f.collectionObjectTypeName, connectionField: f.connectionField }))
@@ -644,7 +647,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     console.log('Data loading effect triggered:', { entityData, action, listField, formFields });
     
     if (entityData && action !== "create" && formFields.length > 0) {
-      const entityName = listField.slice(0, -1); // Remove 's' from end
+      const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, listField);
+      const entityName = entityTypeName || listField.slice(0, -1); // Use introspection result or fallback to old method
       console.log('Looking for entity with name:', entityName);
       console.log('Available keys in entityData:', Object.keys(entityData));
       
