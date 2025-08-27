@@ -872,7 +872,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       if (field && field.isCollection) {
         const transformedCollection: Record<string, unknown> = {};
         
-        // Handle added items - remove connection field and __status metadata, clean object fields
+        // Handle added items - remove connection field, __status metadata, and temporary ID, clean object fields
         if (changes.added && changes.added.length > 0) {
           transformedCollection.added = changes.added.map((item: CollectionItem) => {
             let cleanItem = { ...item };
@@ -883,11 +883,21 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             if (field.connectionField && cleanItem[field.connectionField] !== undefined) {
               delete cleanItem[field.connectionField];
             }
+            // Remove temporary ID for added items (backend will generate the real ID)
+            if (cleanItem.id && typeof cleanItem.id === 'string' && cleanItem.id.startsWith('temp_')) {
+              console.log(`🗑️ Removed temporary ID from added item:`, cleanItem.id);
+              delete (cleanItem as Record<string, unknown>).id;
+            }
             // Clean object fields within the item
             cleanItem = cleanCollectionItemObjectFields(cleanItem, field, schemaData as SchemaData);
-            // Also do deep cleaning to remove _typename from nested structures
+            // Also do deep cleaning to remove __typename from nested structures
             cleanItem = deepCleanCollectionItem(cleanItem) as CollectionItem;
             return cleanItem;
+          });
+          
+          console.log(`➕ Transformed added items for ${fieldName}:`, {
+            original: changes.added,
+            transformed: transformedCollection.added
           });
         }
         
