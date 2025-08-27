@@ -150,8 +150,8 @@ export default function FormFieldRenderer({
         </Box>
         <TextField
           size="small"
-          placeholder={`Add ${field.name}`}
-          onKeyPress={(e) => {
+          placeholder={resolveLabel(["form.addField"], { entity: entityTypeName, field: field.name }, `Add ${field.name}`)}
+          onKeyUp={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
               const input = e.target as HTMLInputElement;
@@ -184,7 +184,7 @@ export default function FormFieldRenderer({
           disabled={disabled || !isEnabled}
           fullWidth
           size="small"
-          placeholder={`Select ${field.name}`}
+          placeholder={resolveLabel(["form.selectField"], { entity: entityTypeName, field: field.name }, `Select ${field.name}`)}
         />
       );
     }
