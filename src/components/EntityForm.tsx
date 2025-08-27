@@ -574,8 +574,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     `;
     
     const createMutation = gql`
-      mutation Create${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: ${entityName}InputForCreate!) {
-        create${entityName}(input: $input) {
+      mutation Add${entityName.charAt(0).toUpperCase() + entityName.slice(1)}($input: ${entityName}Input!) {
+        add${entityName}(input: $input) {
           id
           ${fieldNames}
         }
@@ -616,7 +616,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   });
 
   // Mutations for create and update
-  const [createEntity, { loading: createLoading }] = useMutation(
+  const [addEntity, { loading: createLoading }] = useMutation(
     generateQueries?.createMutation || CREATE_ENTITY_MUTATION
   );
   
@@ -1089,7 +1089,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       console.log('Transformed data for Simfinity mutation:', transformedData);
 
       if (action === "create") {
-        const result = await createEntity({
+        const result = await addEntity({
           variables: { input: transformedData }
         });
         console.log('Entity created:', result.data);
