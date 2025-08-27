@@ -737,6 +737,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     let isValid = true;
     const newFormData = { ...formData };
 
+    // First, validate main form fields
     formFields.forEach(field => {
       // Get the actual field data from formData (user input) instead of the field definition
       const fieldData = formData[field.name];
@@ -759,6 +760,60 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           newFormData[field.name] = { ...fieldData, error: resolveLabel(["form.invalidDate"], { entity: listField }, "Must be a valid date") };
           isValid = false;
         }
+      }
+    });
+
+    // Then, validate embedded object fields
+    formFields.forEach(field => {
+      if (field.isEmbedded && field.embeddedFields) {
+        field.embeddedFields.forEach(embeddedField => {
+          const embeddedFieldData = formData[embeddedField.name];
+          if (!embeddedFieldData) return; // Skip if embedded field data not found
+          
+          const embeddedFieldValue = embeddedFieldData.value;
+          
+          // Validate required embedded fields
+          if (embeddedField.required && (embeddedFieldValue === "" || embeddedFieldValue === null || embeddedFieldValue === undefined)) {
+            newFormData[embeddedField.name] = { 
+              ...embeddedFieldData, 
+              error: resolveLabel(["form.required"], { entity: listField }, "This field is required") 
+            };
+            isValid = false;
+            console.log(`❌ Validation failed for embedded field ${embeddedField.name}: required field is empty`);
+          }
+          
+          // Validate numeric embedded fields
+          if (embeddedField.isNumeric && typeof embeddedFieldValue === "string" && isNaN(Number(embeddedFieldValue))) {
+            newFormData[embeddedField.name] = { 
+              ...embeddedFieldData, 
+              error: resolveLabel(["form.invalidNumber"], { entity: listField }, "Must be a valid number") 
+            };
+            isValid = false;
+            console.log(`❌ Validation failed for embedded field ${embeddedField.name}: invalid number`);
+          }
+          
+          // Validate date embedded fields
+          if (embeddedField.isDate && typeof embeddedFieldValue === "string") {
+            const timestamp = new Date(String(embeddedFieldValue)).getTime();
+            if (isNaN(timestamp)) {
+              newFormData[embeddedField.name] = { 
+                ...embeddedFieldData, 
+                error: resolveLabel(["form.invalidDate"], { entity: listField }, "Must be a valid date") 
+              };
+              isValid = false;
+              console.log(`❌ Validation failed for embedded field ${embeddedField.name}: invalid date`);
+            }
+          }
+          
+          // Clear error if field is valid
+          if (embeddedFieldData.error && embeddedFieldData.error !== "") {
+            newFormData[embeddedField.name] = { 
+              ...embeddedFieldData, 
+              error: undefined 
+            };
+            console.log(`✅ Cleared error for embedded field ${embeddedField.name}`);
+          }
+        });
       }
     });
 
