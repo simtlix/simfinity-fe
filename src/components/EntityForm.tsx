@@ -903,8 +903,9 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             }
             // Clean object fields within the item
             cleanItem = cleanCollectionItemObjectFields(cleanItem, field, schemaData as SchemaData);
-            // Also do deep cleaning to remove _typename from nested structures
+            // Also do deep cleaning to remove __typename from nested structures
             cleanItem = deepCleanCollectionItem(cleanItem) as CollectionItem;
+            return cleanItem;
           });
         }
         
