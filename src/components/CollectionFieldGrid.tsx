@@ -542,7 +542,7 @@ export default function CollectionFieldGrid({
               </Box>
             ) : (
               <>
-                {isEditMode && (
+                {(isEditMode || parentEntityId === "") && (
                   <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
                     <Button
                       variant="contained"
@@ -586,8 +586,8 @@ export default function CollectionFieldGrid({
             )}
           </Box>
 
-          {/* Local state tables for edit mode */}
-          {isEditMode && (
+          {/* Local state tables for create/edit mode */}
+          {(isEditMode || parentEntityId === "") && (
             <Box sx={{ mt: 3 }}>
               {/* Modified items table */}
               {currentState.modified.length > 0 && (
