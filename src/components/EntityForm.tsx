@@ -800,12 +800,12 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           console.log(`Field ${fieldName}: isObject=${isObject}, isEmbedded=${isEmbedded}, type=${current?.name}`);
           
           if (isObject && !isEmbedded && 'id' in fieldValue) {
-            // For non-embedded object fields, only keep the ID and remove _typename
+            // For non-embedded object fields, only keep the ID and remove __typename
             const cleanedObject = { id: (fieldValue as { id: string }).id };
             
-            // Remove _typename if it exists
-            if ('_typename' in fieldValue) {
-              console.log(`🗑️ Removed _typename from object field ${fieldName}`);
+            // Remove __typename if it exists
+            if ('__typename' in fieldValue) {
+              console.log(`🗑️ Removed __typename from object field ${fieldName}`);
             }
             
             cleanItem[fieldName] = cleanedObject;
@@ -813,7 +813,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               fieldName, 
               originalValue: fieldValue, 
               cleanedValue: cleanedObject,
-              removedTypename: '_typename' in fieldValue,
+              removedTypename: '__typename' in fieldValue,
               isNonNull: fieldDef.type.kind === "NON_NULL",
               underlyingType: current?.name
             });
@@ -845,10 +845,10 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     // If it's an object, clean it recursively
     const cleanedItem = { ...item } as Record<string, unknown>;
     
-    // Remove _typename from the current level
-    if ('_typename' in cleanedItem) {
-      console.log(`🗑️ Removed _typename from collection item level`);
-      delete cleanedItem._typename;
+    // Remove __typename from the current level
+    if ('__typename' in cleanedItem) {
+      console.log(`🗑️ Removed __typename from collection item level`);
+      delete cleanedItem.__typename;
     }
     
     // Recursively clean nested properties
