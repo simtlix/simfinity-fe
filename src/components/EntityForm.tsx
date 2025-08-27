@@ -737,95 +737,95 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     let isValid = true;
     const newFormData = { ...formData };
 
-    // Validate all form fields (including embedded object fields)
-    formFields.forEach(field => {
+    // Recursive field validation function
+    const validateField = (field: FormField, fieldData: FormField | undefined, path: string = ""): boolean => {
+      if (!fieldData) {
+        console.log(`⚠️ No data found for field ${path || field.name}`);
+        return true; // Skip validation if no data
+      }
+      
+      const fieldValue = fieldData.value;
+      const fieldPath = path ? `${path}.${field.name}` : field.name;
+      let fieldValid = true;
+      
+      console.log(`🔍 Validating field ${fieldPath}: value = "${fieldValue}", required = ${field.required}`);
+      
+      // Validate required fields
+      if (field.required && (fieldValue === "" || fieldValue === null || fieldValue === undefined)) {
+        newFormData[fieldData.name] = { 
+          ...fieldData, 
+          error: resolveLabel(["form.required"], { entity: listField }, "This field is required") 
+        };
+        fieldValid = false;
+        console.log(`❌ Validation failed for field ${fieldPath}: required field is empty`);
+      }
+      
+      // Validate numeric fields
+      if (field.isNumeric && typeof fieldValue === "string" && isNaN(Number(fieldValue))) {
+        newFormData[fieldData.name] = { 
+          ...fieldData, 
+          error: resolveLabel(["form.invalidNumber"], { entity: listField }, "Must be a valid number") 
+        };
+        fieldValid = false;
+        console.log(`❌ Validation failed for field ${fieldPath}: invalid number`);
+      }
+      
+      // Validate date fields
+      if (field.isDate && typeof fieldValue === "string") {
+        const timestamp = new Date(String(fieldValue)).getTime();
+        if (isNaN(timestamp)) {
+          newFormData[fieldData.name] = { 
+            ...fieldData, 
+            error: resolveLabel(["form.invalidDate"], { entity: listField }, "Must be a valid date") 
+          };
+          fieldValid = false;
+          console.log(`❌ Validation failed for field ${fieldPath}: invalid date`);
+        }
+      }
+      
+      // Validate object fields (non-embedded)
+      if (field.isObject && !field.isEmbedded && field.required && (!fieldValue || fieldValue === "" || fieldValue === null)) {
+        newFormData[fieldData.name] = { 
+          ...fieldData, 
+          error: resolveLabel(["form.required"], { entity: listField }, "This field is required") 
+        };
+        fieldValid = false;
+        console.log(`❌ Validation failed for field ${fieldPath}: required object field is empty`);
+      }
+      
+      // Clear error if field is valid
+      if (fieldData.error && fieldData.error !== "") {
+        newFormData[fieldData.name] = { 
+          ...fieldData, 
+          error: undefined 
+        };
+        console.log(`✅ Cleared error for field ${fieldPath}`);
+      }
+      
+      // Recursively validate embedded fields
       if (field.isEmbedded && field.embeddedFields) {
-        // Handle embedded object fields - validate each individual embedded field
-        console.log(`🔍 Validating embedded object ${field.name} with ${field.embeddedFields.length} embedded fields`);
+        console.log(`🔍 Validating embedded object ${fieldPath} with ${field.embeddedFields.length} embedded fields`);
         
         field.embeddedFields.forEach(embeddedField => {
           const embeddedFieldData = formData[embeddedField.name];
-          if (!embeddedFieldData) {
-            console.log(`⚠️ No data found for embedded field ${embeddedField.name}`);
-            return;
-          }
-          
-          const embeddedFieldValue = embeddedFieldData.value;
-          console.log(`🔍 Validating embedded field ${embeddedField.name}: value = "${embeddedFieldValue}", required = ${embeddedField.required}`);
-          
-          // Validate required embedded fields
-          if (embeddedField.required && (embeddedFieldValue === "" || embeddedFieldValue === null || embeddedFieldValue === undefined)) {
-            newFormData[embeddedField.name] = { 
-              ...embeddedFieldData, 
-              error: resolveLabel(["form.required"], { entity: listField }, "This field is required") 
-            };
-            isValid = false;
-            console.log(`❌ Validation failed for embedded field ${embeddedField.name}: required field is empty`);
-          }
-          
-          // Validate numeric embedded fields
-          if (embeddedField.isNumeric && typeof embeddedFieldValue === "string" && isNaN(Number(embeddedFieldValue))) {
-            newFormData[embeddedField.name] = { 
-              ...embeddedFieldData, 
-              error: resolveLabel(["form.invalidNumber"], { entity: listField }, "Must be a valid number") 
-            };
-            isValid = false;
-            console.log(`❌ Validation failed for embedded field ${embeddedField.name}: invalid number`);
-          }
-          
-          // Validate date embedded fields
-          if (embeddedField.isDate && typeof embeddedFieldValue === "string") {
-            const timestamp = new Date(String(embeddedFieldValue)).getTime();
-            if (isNaN(timestamp)) {
-              newFormData[embeddedField.name] = { 
-                ...embeddedFieldData, 
-                error: resolveLabel(["form.invalidDate"], { entity: listField }, "Must be a valid date") 
-              };
-              isValid = false;
-              console.log(`❌ Validation failed for embedded field ${embeddedField.name}: invalid date`);
-            }
-          }
-          
-          // Clear error if field is valid
-          if (embeddedFieldData.error && embeddedFieldData.error !== "") {
-            newFormData[embeddedField.name] = { 
-              ...embeddedFieldData, 
-              error: undefined 
-            };
-            console.log(`✅ Cleared error for embedded field ${embeddedField.name}`);
+          const embeddedFieldValid = validateField(embeddedField, embeddedFieldData, fieldPath);
+          if (!embeddedFieldValid) {
+            fieldValid = false;
           }
         });
-      } else {
-        // Handle regular (non-embedded) fields
-        const fieldData = formData[field.name];
-        if (!fieldData) return; // Skip if field data not found
-        
-        const fieldValue = fieldData.value;
-        
-        if (field.required && (fieldValue === "" || fieldValue === null || fieldValue === undefined)) {
-          newFormData[field.name] = { ...field, error: resolveLabel(["form.required"], { entity: listField }, "This field is required") };
-          isValid = false;
-          console.log(`❌ Validation failed for main field ${field.name}: required field is empty`);
-        } else if (field.isObject && field.required && (!fieldValue || fieldValue === "" || fieldValue === null)) {
-          newFormData[field.name] = { ...fieldData, error: resolveLabel(["form.required"], { entity: listField }, "This field is required") };
-          isValid = false;
-          console.log(`❌ Validation failed for main object field ${field.name}: required field is empty`);
-        } else if (field.isNumeric && typeof fieldValue === "string" && isNaN(Number(fieldValue))) {
-          newFormData[field.name] = { ...fieldData, error: resolveLabel(["form.invalidNumber"], { entity: listField }, "Must be a valid number") };
-          isValid = false;
-          console.log(`❌ Validation failed for main field ${field.name}: invalid number`);
-        } else if (field.isDate && typeof fieldValue === "string") {
-          const timestamp = new Date(String(fieldValue)).getTime();
-          if (isNaN(timestamp)) {
-            newFormData[field.name] = { ...fieldData, error: resolveLabel(["form.invalidDate"], { entity: listField }, "Must be a valid date") };
-            isValid = false;
-            console.log(`❌ Validation failed for main field ${field.name}: invalid date`);
-          }
-        }
+      }
+      
+      return fieldValid;
+    };
+
+    // Validate all form fields recursively
+    formFields.forEach(field => {
+      const fieldData = formData[field.name];
+      const fieldValid = validateField(field, fieldData);
+      if (!fieldValid) {
+        isValid = false;
       }
     });
-
-
 
     setFormData(newFormData);
     return isValid;
