@@ -648,11 +648,6 @@ function unwrapNamedType(typeRef: unknown): string | null {
   return current?.name || null;
 }
 
-// Helper function to check if a type is a scalar or enum
-function isScalarOrEnum(kind: string): boolean {
-  return kind === "SCALAR" || kind === "ENUM";
-}
-
 // Helper function to check if a scalar name is numeric
 function isNumericScalarName(typeName: string | null): boolean {
   return typeName === "Int" || typeName === "Float";
