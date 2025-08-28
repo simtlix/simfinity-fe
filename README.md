@@ -232,6 +232,232 @@ The system provides extensive customization capabilities for form behavior and a
 
 The column customization system allows you to create specialized renderers for different data types in EntityTable columns.
 
+### 🌍 **Internationalization (i18n) System**
+
+The internationalization system provides multi-language support with dynamic label resolution, entity-specific translations, and function-based internationalization.
+
+#### **Core i18n Function**
+```typescript
+const { resolveLabel } = useI18n();
+
+// Basic usage
+resolveLabel(
+  keys: string[],                    // Array of fallback keys
+  context?: Record<string, unknown>, // Context variables for interpolation
+  fallback?: string                  // Default fallback text
+): string
+```
+
+#### **Label Resolution Strategy**
+The system uses a multi-level fallback strategy for robust label resolution:
+
+1. **Entity-Specific Keys**: `entity.{entityType}.{fieldName}`
+2. **Generic Field Keys**: `{fieldName}`
+3. **Fallback Text**: Direct string fallback
+
+#### **Entity and Field Labeling**
+```typescript
+// Entity labels
+resolveLabel(["entity.serie.single"], { entity: "series" }, "Serie")           // "Serie"
+resolveLabel(["entity.serie.plural"], { entity: "series" }, "Series")          // "Series"
+resolveLabel(["entity.episode.single"], { entity: "episodes" }, "Episode")     // "Episode"
+
+// Field labels
+resolveLabel(["serie.name"], { entity: "series", field: "name" }, "Name")      // "Nombre" (ES) / "Name" (EN)
+resolveLabel(["serie.description"], { entity: "series", field: "description" }, "Description")
+resolveLabel(["episode.date"], { entity: "episodes", field: "date" }, "Date")
+
+// Form labels
+resolveLabel(["form.create"], { entity: "series" }, "Create")                  // "Crear" (ES) / "Create" (EN)
+resolveLabel(["form.edit"], { entity: "series" }, "Edit")                      // "Editar" (ES) / "Edit" (EN)
+resolveLabel(["form.view"], { entity: "series" }, "View")                      // "Ver" (ES) / "View" (EN)
+```
+
+#### **Function-Based Internationalization**
+The system supports dynamic label resolution with context-aware functions:
+
+```typescript
+// Dynamic entity name resolution
+const getEntityName = (pluralName: string, form: 'single' | 'plural'): string => {
+  return resolveLabel([
+    `entity.${pluralName}.${form}`  // entity.series.single, entity.series.plural
+  ], { entity: pluralName }, pluralName);
+};
+
+// Usage
+getEntityName("series", "single")   // "Serie" (ES) / "Series" (EN)
+getEntityName("series", "plural")   // "Series" (ES) / "Series" (EN)
+getEntityName("episodes", "single") // "Episodio" (ES) / "Episode" (EN)
+```
+
+#### **Context-Aware Labeling**
+Labels can include dynamic context for rich, personalized text:
+
+```typescript
+// With entity context
+resolveLabel(
+  ["entity.field"], 
+  { entity: "series", field: "name" }, 
+  "Name"
+);
+
+// With form context
+resolveLabel(
+  ["form.action"], 
+  { entity: "series", action: "create" }, 
+  "Create"
+);
+
+// With count context
+resolveLabel(
+  ["collection.items"], 
+  { entity: "episodes", count: 5 }, 
+  "5 episodes"
+);
+```
+
+#### **Fallback Chain Examples**
+```typescript
+// Field label resolution with fallbacks
+resolveLabel([
+  "serie.name",        // 1. Try entity-specific field key
+  "name"               // 2. Try generic field key
+], { entity: "series", field: "name" }, "Name");
+
+// Entity label resolution with fallbacks
+resolveLabel([
+  "entity.series.single",  // 1. Try specific entity form
+  "entity.series",         // 2. Try generic entity
+  "series"                 // 3. Try direct fallback
+], { entity: "series" }, "Series");
+```
+
+#### **i18n File Structure**
+```typescript
+// src/i18n/en.ts
+export default {
+  entity: {
+    serie: {
+      single: "Series",
+      plural: "Series"
+    },
+    episode: {
+      single: "Episode",
+      plural: "Episodes"
+    }
+  },
+  serie: {
+    name: "Name",
+    description: "Description",
+    year: "Year",
+    director: "Director"
+  },
+  episode: {
+    name: "Name",
+    number: "Number",
+    date: "Date",
+    season: "Season"
+  },
+  form: {
+    create: "Create",
+    edit: "Edit",
+    view: "View",
+    save: "Save",
+    cancel: "Cancel",
+    required: "This field is required",
+    invalidNumber: "Must be a valid number",
+    invalidDate: "Must be a valid date"
+  },
+  collection: {
+    items: "{count} {entity}",
+    noData: "No {entity} available",
+    addItem: "Add {entity}"
+  }
+};
+
+// src/i18n/es.ts
+export default {
+  entity: {
+    serie: {
+      single: "Serie",
+      plural: "Series"
+    },
+    episode: {
+      single: "Episodio",
+      plural: "Episodios"
+    }
+  },
+  serie: {
+    name: "Nombre",
+    description: "Descripción",
+    year: "Año",
+    director: "Director"
+  },
+  episode: {
+    name: "Nombre",
+    number: "Número",
+    date: "Fecha",
+    season: "Temporada"
+  },
+  form: {
+    create: "Crear",
+    edit: "Editar",
+    view: "Ver",
+    save: "Guardar",
+    cancel: "Cancelar",
+    required: "Este campo es obligatorio",
+    invalidNumber: "Debe ser un número válido",
+    invalidDate: "Debe ser una fecha válida"
+  },
+  collection: {
+    items: "{count} {entity}",
+    noData: "No hay {entity} disponibles",
+    addItem: "Agregar {entity}"
+  }
+};
+```
+
+#### **Usage in Components**
+```typescript
+import { useI18n } from '@/lib/i18n';
+
+export default function EntityForm({ listField, action }) {
+  const { resolveLabel } = useI18n();
+  
+  // Dynamic entity name resolution
+  const entityName = resolveLabel([
+    `entity.${listField}.${action === 'create' ? 'single' : 'plural'}`
+  ], { entity: listField }, listField);
+  
+  // Dynamic field labels
+  const getFieldLabel = (fieldName: string): string => {
+    return resolveLabel([
+      `${listField}.${fieldName}`,  // serie.name, episode.date
+      fieldName                      // name, date (fallback)
+    ], { entity: listField, field: fieldName }, fieldName);
+  };
+  
+  // Form action labels
+  const actionLabel = resolveLabel([
+    `form.${action}`                // form.create, form.edit, form.view
+  ], { entity: listField }, action);
+  
+  return (
+    <div>
+      <h1>{actionLabel} {entityName}</h1>
+      {/* Form fields with dynamic labels */}
+    </div>
+  );
+}
+```
+
+#### **Advanced i18n Features**
+- **Pluralization**: Support for different plural forms
+- **Gender Agreement**: Context-aware gender matching
+- **Number Formatting**: Locale-specific number and date formats
+- **Currency Support**: Localized currency display
+- **RTL Support**: Right-to-left language support
+
 #### **Column Renderer Types**
 ```typescript
 type ColumnRenderer = (params: {
@@ -461,11 +687,13 @@ export function setupEpisodeFormCustomization() {
 - **Cache Management**: Apollo Client integration with invalidation
 - **Schema Introspection**: Real-time field discovery
 
-#### **Internationalization**
+#### **Internationalization (i18n)**
 - **Multi-Language**: English and Spanish support
 - **Dynamic Labels**: Field labels resolved from i18n system
 - **Context-Aware**: Entity and field-specific translations
 - **Fallback Support**: Graceful degradation for missing keys
+- **Function-Based**: Dynamic label resolution with parameters
+- **Entity-Specific**: Automatic entity type detection and labeling
 
 #### **Column Customization**
 - **Custom Renderers**: Specialized display for different data types
