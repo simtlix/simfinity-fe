@@ -273,155 +273,7 @@ resolveLabel(["form.edit"], { entity: "series" }, "Edit")                      /
 resolveLabel(["form.view"], { entity: "series" }, "View")                      // "Ver" (ES) / "View" (EN)
 ```
 
-#### **Function-Based Internationalization**
-The system supports dynamic label resolution with context-aware functions:
 
-```typescript
-// Dynamic entity name resolution
-const getEntityName = (pluralName: string, form: 'single' | 'plural'): string => {
-  return resolveLabel([
-    `entity.${pluralName}.${form}`  // entity.series.single, entity.series.plural
-  ], { entity: pluralName }, pluralName);
-};
-
-// Usage
-getEntityName("series", "single")   // "Serie" (ES) / "Series" (EN)
-getEntityName("series", "plural")   // "Series" (ES) / "Series" (EN)
-getEntityName("episodes", "single") // "Episodio" (ES) / "Episode" (EN)
-```
-
-#### **Context-Aware Labeling**
-Labels can include dynamic context for rich, personalized text:
-
-```typescript
-// With entity context
-resolveLabel(
-  ["entity.field"], 
-  { entity: "series", field: "name" }, 
-  "Name"
-);
-
-// With form context
-resolveLabel(
-  ["form.action"], 
-  { entity: "series", action: "create" }, 
-  "Create"
-);
-
-// With count context
-resolveLabel(
-  ["collection.items"], 
-  { entity: "episodes", count: 5 }, 
-  "5 episodes"
-);
-```
-
-#### **Fallback Chain Examples**
-```typescript
-// Field label resolution with fallbacks
-resolveLabel([
-  "serie.name",        // 1. Try entity-specific field key
-  "name"               // 2. Try generic field key
-], { entity: "series", field: "name" }, "Name");
-
-// Entity label resolution with fallbacks
-resolveLabel([
-  "entity.series.single",  // 1. Try specific entity form
-  "entity.series",         // 2. Try generic entity
-  "series"                 // 3. Try direct fallback
-], { entity: "series" }, "Series");
-```
-
-#### **i18n File Structure**
-
-The internationalization system uses two types of i18n files:
-
-##### **1. Source i18n Files (src/i18n/)**
-These are TypeScript files that provide type-safe translations and are imported directly into components.
-
-```typescript
-// src/i18n/en.ts
-export default {
-  entity: {
-    serie: {
-      single: "Series",
-      plural: "Series"
-    },
-    episode: {
-      single: "Episode",
-      plural: "Episodes"
-    }
-  },
-  serie: {
-    name: "Name",
-    description: "Description",
-    year: "Year",
-    director: "Director"
-  },
-  episode: {
-    name: "Name",
-    number: "Number",
-    date: "Date",
-    season: "Season"
-  },
-  form: {
-    create: "Create",
-    edit: "Edit",
-    view: "View",
-    save: "Save",
-    cancel: "Cancel",
-    required: "This field is required",
-    invalidNumber: "Must be a valid number",
-    invalidDate: "Must be a valid date"
-  },
-  collection: {
-    items: "{count} {entity}",
-    noData: "No {entity} available",
-    addItem: "Add {entity}"
-  }
-};
-
-// src/i18n/es.ts
-export default {
-  entity: {
-    serie: {
-      single: "Serie",
-      plural: "Series"
-    },
-    episode: {
-      single: "Episodio",
-      plural: "Episodios"
-    }
-  },
-  serie: {
-    name: "Nombre",
-    description: "Descripción",
-    year: "Año",
-    director: "Director"
-  },
-  episode: {
-    name: "Nombre",
-    number: "Número",
-    date: "Fecha",
-    season: "Temporada"
-  },
-  form: {
-    create: "Crear",
-    edit: "Editar",
-    view: "Ver",
-    save: "Guardar",
-    cancel: "Cancelar",
-    required: "Este campo es obligatorio",
-    invalidNumber: "Debe ser un número válido",
-    invalidDate: "Debe ser una fecha válida"
-  },
-  collection: {
-    items: "{count} {entity}",
-    noData: "No hay {entity} disponibles",
-    addItem: "Agregar {entity}"
-  }
-};
-```
 
 ##### **2. Public i18n Files (public/i18n/)**
 These are JSON files served statically and can be loaded dynamically for runtime language switching.
@@ -429,84 +281,172 @@ These are JSON files served statically and can be loaded dynamically for runtime
 ```json
 // public/i18n/en.json
 {
-  "entity": {
-    "serie": {
-      "single": "Series",
-      "plural": "Series"
-    },
-    "episode": {
-      "single": "Episode",
-      "plural": "Episodes"
-    }
-  },
-  "serie": {
-    "name": "Name",
-    "description": "Description",
-    "year": "Year",
-    "director": "Director"
-  },
-  "episode": {
-    "name": "Name",
-    "number": "Number",
-    "date": "Date",
-    "season": "Season"
-  },
-  "form": {
-    "create": "Create",
-    "edit": "Edit",
-    "view": "View",
-    "save": "Save",
-    "cancel": "Cancel",
-    "required": "This field is required",
-    "invalidNumber": "Must be a valid number",
-    "invalidDate": "Must be a valid date"
-  },
-  "collection": {
-    "items": "{count} {entity}",
-    "noData": "No {entity} available",
-    "addItem": "Add {entity}"
-  }
+  "entity.serie.single": "Serie",
+  "entity.serie.plural": "Series",
+  "entity.season.single": "Season",
+  "entity.season.plural": "Seasons",
+  "entity.episode.single": "Episode",
+  "entity.episode.plural": "Episodes",
+  "entity.director.single": "Director",
+  "entity.director.plural": "Directors",
+  "entity.star.single": "Star",
+  "entity.star.plural": "Stars",
+  "entity.category.single": "Category",
+  "entity.category.plural": "Categories",
+  "entity.movie.single": "Movie",
+  "entity.movie.plural": "Movies",
+
+  "serie.name": "Name",
+  "serie.categories": "Categories",
+  "serie.director": "Director",
+  "serie.seasons": "Seasons",
+  "serie.stars": "Stars",
+
+  "director.name": "Name",
+  "director.country": "Country",
+
+  "season.number": "Number",
+  "season.year": "Year",
+  "season.state": "State",
+  "season.serie": "Series",
+
+  "episode.number": "Number",
+  "episode.name": "Name",
+  "episode.date": "Air Date",
+  "episode.season": "Season",
+
+  "star.name": "Name",
+  "star.country": "Country",
+
+  "assignedStarAndSerie.id": "ID",
+  "assignedStarAndSerie.serie": "Series",
+  "assignedStarAndSerie.star": "Star",
+  
+  "collection.loading": "Loading...",
+  "collection.error": "Error loading data",
+  "collection.noData": "No data available",
+  
+  "grid.filter.columns": "Columns",
+  "grid.filter.operator": "Operator",
+  "grid.filter.value": "Value",
+  "grid.filter.contains": "contains",
+  "grid.filter.equals": "equals",
+  "grid.filter.startsWith": "starts with",
+  "grid.filter.endsWith": "ends with",
+  "grid.filter.is": "is",
+  "grid.filter.not": "not",
+  "grid.filter.isAnyOf": "is any of",
+  "grid.filter.greaterThan": "greater than",
+  "grid.filter.greaterThanOrEqual": "greater than or equal to",
+  "grid.filter.lessThan": "less than",
+  "grid.filter.lessThanOrEqual": "less than or equal to",
+
+  "form.create": "Create",
+  "form.edit": "Edit",
+  "form.view": "View",
+  "form.cancel": "Cancel",
+  "form.update": "Update",
+  "form.submit": "Submit",
+  "form.required": "This field is required",
+  "form.invalidNumber": "Must be a valid number",
+  "form.invalidDate": "Must be a valid date",
+  "form.successCreated": "Entity created successfully!",
+  "form.successUpdated": "Entity updated successfully!",
+  "form.errorOccurred": "An error occurred",
+  "form.searchAnother": "Search for another...",
+  "form.searchObject": "Search {entity}...",
+  "form.addField": "Add {field}",
+  "form.selectField": "Select {field}",
+
+  "actions.view": "View",
+  "actions.edit": "Edit",
+  "actions.column": "Actions",
+  "button.create": "Create"
 }
 
 // public/i18n/es.json
 {
-  "entity": {
-    "serie": {
-      "single": "Serie",
-      "plural": "Series"
-    },
-    "episode": {
-      "single": "Episodio",
-      "plural": "Episodios"
-    }
-  },
-  "serie": {
-    "name": "Nombre",
-    "description": "Descripción",
-    "year": "Año",
-    "director": "Director"
-  },
-  "episode": {
-    "name": "Nombre",
-    "number": "Número",
-    "date": "Fecha",
-    "season": "Temporada"
-  },
-  "form": {
-    "create": "Crear",
-    "edit": "Editar",
-    "view": "Ver",
-    "save": "Guardar",
-    "cancel": "Cancelar",
-    "required": "Este campo es obligatorio",
-    "invalidNumber": "Debe ser un número válido",
-    "invalidDate": "Debe ser una fecha válida"
-  },
-  "collection": {
-    "items": "{count} {entity}",
-    "noData": "No hay {entity} disponibles",
-    "addItem": "Agregar {entity}"
-  }
+  "entity.serie.single": "Serie",
+  "entity.serie.plural": "Series",
+  "entity.season.single": "Temporada",
+  "entity.season.plural": "Temporadas",
+  "entity.episode.single": "Episodio",
+  "entity.episode.plural": "Episodios",
+  "entity.director.single": "Director",
+  "entity.director.plural": "Directores",
+  "entity.star.single": "Actor",
+  "entity.star.plural": "Actores",
+  "entity.category.single": "Categoría",
+  "entity.category.plural": "Categorías",
+  "entity.movie.single": "Película",
+  "entity.movie.plural": "Películas",
+
+  "serie.name": "Título",
+  "serie.categories": "Categorías",
+  "serie.director": "Director",
+  "serie.seasons": "Temporadas",
+  "serie.stars": "Actores",
+
+  "director.name": "Nombre",
+  "director.country": "País",
+
+  "season.number": "N°",
+  "season.year": "Año",
+  "season.state": "Estado",
+  "season.serie": "Serie",
+
+  "episode.number": "N°",
+  "episode.name": "Nombre",
+  "episode.date": "Fecha",
+  "episode.season": "Temporada",
+
+  "star.name": "Nombre",
+  "star.country": "País",
+
+  "assignedStarAndSerie.id": "ID",
+  "assignedStarAndSerie.serie": "Serie",
+  "assignedStarAndSerie.star": "Estrella",
+  
+  "collection.loading": "Cargando...",
+  "collection.error": "Error al cargar datos",
+  "collection.noData": "No hay datos disponibles",
+  
+  "grid.filter.columns": "Columnas",
+  "grid.filter.operator": "Operador",
+  "grid.filter.value": "Valor",
+  "grid.filter.contains": "contiene",
+  "grid.filter.equals": "igual a",
+  "grid.filter.startsWith": "empieza con",
+  "grid.filter.endsWith": "termina con",
+  "grid.filter.is": "es",
+  "grid.filter.not": "no es",
+  "grid.filter.isAnyOf": "cualquiera de",
+  "grid.filter.greaterThan": "mayor que",
+  "grid.filter.greaterThanOrEqual": "mayor o igual que",
+  "grid.filter.lessThan": "menor que",
+  "grid.filter.lessThanOrEqual": "menor o igual que",
+
+  "form.create": "Crear",
+  "form.edit": "Editar",
+  "form.view": "Ver",
+  "form.cancel": "Cancelar",
+  "form.update": "Actualizar",
+  "form.submit": "Enviar",
+  "form.required": "Este campo es obligatorio",
+  "form.invalidNumber": "Debe ser un número válido",
+  "form.invalidDate": "Debe ser una fecha válida",
+  "form.successCreated": "¡Entidad creada exitosamente!",
+  "form.successUpdated": "¡Entidad actualizada exitosamente!",
+  "form.errorOccurred": "Ocurrió un error",
+  "form.searchAnother": "Buscar otro...",
+  "form.searchObject": "Buscar {entity}...",
+  "form.addField": "Agregar {field}",
+  "form.selectField": "Seleccionar {field}",
+
+  "actions.view": "Ver",
+  "actions.edit": "Editar",
+  "actions.column": "Acciones",
+  "button.create": "Crear"
 }
 ```
 
