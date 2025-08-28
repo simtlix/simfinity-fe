@@ -6,7 +6,8 @@ export function setupCollectionFieldCustomizations() {
   
   // Example 1: Serie with embedded seasons collection customization
   registerFormCustomization("serie", "edit", {
-    name: {
+    fieldsCustomization: {
+      name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
       onChange: (fieldName, value, formData) => {
@@ -122,11 +123,13 @@ export function setupCollectionFieldCustomizations() {
         }
       }
     }
+    }
   });
 
   // Example 2: Serie with embedded stars collection customization
   registerFormCustomization("serie", "edit", {
-    name: {
+    fieldsCustomization: {
+      name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1
     },
@@ -157,11 +160,13 @@ export function setupCollectionFieldCustomizations() {
         }
       }
     }
+    }
   });
 
   // Example 3: Serie with assigned stars and series collection customization
   registerFormCustomization("serie", "edit", {
-    name: {
+    fieldsCustomization: {
+      name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1
     },
@@ -192,11 +197,13 @@ export function setupCollectionFieldCustomizations() {
         }
       }
     }
+    }
   });
 
   // Example 4: Conditional collection field visibility and enabling
   registerFormCustomization("serie", "edit", {
-    name: {
+    fieldsCustomization: {
+      name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
       onChange: (fieldName, value, formData) => {
@@ -261,6 +268,7 @@ export function setupCollectionFieldCustomizations() {
           order: 2
         }
       }
+    }
     }
   });
 }

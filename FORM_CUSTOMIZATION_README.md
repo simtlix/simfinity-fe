@@ -10,6 +10,9 @@ The Form Customization System allows you to control the layout, behavior, and va
 - **Field State**: Enable/disable fields based on business logic
 - **Custom Validation**: Add custom error messages for fields
 - **Custom onChange Events**: Implement complex field interactions and dependencies
+- **Entity-Level Callbacks**: Execute custom logic before/after form submissions and handle errors
+- **Form-Level Messages**: Display messages at the form level with different severity types
+- **Collection Management**: Handle collection changes in both create and edit modes
 
 ## Basic Usage
 
@@ -22,18 +25,39 @@ import { registerFormCustomization } from '@/lib/formCustomization';
 ### 2. Register Customizations for an Entity Type
 
 ```typescript
-registerFormCustomization("serie", {
-  name: {
-    size: { xs: 12, sm: 6, md: 4 },
-    order: 1,
-    enabled: true,
-    visible: true,
-    errorMessage: (value) => {
-      if (!value || String(value).trim() === '') {
-        return "Name is required";
+registerFormCustomization("serie", "create", {
+  fieldsCustomization: {
+    name: {
+      size: { xs: 12, sm: 6, md: 4 },
+      order: 1,
+      enabled: true,
+      visible: true,
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+        if (!value || String(value).trim() === '') {
+          return { value, error: "Name is required" };
+        }
+        return { value, error: undefined };
       }
-      return undefined;
     }
+  },
+  // Entity-level callbacks (optional)
+  beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+    // Custom validation or data processing before submission
+    console.log('About to submit:', { formData, collectionChanges, transformedData });
+  },
+  onSuccess: async (result) => {
+    // Custom actions after successful submission
+    return {
+      message: 'Entity created successfully!',
+      navigateTo: '/entities/series'
+    };
+  },
+  onError: async (error, formData, actions) => {
+    // Custom error handling
+    actions.setFormMessage({
+      type: 'error',
+      message: `Failed to create entity: ${error.message}`
+    });
   }
 });
 ```
@@ -223,60 +247,329 @@ onChange: (fieldName, value, formData, setFieldData) => {
 - `value`: The processed value (can be modified)
 - `error`: Optional error message
 
+## Entity-Level Callbacks
+
+Entity-level callbacks allow you to execute custom logic at key points in the form lifecycle: before submission, after success, and on error. These callbacks provide powerful hooks for business logic, validation, and custom user experience flows.
+
+### Registration Format
+
+```typescript
+registerFormCustomization("entityType", "mode", {
+  fieldsCustomization: {
+    // Field-level customizations go here
+  },
+  beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+    // Execute before form submission
+  },
+  onSuccess: async (result) => {
+    // Execute after successful submission
+  },
+  onError: async (error, formData, actions) => {
+    // Execute when errors occur
+  }
+});
+```
+
+### beforeSubmit Callback
+
+Executed before the form is submitted to the server. Use this for final validation, data transformation, or business rule enforcement.
+
+**Parameters:**
+- `formData`: Current form field values
+- `collectionChanges`: Changes to collection fields (added, modified, deleted items)
+- `transformedData`: Data prepared for the GraphQL mutation
+- `actions`: Object containing functions to modify form state
+
+**Available Actions:**
+- `setFieldData(fieldName, value)`: Set a field's value
+- `setFieldVisible(fieldName, visible)`: Show/hide a field
+- `setFieldEnabled(fieldName, enabled)`: Enable/disable a field
+- `setCollectionChanges(fieldName, changes)`: Update collection state
+- `setFormMessage(message)`: Display a form-level message
+- `setError(errorMessage)`: Set a form-level error
+
+**Example:**
+```typescript
+beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+  // Validate business rules
+  const title = formData.title?.value;
+  const genre = formData.genre?.value;
+  
+  if (genre === 'horror' && title?.includes('kids')) {
+    actions.setFormMessage({
+      type: 'error',
+      message: 'Horror content cannot be marketed to children'
+    });
+    throw new Error('Validation failed'); // Prevents submission
+  }
+  
+  // Auto-generate missing data
+  if (!formData.slug?.value && title) {
+    const slug = String(title).toLowerCase().replace(/\s+/g, '-');
+    actions.setFieldData('slug', slug);
+  }
+  
+  // Validate collection changes
+  if (collectionChanges.episodes?.added.length > 50) {
+    actions.setFormMessage({
+      type: 'warning',
+      message: 'You are adding many episodes. This may take longer to process.'
+    });
+  }
+}
+```
+
+### onSuccess Callback
+
+Executed after successful form submission. Use this for custom success messages, navigation, or follow-up actions.
+
+**Parameters:**
+- `result`: The GraphQL mutation result
+
+**Return Value (Optional):**
+```typescript
+{
+  message?: string | React.ReactNode;  // Custom success message
+  navigateTo?: string;                 // Custom navigation URL
+  action?: () => void;                 // Custom action to execute
+}
+```
+
+**Examples:**
+```typescript
+// Simple success message
+onSuccess: async (result) => {
+  return {
+    message: 'Series created successfully! You can now add seasons and episodes.',
+    navigateTo: `/entities/series/${result.data.addSerie.id}/edit`
+  };
+}
+
+// Complex success flow
+onSuccess: async (result) => {
+  const seriesId = result.data.addSerie.id;
+  
+  // Log analytics
+  analytics.track('series_created', { id: seriesId });
+  
+  // Custom navigation with delay
+  return {
+    message: 'Series created! Redirecting to edit page...',
+    action: () => {
+      setTimeout(() => {
+        window.location.href = `/entities/series/${seriesId}/edit`;
+      }, 1000);
+    }
+  };
+}
+```
+
+### onError Callback
+
+Executed when form submission fails. Use this for custom error handling, user-friendly error messages, or error recovery actions.
+
+**Parameters:**
+- `error`: The error object from the failed mutation
+- `formData`: Current form field values  
+- `actions`: Object containing functions to modify form state
+
+**Important:** If this callback is provided, it completely overrides the default error handling. Make sure to handle all error scenarios.
+
+**Example:**
+```typescript
+onError: async (error, formData, actions) => {
+  console.error('Form submission failed:', error);
+  
+  if (error.message.includes('duplicate')) {
+    actions.setFormMessage({
+      type: 'error',
+      message: 'A series with this title already exists. Please choose a different title.'
+    });
+    actions.setFieldData('title', ''); // Clear the title field
+  } else if (error.message.includes('permission')) {
+    actions.setFormMessage({
+      type: 'error',
+      message: 'You do not have permission to create series. Please contact an administrator.'
+    });
+  } else if (error.message.includes('network')) {
+    actions.setFormMessage({
+      type: 'error', 
+      message: 'Network error. Please check your connection and try again.'
+    });
+  } else {
+    // Generic error handling
+    actions.setFormMessage({
+      type: 'error',
+      message: `Failed to create series: ${error.message}`
+    });
+  }
+}
+```
+
+### Form Message Types
+
+Form messages can have different severity levels:
+
+```typescript
+actions.setFormMessage({
+  type: 'error',    // Red background, error icon
+  type: 'warning',  // Orange background, warning icon
+  type: 'info',     // Blue background, info icon
+  type: 'success',  // Green background, success icon
+  message: 'Your message here'
+});
+```
+
+### Collection Changes Structure
+
+The `collectionChanges` parameter contains information about modifications to collection fields:
+
+```typescript
+{
+  [fieldName]: {
+    added: CollectionItem[],      // New items being added
+    modified: CollectionItem[],   // Existing items with changes
+    deleted: CollectionItem[]     // Items being removed
+  }
+}
+```
+
+**Example:**
+```typescript
+beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+  // Check episode changes
+  if (collectionChanges.episodes) {
+    const { added, modified, deleted } = collectionChanges.episodes;
+    
+    if (added.length > 0) {
+      actions.setFormMessage({
+        type: 'info',
+        message: `Adding ${added.length} new episode(s)`
+      });
+    }
+    
+    if (deleted.length > 0) {
+      actions.setFormMessage({
+        type: 'warning',
+        message: `Deleting ${deleted.length} episode(s). This action cannot be undone.`
+      });
+    }
+  }
+}
+```
+
+### Mode-Specific Customizations
+
+You can register different customizations for create, edit, and view modes:
+
+```typescript
+// Create mode - focus on data entry assistance
+registerFormCustomization("serie", "create", {
+  fieldsCustomization: { /* ... */ },
+  beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+    // Auto-generate slug, validate required fields
+  },
+  onSuccess: async (result) => {
+    return {
+      message: 'Series created! You can now add episodes.',
+      navigateTo: `/entities/series/${result.data.addSerie.id}/edit`
+    };
+  }
+});
+
+// Edit mode - focus on change tracking and validation
+registerFormCustomization("serie", "edit", {
+  fieldsCustomization: { /* ... */ },
+  beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+    // Track significant changes, validate business rules
+  },
+  onSuccess: async (result) => {
+    return {
+      message: 'Series updated successfully!',
+      navigateTo: undefined // Stay on edit page
+    };
+  }
+});
+```
+
 ## Complete Examples
 
 ### Basic Field Customization
 
 ```typescript
-registerFormCustomization("serie", {
-  name: {
-    size: { xs: 12, sm: 6, md: 4 },
-    order: 1,
-    errorMessage: (value) => {
-      if (!value || String(value).trim() === '') {
-        return "Name is required";
+registerFormCustomization("serie", "create", {
+  fieldsCustomization: {
+    name: {
+      size: { xs: 12, sm: 6, md: 4 },
+      order: 1,
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+        // Auto-capitalize first letter
+        const capitalized = String(value).charAt(0).toUpperCase() + String(value).slice(1);
+        
+        // Show movie-specific fields if name contains 'movie'
+        if (String(value).toLowerCase().includes('movie')) {
+          setFieldVisible('director', true);
+          setFieldVisible('year', true);
+        } else {
+          setFieldVisible('director', false);
+          setFieldVisible('year', false);
+        }
+        
+        // Validation
+        if (!value || String(value).trim() === '') {
+          return { value: capitalized, error: "Name is required" };
+        }
+        
+        return { value: capitalized, error: undefined };
       }
-      return undefined;
     },
-    onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
-      // Auto-capitalize first letter
-      const capitalized = String(value).charAt(0).toUpperCase() + String(value).slice(1);
-      
-      // Show movie-specific fields if name contains 'movie'
-      if (String(value).toLowerCase().includes('movie')) {
-        setFieldVisible('director', true);
-        setFieldVisible('year', true);
-      } else {
-        setFieldVisible('director', false);
-        setFieldVisible('year', false);
+    
+    director: {
+      size: { xs: 12, sm: 6, md: 4 },
+      order: 2,
+      visible: false, // Initially hidden
+      onChange: (fieldName, value) => {
+        if (!value) {
+          return { value, error: "Director is required for movies" };
+        }
+        return { value, error: undefined };
       }
-      
-      return { value: capitalized, error: undefined };
+    },
+    
+    year: {
+      size: { xs: 12, sm: 6, md: 4 },
+      order: 3,
+      visible: false, // Initially hidden
+      onChange: (fieldName, value) => {
+        if (!value) return { value, error: undefined };
+        const year = Number(value);
+        if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
+          return { value, error: `Year must be between 1900 and ${new Date().getFullYear()}` };
+        }
+        return { value, error: undefined };
+      }
     }
   },
   
-  director: {
-    size: { xs: 12, sm: 6, md: 4 },
-    order: 2,
-    visible: false, // Initially hidden
-    errorMessage: (value) => {
-      if (!value) return "Director is required for movies";
-      return undefined;
+  beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+    const name = formData.name?.value;
+    const isMovie = String(name).toLowerCase().includes('movie');
+    
+    // Enforce business rules
+    if (isMovie && !formData.director?.value) {
+      actions.setFormMessage({
+        type: 'error',
+        message: 'Director is required for movies'
+      });
+      throw new Error('Validation failed');
     }
   },
   
-  year: {
-    size: { xs: 12, sm: 6, md: 4 },
-    order: 3,
-    visible: false, // Initially hidden
-    errorMessage: (value) => {
-      if (!value) return undefined;
-      const year = Number(value);
-      if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
-        return `Year must be between 1900 and ${new Date().getFullYear()}`;
-      }
-      return undefined;
-    }
+  onSuccess: async (result) => {
+    return {
+      message: 'Series created successfully!',
+      navigateTo: `/entities/series/${result.data.addSerie.id}/edit`
+    };
   }
 });
 ```
@@ -284,68 +577,98 @@ registerFormCustomization("serie", {
 ### Advanced Embedded Object Customization
 
 ```typescript
-registerFormCustomization("serie", {
-  // Section-level customization for embedded objects
-  director: {
-    size: { xs: 12, sm: 6, md: 6 }, // Section takes half the screen
-    order: 3,                        // Appears after name and categories
-    visible: true,
-    enabled: true
-  },
-  
-  // Field-level customization within the director section
-  "director.name": {
-    size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
-    errorMessage: (value) => {
-      if (!value || String(value).trim() === '') {
-        return "Director name is required";
-      }
-      return undefined;
+registerFormCustomization("serie", "edit", {
+  fieldsCustomization: {
+    // Section-level customization for embedded objects
+    director: {
+      size: { xs: 12, sm: 6, md: 6 }, // Section takes half the screen
+      order: 3,                        // Appears after name and categories
+      visible: true,
+      enabled: true
     },
-    onChange: (fieldName, value, formData, setFieldData) => {
-      // Auto-capitalize director name
-      if (value && typeof value === 'string') {
-        const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
-        return { value: capitalized, error: undefined };
+    
+    // Field-level customization within the director section
+    "director.name": {
+      size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
+      onChange: (fieldName, value, formData, setFieldData) => {
+        // Auto-capitalize director name
+        if (value && typeof value === 'string') {
+          const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
+          if (!value || String(value).trim() === '') {
+            return { value: capitalized, error: "Director name is required" };
+          }
+          return { value: capitalized, error: undefined };
+        }
+        return { value, error: undefined };
       }
-      return { value, error: undefined };
+    },
+    
+    "director.country": {
+      size: { xs: 12, sm: 6, md: 6 }, // Field takes the other half of the section
+      onChange: (fieldName, value) => {
+        if (!value || String(value).trim() === '') {
+          return { value, error: "Director country is required" };
+        }
+        return { value, error: undefined };
+      }
+    },
+    
+    // Another section that can appear in the same row
+    production: {
+      size: { xs: 12, sm: 6, md: 6 }, // Section takes the other half of the screen
+      order: 4,                        // Appears after director section
+      visible: true,
+      enabled: true
+    },
+    
+    "production.company": {
+      size: { xs: 12, sm: 12, md: 12 }, // Field takes full width of its section
+      onChange: (fieldName, value) => {
+        if (!value || String(value).trim() === '') {
+          return { value, error: "Production company is required" };
+        }
+        return { value, error: undefined };
+      }
+    },
+    
+    "production.year": {
+      size: { xs: 12, sm: 6, md: 6 } // Field takes half the section width
+    },
+    
+    "production.budget": {
+      size: { xs: 12, sm: 6, md: 6 } // Field takes the other half of the section
     }
   },
   
-  "director.country": {
-    size: { xs: 12, sm: 6, md: 6 }, // Field takes the other half of the section
-    errorMessage: (value) => {
-      if (!value || String(value).trim() === '') {
-        return "Director country is required";
-      }
-      return undefined;
+  beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+    // Validate embedded object completeness
+    const directorName = formData['director.name']?.value;
+    const directorCountry = formData['director.country']?.value;
+    
+    if (directorName && !directorCountry) {
+      actions.setFormMessage({
+        type: 'warning',
+        message: 'Director country is recommended when director name is provided'
+      });
+    }
+    
+    // Track significant changes
+    const originalTitle = formData.title?.__originalValue;
+    const currentTitle = formData.title?.value;
+    
+    if (originalTitle !== currentTitle) {
+      actions.setFormMessage({
+        type: 'info',
+        message: 'Title changed. This may affect search rankings and bookmarks.'
+      });
     }
   },
   
-  // Another section that can appear in the same row
-  production: {
-    size: { xs: 12, sm: 6, md: 6 }, // Section takes the other half of the screen
-    order: 4,                        // Appears after director section
-    visible: true,
-    enabled: true
-  },
-  
-  "production.company": {
-    size: { xs: 12, sm: 12, md: 12 }, // Field takes full width of its section
-    errorMessage: (value) => {
-      if (!value || String(value).trim() === '') {
-        return "Production company is required";
-      }
-      return undefined;
-    }
-  },
-  
-  "production.year": {
-    size: { xs: 12, sm: 6, md: 6 } // Field takes half the section width
-  },
-  
-  "production.budget": {
-    size: { xs: 12, sm: 6, md: 6 } // Field takes the other half of the section
+  onSuccess: async (result) => {
+    return {
+      message: 'Series updated successfully!',
+      navigateTo: undefined // Stay on edit page
+    };
   }
 });
 ```
@@ -372,6 +695,10 @@ The EntityForm component automatically detects and applies customizations:
 4. **Performance**: Keep custom onChange functions lightweight
 5. **Error Handling**: Return appropriate error messages for validation failures
 6. **State Consistency**: Use the provided setter functions to maintain form state
+7. **Mode-Specific Logic**: Use different customizations for create vs edit modes when needed
+8. **Collection Management**: Collections work in both create and edit modes - users can add items to collections when creating new entities
+9. **Error Recovery**: Always provide user-friendly error messages and recovery options in onError callbacks
+10. **Success Flow**: Use onSuccess callbacks to provide clear feedback and appropriate navigation
 
 ## Troubleshooting
 
@@ -392,20 +719,26 @@ The EntityForm component automatically detects and applies customizations:
 
 ## API Reference
 
-### `registerFormCustomization(entityType, customization)`
+### `registerFormCustomization(entityType, mode, config)`
 
-Registers form customizations for a specific entity type.
+Registers form customizations for a specific entity type and mode.
 
 **Parameters:**
 - `entityType`: String - The entity type name (e.g., "serie", "episode")
-- `customization`: FormCustomization - Object containing field customizations
+- `mode`: String - The form mode ("create", "edit", or "view")
+- `config`: FormCustomizationConfig - Object containing field customizations and entity-level callbacks
 
-### `FormCustomization`
+### `FormCustomizationConfig`
 
-Type definition for the customization object:
+Type definition for the configuration object:
 
 ```typescript
-type FormCustomization = Record<string, FieldCustomization>;
+type FormCustomizationConfig = {
+  fieldsCustomization?: Record<string, FieldCustomization | EmbeddedSectionCustomization | CollectionFieldCustomization>;
+  beforeSubmit?: (formData: Record<string, unknown>, collectionChanges: Record<string, CollectionFieldState>, transformedData: Record<string, unknown>, actions: EntityFormCallbackActions) => void | Promise<void>;
+  onSuccess?: (result: unknown) => EntityFormSuccessResult | void | Promise<EntityFormSuccessResult | void>;
+  onError?: (error: unknown, formData: Record<string, unknown>, actions: EntityFormCallbackActions) => void | Promise<void>;
+};
 ```
 
 ### `FieldCustomization`
@@ -415,9 +748,47 @@ Type definition for individual field customization:
 ```typescript
 type FieldCustomization = {
   size?: FieldSize;
-  enabled?: boolean;
-  visible?: boolean;
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
+  visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
   order?: number;
-  onChange?: (fieldName: string, value: string | number | boolean | string[] | null, formData: Record<string, unknown>, setFieldData: (fieldName: string, value: string | number | boolean | string[] | null) => void, setFieldVisible: (fieldName: string, visible: boolean) => void, setFieldEnabled: (fieldName: string, enabled: boolean) => void) => { value: string | number | boolean | string[] | null; error?: string };
+  onChange?: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, formData: Record<string, unknown>, setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, setFieldVisible: (fieldName: string, visible: boolean) => void, setFieldEnabled: (fieldName: string, enabled: boolean) => void) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
+};
+```
+
+### `EntityFormCallbackActions`
+
+Type definition for actions available in entity-level callbacks:
+
+```typescript
+type EntityFormCallbackActions = {
+  setFieldData: (fieldName: string, value: unknown) => void;
+  setFieldVisible: (fieldName: string, visible: boolean) => void;
+  setFieldEnabled: (fieldName: string, enabled: boolean) => void;
+  setCollectionChanges: (fieldName: string, changes: CollectionFieldState) => void;
+  setFormMessage: (message: FormMessage) => void;
+  setError: (errorMessage: string) => void;
+};
+```
+
+### `FormMessage`
+
+Type definition for form-level messages:
+
+```typescript
+type FormMessage = {
+  type: 'error' | 'warning' | 'info' | 'success';
+  message: string | React.ReactNode;
+};
+```
+
+### `EntityFormSuccessResult`
+
+Type definition for onSuccess callback return value:
+
+```typescript
+type EntityFormSuccessResult = {
+  message?: string | React.ReactNode;
+  navigateTo?: string;
+  action?: () => void;
 };
 ```

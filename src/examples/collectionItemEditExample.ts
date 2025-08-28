@@ -6,7 +6,8 @@ export function setupCollectionItemEditCustomizations() {
   
   // Example 1: Customize star edit form in seasons collection
   registerFormCustomization("seasons.star", "edit", {
-    name: {
+    fieldsCustomization: {
+      name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
       onChange: (fieldName, value, formData) => {
@@ -22,11 +23,13 @@ export function setupCollectionItemEditCustomizations() {
         return { value, error: undefined };
       }
     }
+    }
   });
 
   // Example 2: Customize episode edit form in episodes collection
   registerFormCustomization("episodes.episode", "edit", {
-    name: {
+    fieldsCustomization: {
+      name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
       onChange: (fieldName, value, formData) => {
@@ -58,11 +61,13 @@ export function setupCollectionItemEditCustomizations() {
         return { value, error: undefined };
       }
     }
+    }
   });
 
   // Example 3: Customize assigned star and serie edit form
   registerFormCustomization("stars.assignedStarAndSerie", "edit", {
-    serie: {
+    fieldsCustomization: {
+      serie: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
       onChange: (fieldName, value, formData) => {
@@ -78,11 +83,13 @@ export function setupCollectionItemEditCustomizations() {
         return { value, error: undefined };
       }
     }
+    }
   });
 
   // Example 4: Conditional field visibility and enabling
   registerFormCustomization("episodes.episode", "edit", {
-    name: {
+    fieldsCustomization: {
+      name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
       onChange: (fieldName, value, _formData, setFieldData) => {
@@ -110,6 +117,7 @@ export function setupCollectionItemEditCustomizations() {
         const numberValue = formDataTyped.number?.value;
         return !!(numberValue && Number(numberValue) > 0);
       }
+    }
     }
   });
 }

@@ -1,0 +1,495 @@
+# Simfinity Frontend - Comprehensive Cursor Rules & Context
+
+## Project Overview
+This is a Next.js 15.4.6 frontend application for Simfinity, featuring a dynamic, schema-driven form management system built with GraphQL, Apollo Client, and Material-UI v7.3.1. The system automatically generates forms from GraphQL schema introspection and supports complex entity management including embedded objects, collections, and extensive customization capabilities.
+
+## Tech Stack
+- **Framework**: Next.js 15.4.6 with App Router
+- **Language**: TypeScript 5 (strict mode)
+- **UI Library**: Material-UI v7.3.1 (MUI)
+- **Data Layer**: Apollo Client 3.13.9 + GraphQL 16.11.0
+- **Styling**: Tailwind CSS 4 + Emotion
+- **State Management**: React hooks + custom hooks
+- **Internationalization**: i18n support (en/es)
+
+## Core Architecture
+
+### EntityForm System
+The application centers around a sophisticated EntityForm component that:
+- Automatically generates forms from GraphQL schema introspection
+- Supports create/edit/view modes for any entity type
+- Handles complex nested objects, collections, and relationships
+- Provides extensive customization capabilities
+
+### Component Hierarchy
+```
+EntityForm (Main Container)
+├── FormFieldRenderer (Generic Field Renderer)
+├── ObjectFieldSelector (Object Reference Selector)
+├── CollectionFieldGrid (Collection Management)
+│   └── CollectionItemEditForm (Individual Item Editor)
+└── Embedded Object Sections (Accordion-based)
+```
+
+### Key Components
+
+#### EntityForm.tsx
+**Purpose**: Main form container that orchestrates the entire form system
+
+**Key Responsibilities**:
+- Schema introspection and field discovery
+- Dynamic GraphQL query generation
+- Form state management
+- Collection field integration
+- Form customization coordination
+
+**Core Features**:
+- **Action Modes**: `create`, `edit`, `view` with different behaviors
+- **Dynamic Queries**: Generates GraphQL queries based on discovered fields
+- **Collection Integration**: Manages collection fields separately from main form
+- **Embedded Objects**: Handles nested object structures with accordion sections
+
+#### FormFieldRenderer.tsx
+**Purpose**: Generic component for rendering any form field type
+
+**Supported Field Types**:
+- **Scalar Fields**: Text, Number, Boolean, Date, Enum
+- **Object Fields**: Foreign key relationships with search/select
+- **List Fields**: Tag-based input for scalar lists
+- **Embedded Fields**: Nested object structures
+
+**Customization Integration**:
+- Field visibility control
+- Field enable/disable logic
+- Field sizing and layout
+- Custom onChange handlers
+
+#### ObjectFieldSelector.tsx
+**Purpose**: Handles object reference selection (foreign keys)
+
+**Features**:
+- Search functionality for object lists
+- Display field rendering (e.g., name, title)
+- Object data preservation (stores full objects, not just IDs)
+- Integration with form customization system
+
+#### CollectionFieldGrid.tsx
+**Purpose**: Manages collections of related entities (e.g., seasons in a series)
+
+**State Management**:
+- **Added Items**: New items being created
+- **Modified Items**: Existing items with changes
+- **Deleted Items**: Items marked for removal
+- **Original Data**: Preserves initial state for comparison
+
+**Key Features**:
+- **Add Button**: Opens CollectionItemEditForm for new items
+- **Edit Functionality**: Modifies existing items
+- **Delete/Restore**: Manages item lifecycle
+- **Connection Field Hiding**: Automatically hides parent entity reference columns
+- **Status Tracking**: Uses `__status` and `__originalData` for change management
+
+#### CollectionItemEditForm.tsx
+**Purpose**: Dialog form for editing individual collection items
+
+**Modes**:
+- **Edit Mode**: Modifies existing items
+- **Add Mode**: Creates new items (ensures connection field remains null)
+
+**Features**:
+- Schema-driven field generation
+- Form customization inheritance from parent entity
+- Object field support with full data preservation
+- Validation and error handling
+
+## SOLID Principles & Code Practices
+
+### 1. Single Responsibility Principle (SRP)
+- Each component has one clear purpose
+- EntityForm orchestrates, FormFieldRenderer renders, ObjectFieldSelector selects
+- Separate concerns: form logic, field rendering, data management
+
+### 2. Open/Closed Principle (OCP)
+- System is open for extension (new field types, customizations)
+- Closed for modification (core architecture remains stable)
+- Use composition and configuration over inheritance
+
+### 3. Liskov Substitution Principle (LSP)
+- All field types can be substituted through FormFieldRenderer
+- Custom field types must implement the same interface
+- Maintain consistent behavior across field implementations
+
+### 4. Interface Segregation Principle (ISP)
+- FormField interface only includes necessary properties
+- Customization interfaces are specific to their use cases
+- Avoid fat interfaces that force unnecessary implementations
+
+### 5. Dependency Inversion Principle (DIP)
+- High-level modules (EntityForm) don't depend on low-level modules (specific field types)
+- Depend on abstractions (FormField interface) not concretions
+- Use dependency injection for customization and configuration
+
+### Additional Code Practices
+
+#### Clean Code Principles
+- **Meaningful Names**: Use descriptive field names that match GraphQL schema
+- **Small Functions**: Keep functions focused and under 20 lines
+- **Single Level of Abstraction**: Don't mix high and low-level concepts
+- **Error Handling**: Use proper error boundaries and graceful degradation
+
+#### React Best Practices
+- **Functional Components**: Prefer functional components with hooks
+- **Proper Dependencies**: Use correct dependency arrays in useEffect/useMemo
+- **State Management**: Lift state up when needed, use local state when appropriate
+- **Performance**: Implement React.memo, useMemo, and useCallback appropriately
+
+#### TypeScript Best Practices
+- **Strict Mode**: Enable all strict TypeScript options
+- **Interface Design**: Design interfaces for extensibility
+- **Generic Types**: Use generics for reusable components
+- **Type Guards**: Implement proper type checking and narrowing
+
+## Form Customization System
+
+### Core Concepts
+The customization system provides fine-grained control over form behavior:
+
+```typescript
+type FormCustomizationState = {
+  customization: FormCustomization;        // Field-level customization
+  fieldVisibility: Record<string, boolean>; // Field visibility rules
+  fieldEnabled: Record<string, boolean>;    // Field enable/disable rules
+  fieldOrder: string[];                    // Field ordering
+};
+```
+
+### Customization Levels
+
+#### 1. Field-Level Customization
+```typescript
+type FieldCustomization = {
+  visible?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
+  size?: GridSize; // Material-UI grid sizing
+  order?: number;  // Display order
+  onChange?: (fieldName: string, value: unknown, formData: FormData, actions: FormCustomizationActions) => FieldChangeResult;
+};
+```
+
+#### 2. Embedded Object Customization
+```typescript
+type EmbeddedSectionCustomization = {
+  visible?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
+  size?: GridSize;
+  order?: number;
+};
+```
+
+#### 3. Collection Item Customization
+```typescript
+type CollectionItemCustomization = {
+  visible?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
+  size?: GridSize;
+  order?: number;
+  onChange?: (fieldName: string, value: unknown, formData: FormData, actions: FormCustomizationActions) => FieldChangeResult;
+};
+```
+
+### Customization Actions
+```typescript
+type FormCustomizationActions = {
+  setFieldData: (fieldName: string, value: unknown) => void;
+  setFieldVisible: (fieldName: string, visible: boolean) => void;
+  setFieldEnabled: (fieldName: string, enabled: boolean) => void;
+  setFieldOrder: (fieldOrder: string[]) => void;
+};
+```
+
+## Data Flow & State Management
+
+### 1. Form Data Structure
+```typescript
+type FormField = {
+  name: string;
+  type: string;
+  required: boolean;
+  value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown };
+  error?: string;
+  isNumeric: boolean;
+  isBoolean: boolean;
+  isDate: boolean;
+  isList: boolean;
+  isEnum: boolean;
+  enumValues?: string[];
+  isObject: boolean;
+  objectTypeName?: string;
+  descriptionField?: string;
+  descriptionFieldType?: string;
+  listQueryName?: string;
+  singleQueryName?: string;
+  isEmbedded?: boolean;
+  embeddedFields?: FormField[];
+  isCollection?: boolean;
+  collectionObjectTypeName?: string;
+  connectionField?: string;
+};
+```
+
+### 2. Collection State Management
+```typescript
+type CollectionFieldState = {
+  added: CollectionItem[];
+  modified: CollectionItem[];
+  deleted: CollectionItem[];
+};
+
+type CollectionItem = {
+  id?: string;
+  [key: string]: unknown;
+  __status?: 'added' | 'modified' | 'deleted';
+  __originalData?: Record<string, unknown>;
+};
+```
+
+### 3. Data Flow Patterns
+1. **Schema Introspection** → Field Discovery → Form Generation
+2. **User Input** → Field Change → Customization Processing → State Update
+3. **Collection Changes** → Local State → Parent Form Integration
+4. **Form Submission** → Data Validation → GraphQL Mutation → Success/Error Handling
+
+## Field Type Detection & Rendering
+
+### Scalar Field Detection
+```typescript
+// Automatic type detection from GraphQL schema
+const isNumeric = isNumericScalarName(typeName);      // Int, Float
+const isBoolean = isBooleanScalarName(typeName);      // Boolean
+const isDate = isDateTimeScalarName(typeName);        // Date, DateTime
+const isEnum = current?.kind === "ENUM";              // Enum types
+```
+
+### Object Field Detection
+```typescript
+// Object fields with foreign key relationships
+const isObject = current?.kind === "OBJECT" && !isList;
+const descriptionField = field.extensions?.relation?.displayField || "name";
+const connectionField = field.extensions?.relation?.connectionField;
+```
+
+### Collection Field Detection
+```typescript
+// List of objects that form collections
+const isCollection = isList && current?.kind === "OBJECT";
+const collectionObjectTypeName = typeName;
+const connectionField = field.extensions?.relation?.connectionField;
+```
+
+### Embedded Object Detection
+```typescript
+// Nested objects within the main entity
+const isEmbedded = field.extensions?.relation?.embedded === true;
+const embeddedFields = processEmbeddedObjectFields(schema, objectTypeName, field.name);
+```
+
+## Internationalization (i18n)
+
+### Label Resolution Strategy
+```typescript
+// Multi-level fallback system
+const getFieldLabel = (fieldName: string): string => {
+  const entityKey = listField.slice(0, -1); // Remove 's' from end
+  const fieldKey = `${entityKey}.${fieldName}`;
+  
+  return resolveLabel([
+    fieldKey,           // entity.field (e.g., "serie.name")
+    fieldName,          // field name as fallback
+  ], { entity: listField, field: fieldName }, fieldName);
+};
+```
+
+### Label Patterns
+- **Entity Labels**: `entity.{entityType}.{form}` (e.g., "serie.single", "serie.plural")
+- **Field Labels**: `{entityType}.{fieldName}` (e.g., "serie.name", "serie.description")
+- **Form Labels**: `form.{action}` (e.g., "form.create", "form.edit", "form.view")
+
+## GraphQL Integration
+
+### Dynamic Query Generation
+```typescript
+// Automatically generates queries based on discovered fields
+const generateQueries = React.useMemo(() => {
+  const fieldSelections = formFields
+    .filter(field => !field.isCollection) // Exclude collection fields
+    .map(field => {
+      if (field.isObject && !field.isEmbedded) {
+        return `${field.name} { id ${field.descriptionField} }`;
+      }
+      return field.name;
+    });
+  
+  // Generate Get, Create, Update queries dynamically
+}, [formFields, listField]);
+```
+
+### Collection Field Handling
+- Collection fields are excluded from main entity queries
+- Collection data is managed separately through dedicated components
+- Changes are tracked locally and integrated during form submission
+
+## Validation & Error Handling
+
+### Validation System
+```typescript
+const validateForm = (): boolean => {
+  let isValid = true;
+  
+  formFields.forEach(field => {
+    // Required field validation
+    if (field.required && (field.value === "" || field.value === null)) {
+      setFieldError(field.name, "This field is required");
+      isValid = false;
+    }
+    
+    // Type-specific validation
+    if (field.isNumeric && typeof field.value === "string" && isNaN(Number(field.value))) {
+      setFieldError(field.name, "Must be a valid number");
+      isValid = false;
+    }
+  });
+  
+  return isValid;
+};
+```
+
+### Error Display
+- Field-level error messages below each field
+- Form-level error alerts for submission failures
+- Success messages with auto-hide functionality
+
+## Performance Optimizations
+
+### 1. Memoization
+```typescript
+// Heavy computations are memoized
+const formFields = React.useMemo(() => {
+  // Field discovery and processing
+}, [schemaData, listField]);
+
+const generateQueries = React.useMemo(() => {
+  // Query generation
+}, [formFields, listField]);
+```
+
+### 2. Conditional Rendering
+- Fields are only rendered when visible and enabled
+- Embedded sections are collapsed by default
+- Collection grids load data on-demand
+
+### 3. State Updates
+- Batched state updates for form data
+- Local state management for collections
+- Efficient re-rendering through proper dependency arrays
+
+## Extension Points
+
+### 1. Custom Field Types
+- Add new field types by extending `FormField` interface
+- Implement custom renderers in `FormFieldRenderer`
+- Register new field processors in field discovery logic
+
+### 2. Custom Validation Rules
+- Extend validation system with field-specific rules
+- Implement custom error messages
+- Add async validation support
+
+### 3. Custom Form Actions
+- Extend form submission logic
+- Add pre/post submission hooks
+- Implement custom success/error handling
+
+## Development Guidelines
+
+### Code Style
+- Use TypeScript strict mode
+- Follow Next.js 15 App Router conventions
+- Implement proper error boundaries and loading states
+- Use Material-UI components consistently
+- Maintain responsive design (mobile-first approach)
+
+### Component Patterns
+- Prefer functional components with hooks
+- Use proper TypeScript interfaces for props
+- Implement proper error handling and validation
+- Follow React best practices for state management
+
+### GraphQL Integration
+- Use Apollo Client for all data operations
+- Implement proper loading and error states
+- Handle mutations with optimistic updates when appropriate
+- Use schema introspection for dynamic field discovery
+
+### Form Customization
+- Support field-level customization (visibility, validation, etc.)
+- Allow business logic injection through configuration
+- Maintain separation of concerns between UI and business logic
+- Support internationalization for all user-facing text
+
+## File Structure
+```
+src/
+├── app/           # Next.js App Router pages
+├── components/    # Reusable UI components
+├── hooks/         # Custom React hooks
+├── lib/           # Utilities and configurations
+├── i18n/          # Internationalization
+└── examples/      # Usage examples and patterns
+```
+
+## Common Patterns
+
+### Dynamic Field Rendering
+```typescript
+// Field type detection
+const isNumeric = ['Int', 'Float'].includes(fieldType);
+const isBoolean = fieldType === 'Boolean';
+const isDate = fieldType === 'DateTime';
+const isObject = !isScalarType(fieldType);
+const isCollection = fieldType.startsWith('[') && fieldType.endsWith(']');
+```
+
+### Collection Management
+```typescript
+// Collection state management
+const [addedItems, setAddedItems] = useState<any[]>([]);
+const [modifiedItems, setModifiedItems] = useState<Record<string, any>>({});
+const [deletedItems, setDeletedItems] = useState<string[]>([]);
+```
+
+### Form Customization
+```typescript
+// Field customization
+const fieldConfig = formCustomization?.fields?.[fieldName];
+const isVisible = fieldConfig?.visible ?? true;
+const isEnabled = fieldConfig?.enabled ?? true;
+```
+
+## Important Notes
+- Always consider GraphQL schema changes when modifying forms
+- Test form behavior across different entity types
+- Ensure proper error handling for network failures
+- Maintain backward compatibility for existing customizations
+- Follow accessibility best practices for form inputs
+- Consider internationalization requirements
+- Think about responsive design implications
+
+## When Helping
+- Consider the dynamic nature of the form system
+- Remember that field types are discovered at runtime
+- Account for the customization system in solutions
+- Suggest improvements that work with the existing architecture
+- Apply SOLID principles in recommendations
+- Consider performance implications of changes
+- Ensure solutions maintain the system's extensibility
+- Think about maintainability and code quality

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
+import { getEntityFormCallbacks, EntityFormCallbackActions, FormMessage, CollectionFieldState as FormCustomizationCollectionFieldState } from "@/lib/formCustomization";
 import {
   Box,
   Breadcrumbs,
@@ -227,6 +228,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [formMessage, setFormMessage] = React.useState<FormMessage | null>(null);
 
   // Form customization state
   const [customizationState, setCustomizationState] = React.useState<FormCustomizationState>({
@@ -239,7 +241,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   // Get schema data to understand entity structure
   const { data: schemaData, loading: schemaLoading } = useQuery(INTROSPECTION_QUERY);
 
-  // Get entity type name for use throughout the component
+  // Get entity type name for use throughout the component (memoized)
   const entityTypeName = React.useMemo(() => {
     if (!schemaData) return null;
     return getElementTypeNameOfListField(schemaData as SchemaData, listField);
@@ -257,11 +259,11 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     if (!schemaData) return `entity.${pluralName}.${form}`;
     
     // Get the proper entity type name from schema
-    const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, pluralName);
-    if (!entityTypeName) return `entity.${pluralName}.${form}`;
+    const entityTypeNameForI18n = getElementTypeNameOfListField(schemaData as SchemaData, pluralName);
+    if (!entityTypeNameForI18n) return `entity.${pluralName}.${form}`;
     
     // Convert to lowercase for i18n key
-    const baseName = entityTypeName.toLowerCase();
+    const baseName = entityTypeNameForI18n.toLowerCase();
     
     return `entity.${baseName}.${form}`;
   }, [schemaData]);
@@ -500,16 +502,13 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
   // Initialize customization state when formFields change
   React.useEffect(() => {
-    if (formFields.length > 0) {
-      const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, listField);
-      if (entityTypeName) {
-        const fieldNames = formFields.map(field => field.name);
-        const newCustomizationState = createFormCustomizationState(entityTypeName, action, fieldNames);
-        setCustomizationState(newCustomizationState);
-        console.log('Initialized customization state for', entityTypeName, ':', newCustomizationState);
-      }
+    if (formFields.length > 0 && entityTypeName) {
+      const fieldNames = formFields.map(field => field.name);
+      const newCustomizationState = createFormCustomizationState(entityTypeName, action, fieldNames);
+      setCustomizationState(newCustomizationState);
+      console.log('Initialized customization state for', entityTypeName, ':', newCustomizationState);
     }
-  }, [formFields, schemaData, listField, action]);
+  }, [formFields, entityTypeName, action]);
 
   // For now, we'll skip the dynamic GraphQL queries and just show the form
   // The actual GraphQL integration can be added later once the form rendering works
@@ -518,7 +517,6 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   // Helper function to get i18n label for form fields
   const getFieldLabel = (fieldName: string): string => {
     // Try to get the label using the entity.field pattern (e.g., "serie.name")
-    const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, listField);
     const entityKey = entityTypeName ? entityTypeName.toLowerCase() : listField.slice(0, -1); // Fallback to old method if introspection fails
     const fieldKey = `${entityKey}.${fieldName}`;
     
@@ -553,8 +551,11 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       });
     
     const fieldNames = fieldSelections.join('\n      ');
-    const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, listField);
-    const entityName = entityTypeName || listField.slice(0, -1); // Use introspection result or fallback to old method
+    if (!entityTypeName) {
+      console.error('No entity type name found for generating queries');
+      return null;
+    }
+    const entityName = entityTypeName; // Use introspection result
     
     console.log('Generating queries for:', { 
       entityName, 
@@ -594,7 +595,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     console.log('Generated getQuery:', getQuery.loc?.source.body);
     
     return { getQuery, createMutation, updateMutation };
-  }, [schemaData, formFields, listField]);
+  }, [entityTypeName, formFields]);
 
   // Fetch entity data for edit/view mode
   const { data: entityData, loading: entityLoading, error: entityError } = useQuery(
@@ -646,9 +647,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   React.useEffect(() => {
     console.log('Data loading effect triggered:', { entityData, action, listField, formFields });
     
-    if (entityData && action !== "create" && formFields.length > 0) {
-      const entityTypeName = getElementTypeNameOfListField(schemaData as SchemaData, listField);
-      const entityName = entityTypeName || listField.slice(0, -1); // Use introspection result or fallback to old method
+    if (entityData && action !== "create" && formFields.length > 0 && entityTypeName) {
+      const entityName = entityTypeName; // Use introspection result
       console.log('Looking for entity with name:', entityName);
       console.log('Available keys in entityData:', Object.keys(entityData));
       
@@ -705,7 +705,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         setFormData(updatedData);
       }
     }
-  }, [schemaData, entityData, listField, action, formFields]);
+  }, [entityData, entityTypeName, action, formFields, listField]);
 
   // Handle field changes
   const handleFieldChange = (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, error?: string) => {
@@ -1137,12 +1137,57 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       return;
     }
 
+    // Get entity-level callbacks
+    if (!entityTypeName) {
+      console.warn('No entity type name found for callbacks');
+      return;
+    }
+    const callbacks = getEntityFormCallbacks(entityTypeName, action);
+    
+    // Create callback actions
+    const callbackActions: EntityFormCallbackActions = {
+      setFieldData: (fieldName: string, value: unknown) => {
+        setFormData(prev => ({
+          ...prev,
+          [fieldName]: { ...prev[fieldName], value: value as string | number | boolean | string[] | null | { id: string; [key: string]: unknown } }
+        }));
+      },
+      setFieldVisible: (fieldName: string, visible: boolean) => {
+        setCustomizationState(prev => ({
+          ...prev,
+          fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
+        }));
+      },
+      setFieldEnabled: (fieldName: string, enabled: boolean) => {
+        setCustomizationState(prev => ({
+          ...prev,
+          fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
+        }));
+      },
+      setCollectionChanges: (fieldName: string, changes: FormCustomizationCollectionFieldState) => {
+        // Convert the form customization CollectionFieldState to the component CollectionFieldState
+        const componentChanges: CollectionFieldState = {
+          added: changes.added as CollectionItem[],
+          modified: changes.modified as CollectionItem[],
+          deleted: changes.deleted as CollectionItem[]
+        };
+        updateCollectionState(fieldName, componentChanges);
+      },
+      setFormMessage: (message: FormMessage) => {
+        setFormMessage(message);
+      },
+      setError: (errorMessage: string) => {
+        setError(errorMessage);
+      }
+    };
+
     setLoading(true);
     setError(null);
+    setFormMessage(null);
 
     try {
-      // Get collection changes if in edit mode
-      const collectionChanges = action === "edit" ? getCollectionChanges() : {};
+      // Get collection changes for both create and edit modes
+      const collectionChanges = getCollectionChanges();
       
       if (Object.keys(collectionChanges).length > 0) {
         console.log('Collection changes to be processed:', collectionChanges);
@@ -1153,34 +1198,95 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       
       console.log('Transformed data for Simfinity mutation:', transformedData);
 
+      // Execute beforeSubmit callback if available
+      if (callbacks?.beforeSubmit) {
+        try {
+          await callbacks.beforeSubmit(formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, callbackActions);
+        } catch (beforeSubmitError) {
+          console.error('Error in beforeSubmit callback:', beforeSubmitError);
+          // If beforeSubmit throws an error, stop form submission
+          return;
+        }
+      }
+
+      let result: unknown;
+      
       if (action === "create") {
-        const result = await addEntity({
+        result = await addEntity({
           variables: { input: transformedData }
         });
-        console.log('Entity created:', result.data);
-        setSuccessMessage(resolveLabel(["form.successCreated"], { entity: listField }, "Entity created successfully!"));
+        console.log('Entity created:', (result as { data: unknown }).data);
         
         // Invalidate and refetch list queries for the entity type
         await invalidateEntityListCache(listField);
       } else if (action === "edit") {
         // For update mutations, include the ID inside the input
         const updateInput = { id: entityId, ...transformedData };
-        const result = await updateEntity({
+        result = await updateEntity({
           variables: { input: updateInput }
         });
-        console.log('Entity updated:', result.data);
-        setSuccessMessage(resolveLabel(["form.successUpdated"], { entity: listField }, "Entity updated successfully!"));
+        console.log('Entity updated:', (result as { data: unknown }).data);
         
         // Invalidate and refetch both the specific entity and list queries
         await invalidateEntityCache(entityId!, listField);
         await invalidateEntityListCache(listField);
       }
 
-      // Redirect back to list
-      setTimeout(() => {
-        router.push(`/entities/${listField}`);
-      }, 1500);
+      // Execute onSuccess callback if available
+      let successResult;
+      if (callbacks?.onSuccess) {
+        try {
+          successResult = await callbacks.onSuccess(result, callbackActions);
+        } catch (onSuccessError) {
+          console.error('Error in onSuccess callback:', onSuccessError);
+        }
+      }
+
+      // Handle success result from callback or use default
+      if (successResult) {
+        if (successResult.message) {
+          setSuccessMessage(typeof successResult.message === 'string' ? successResult.message : 'Success');
+        }
+        
+        if (successResult.navigateTo) {
+          setTimeout(() => {
+            router.push(successResult.navigateTo!);
+          }, 1000);
+        } else if (successResult.action) {
+          successResult.action();
+        } else {
+          // Default navigation
+          setTimeout(() => {
+            router.push(`/entities/${listField}`);
+          }, 1500);
+        }
+      } else {
+        // Default success handling
+        const defaultMessage = action === "create" 
+          ? resolveLabel(["form.successCreated"], { entity: listField }, "Entity created successfully!")
+          : resolveLabel(["form.successUpdated"], { entity: listField }, "Entity updated successfully!");
+        setSuccessMessage(defaultMessage);
+        
+        // Default redirect back to list
+        setTimeout(() => {
+          router.push(`/entities/${listField}`);
+        }, 1500);
+      }
+      
     } catch (err: unknown) {
+      // Execute onError callback if available
+      if (callbacks?.onError) {
+        try {
+          await callbacks.onError(err, formData, callbackActions);
+          // If onError callback is provided, it handles the error completely
+          return;
+        } catch (onErrorError) {
+          console.error('Error in onError callback:', onErrorError);
+          // Fall back to default error handling if onError callback fails
+        }
+      }
+      
+      // Default error handling
       const errorMessage = err instanceof Error ? err.message : resolveLabel(["form.errorOccurred"], { entity: listField }, "An error occurred");
       setError(errorMessage);
     } finally {
@@ -1514,6 +1620,12 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         </Alert>
       )}
 
+      {formMessage && (
+        <Alert severity={formMessage.type} sx={{ mb: 2 }}>
+          {typeof formMessage.message === 'string' ? formMessage.message : formMessage.message}
+        </Alert>
+      )}
+
                 {/* Form */}
           <Paper sx={{ p: 3 }}>
             <form onSubmit={handleSubmit}>
@@ -1640,7 +1752,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                 connectionField: field.connectionField!,
               }}
               parentEntityId={entityId || ""}
-              parentEntityType={getElementTypeNameOfListField(schemaData, listField) || "" }
+              parentEntityType={entityTypeName || ""}
               isEditMode={action === "edit"}
               collectionState={getCollectionState(field.name)}
               onCollectionStateChange={updateCollectionState}

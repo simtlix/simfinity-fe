@@ -6,6 +6,78 @@ export type FieldSize = {
   xl?: number;
 };
 
+// Message types for form-level messages
+export type MessageType = 'error' | 'warning' | 'info' | 'success';
+
+// Form message interface
+export type FormMessage = {
+  type: MessageType;
+  message: string | React.ReactNode;
+};
+
+// Collection changes type (from useCollectionState)
+export type CollectionFieldState = {
+  added: Array<{
+    id?: string;
+    [key: string]: unknown;
+    __status?: 'added' | 'modified' | 'deleted';
+    __originalData?: Record<string, unknown>;
+  }>;
+  modified: Array<{
+    id?: string;
+    [key: string]: unknown;
+    __status?: 'added' | 'modified' | 'deleted';
+    __originalData?: Record<string, unknown>;
+  }>;
+  deleted: Array<{
+    id?: string;
+    [key: string]: unknown;
+    __status?: 'added' | 'modified' | 'deleted';
+    __originalData?: Record<string, unknown>;
+  }>;
+};
+
+// Entity-level callback functions
+export type EntityFormCallbacks = {
+  // Called before create/update operations
+  beforeSubmit?: (
+    formData: Record<string, unknown>,
+    collectionChanges: Record<string, CollectionFieldState>,
+    transformedData: Record<string, unknown>,
+    actions: EntityFormCallbackActions
+  ) => void | Promise<void>;
+  
+  // Called after successful create/update operations
+  onSuccess?: (
+    result: unknown,
+    actions: EntityFormCallbackActions
+  ) => EntityFormSuccessResult | void | Promise<EntityFormSuccessResult | void>;
+  
+  // Called when errors occur (overrides default error handling)
+  onError?: (
+    error: unknown,
+    formData: Record<string, unknown>,
+    actions: EntityFormCallbackActions
+  ) => void | Promise<void>;
+};
+
+// Actions available in entity-level callbacks
+export type EntityFormCallbackActions = {
+  setFieldData: (fieldName: string, value: unknown) => void;
+  setFieldVisible: (fieldName: string, visible: boolean) => void;
+  setFieldEnabled: (fieldName: string, enabled: boolean) => void;
+  setCollectionChanges: (fieldName: string, changes: CollectionFieldState) => void;
+  setFormMessage: (message: FormMessage) => void;
+  setError: (errorMessage: string) => void;
+};
+
+// Result from afterSuccess callback
+export type EntityFormSuccessResult = {
+  message?: string | React.ReactNode;
+  navigateTo?: string;
+  action?: () => void;
+};
+
 export type FieldCustomization = {
   size?: FieldSize;
   enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
@@ -60,7 +132,16 @@ export type CollectionFieldCustomization = {
   items?: Record<string, CollectionItemCustomization>;
 };
 
-export type FormCustomization = Record<string, FieldCustomization | EmbeddedSectionCustomization | CollectionFieldCustomization>;
+// Separate type for entity callbacks to avoid index signature conflicts
+export type EntityCallbacksOnly = {
+  beforeSubmit?: EntityFormCallbacks['beforeSubmit'];
+  onSuccess?: EntityFormCallbacks['onSuccess'];
+  onError?: EntityFormCallbacks['onError'];
+};
+
+export type FormCustomization = EntityCallbacksOnly & {
+  [key: string]: FieldCustomization | EmbeddedSectionCustomization | CollectionFieldCustomization;
+};
 
 export type FormCustomizationState = {
   customization: FormCustomization;
@@ -80,12 +161,24 @@ export type FormCustomizationActions = {
 // Key format: "entityType:mode" (e.g., "episode:create", "episode:edit")
 const formCustomizations = new Map<string, FormCustomization>();
 
+export type FormCustomizationConfig = EntityCallbacksOnly & {
+  fieldsCustomization?: Record<string, FieldCustomization | EmbeddedSectionCustomization | CollectionFieldCustomization>;
+};
+
 export function registerFormCustomization(
   entityType: string,
   mode: "create" | "edit" | "view",
-  customization: FormCustomization
+  config: FormCustomizationConfig
 ): void {
   const key = `${entityType}:${mode}`;
+  
+  const customization: FormCustomization = {
+    ...(config.fieldsCustomization || {}),
+    ...(config.beforeSubmit && { beforeSubmit: config.beforeSubmit }),
+    ...(config.onSuccess && { onSuccess: config.onSuccess }),
+    ...(config.onError && { onError: config.onError })
+  } as FormCustomization;
+  
   console.log(`Registering form customization for ${entityType} in ${mode} mode:`, customization);
   formCustomizations.set(key, customization);
 }
@@ -93,6 +186,18 @@ export function registerFormCustomization(
 export function getFormCustomization(entityType: string, mode: "create" | "edit" | "view"): FormCustomization | undefined {
   const key = `${entityType}:${mode}`;
   return formCustomizations.get(key);
+}
+
+// Helper function to get entity-level callbacks
+export function getEntityFormCallbacks(entityType: string, mode: "create" | "edit" | "view"): EntityFormCallbacks | undefined {
+  const customization = getFormCustomization(entityType, mode);
+  if (!customization) return undefined;
+  
+  return {
+    beforeSubmit: customization.beforeSubmit,
+    onSuccess: customization.onSuccess,
+    onError: customization.onError,
+  };
 }
 
 export function createFormCustomizationState(

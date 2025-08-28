@@ -1341,6 +1341,23 @@ The Simfinity Frontend follows a component-based architecture with clear separat
 - **Extensible**: Customization system for business logic
 - **Accessible**: WCAG compliance and keyboard navigation
 
+## 📚 Documentation
+
+### Core Documentation
+- **[EntityForm Guide](ENTITY_FORM_README.md)** - Complete guide to the EntityForm component architecture, field types, and usage patterns
+- **[Form Customization](FORM_CUSTOMIZATION_README.md)** - Comprehensive documentation for customizing form layouts, field behavior, validation, and entity-level callbacks
+
+### Advanced Features
+- **[Entity-Level Callbacks](ENTITY_LEVEL_CALLBACKS_README.md)** - In-depth guide to beforeSubmit, onSuccess, and onError callbacks for custom business logic
+
+### Examples & Patterns
+The repository includes extensive examples in the `/src/examples/` directory:
+- `entityLevelCallbacksExample.ts` - Entity-level callback implementations
+- `episodeFormCustomization.ts` - Field-level customization examples  
+- `collectionFieldCustomizationExample.ts` - Collection field management
+- `collectionItemEditExample.ts` - Collection item editing patterns
+- `collectionManagementExample.tsx` - Advanced collection workflows
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

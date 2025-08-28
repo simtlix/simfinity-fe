@@ -6,6 +6,8 @@ import { registerFormCustomization } from '@/lib/formCustomization';
 export function setupEpisodeFormCustomization() {
   // Register customization for create mode
   registerFormCustomization("episode", "create", {
+    fieldsCustomization: {
+    // Field-level customizations
     name: {
       size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices
       order: 1, // First in the row
@@ -67,10 +69,12 @@ export function setupEpisodeFormCustomization() {
         return { value, error: undefined };
       }
     }
+    }
   });
 
   // Register customization for edit mode (different behavior)
   registerFormCustomization("episode", "edit", {
+    fieldsCustomization: {
     name: {
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
@@ -102,6 +106,7 @@ export function setupEpisodeFormCustomization() {
       size: { xs: 12, sm: 6, md: 6 },
       order: 4,
       enabled: true // Always enabled in edit mode
+    }
     }
   });
 }
