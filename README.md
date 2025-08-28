@@ -515,88 +515,63 @@ These are JSON files served statically and can be loaded dynamically for runtime
 ##### **1. Runtime Language Switching**
 - **Dynamic loading** of language files without rebuilding
 - **User preference** persistence across sessions
-- **A/B testing** of different translations
-- **Content management** system integration
+- **Automatic locale detection** from browser settings
 
 ##### **2. Static File Serving**
-- **CDN optimization** for global distribution
-- **Caching strategies** for better performance
-- **Version control** for translation updates
-- **Deployment flexibility** independent of code
+- **JSON files** served from public folder
+- **Automatic loading** when locale changes
+- **Error handling** with graceful fallbacks
 
-##### **3. Integration with CMS**
-- **Translation management** through external systems
-- **Content editor** access to translation files
-- **Workflow integration** for translation approval
-- **Multi-team collaboration** on translations
+#### **How Public i18n Files Work in This Project**
 
-#### **Loading Public i18n Files**
+The project automatically loads JSON translation files from the `public/i18n/` folder based on the user's locale. Here's how it works:
+
+##### **1. Automatic Loading**
+The `I18nProvider` automatically fetches the appropriate language file when the locale changes:
 
 ```typescript
-// Dynamic language loading
-async function loadLanguageFile(language: string) {
-  try {
-    const response = await fetch(`/i18n/${language}.json`);
-    const translations = await response.json();
-    return translations;
-  } catch (error) {
-    console.error(`Failed to load ${language} translations:`, error);
-    // Fallback to default language
-    return await loadLanguageFile('en');
-  }
-}
-
-// Usage in components
-useEffect(() => {
-  const loadTranslations = async () => {
-    const userLanguage = getUserPreferredLanguage(); // 'en', 'es', etc.
-    const translations = await loadLanguageFile(userLanguage);
-    setTranslations(translations);
-  };
-  
-  loadTranslations();
-}, []);
+// From src/lib/i18n.tsx
+React.useEffect(() => {
+  // Load JSON labels from public folder
+  fetch(`/i18n/${locale}.json`)
+    .then(async (res) => (res.ok ? res.json() : {}))
+    .then((json) => {
+      if (!cancelled && json && typeof json === "object") 
+        setStringLabels(json as Record<string, string>);
+    })
+    .catch(() => {
+      if (!cancelled) setStringLabels({});
+    });
+}, [locale]);
 ```
 
-#### **File Organization Strategy**
-
+##### **2. Current File Structure**
 ```
 public/
 └── i18n/
     ├── en.json          # English translations
-    ├── es.json          # Spanish translations
-    ├── fr.json          # French translations (future)
-    ├── de.json          # German translations (future)
-    └── index.json       # Language metadata and fallbacks
+    └── es.json          # Spanish translations
 ```
 
-##### **Language Metadata (index.json)**
+##### **3. Translation Key Format**
+The project uses dot-notation keys for translations:
+
 ```json
 {
-  "languages": {
-    "en": {
-      "name": "English",
-      "nativeName": "English",
-      "direction": "ltr",
-      "fallback": null
-    },
-    "es": {
-      "name": "Spanish",
-      "nativeName": "Español",
-      "direction": "ltr",
-      "fallback": "en"
-    },
-    "fr": {
-      "name": "French",
-      "nativeName": "Français",
-      "direction": "ltr",
-      "fallback": "en"
-    }
-  },
-  "defaultLanguage": "en",
-  "supportedLanguages": ["en", "es", "fr"]
+  "entity.serie.single": "Serie",
+  "entity.serie.plural": "Series",
+  "serie.name": "Name",
+  "serie.director": "Director",
+  "form.create": "Create",
+  "form.required": "This field is required"
 }
 ```
+
+##### **4. Locale Detection**
+The system automatically detects the user's preferred language:
+- **Browser language** preference
+- **Environment variable** `NEXT_PUBLIC_LOCALE`
+- **Fallback** to English ("en")
 
 #### **Usage in Components**
 ```typescript
