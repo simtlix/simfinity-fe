@@ -333,6 +333,12 @@ resolveLabel([
 ```
 
 #### **i18n File Structure**
+
+The internationalization system uses two types of i18n files:
+
+##### **1. Source i18n Files (src/i18n/)**
+These are TypeScript files that provide type-safe translations and are imported directly into components.
+
 ```typescript
 // src/i18n/en.ts
 export default {
@@ -415,6 +421,181 @@ export default {
     addItem: "Agregar {entity}"
   }
 };
+```
+
+##### **2. Public i18n Files (public/i18n/)**
+These are JSON files served statically and can be loaded dynamically for runtime language switching.
+
+```json
+// public/i18n/en.json
+{
+  "entity": {
+    "serie": {
+      "single": "Series",
+      "plural": "Series"
+    },
+    "episode": {
+      "single": "Episode",
+      "plural": "Episodes"
+    }
+  },
+  "serie": {
+    "name": "Name",
+    "description": "Description",
+    "year": "Year",
+    "director": "Director"
+  },
+  "episode": {
+    "name": "Name",
+    "number": "Number",
+    "date": "Date",
+    "season": "Season"
+  },
+  "form": {
+    "create": "Create",
+    "edit": "Edit",
+    "view": "View",
+    "save": "Save",
+    "cancel": "Cancel",
+    "required": "This field is required",
+    "invalidNumber": "Must be a valid number",
+    "invalidDate": "Must be a valid date"
+  },
+  "collection": {
+    "items": "{count} {entity}",
+    "noData": "No {entity} available",
+    "addItem": "Add {entity}"
+  }
+}
+
+// public/i18n/es.json
+{
+  "entity": {
+    "serie": {
+      "single": "Serie",
+      "plural": "Series"
+    },
+    "episode": {
+      "single": "Episodio",
+      "plural": "Episodios"
+    }
+  },
+  "serie": {
+    "name": "Nombre",
+    "description": "Descripción",
+    "year": "Año",
+    "director": "Director"
+  },
+  "episode": {
+    "name": "Nombre",
+    "number": "Número",
+    "date": "Fecha",
+    "season": "Temporada"
+  },
+  "form": {
+    "create": "Crear",
+    "edit": "Editar",
+    "view": "Ver",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "required": "Este campo es obligatorio",
+    "invalidNumber": "Debe ser un número válido",
+    "invalidDate": "Debe ser una fecha válida"
+  },
+  "collection": {
+    "items": "{count} {entity}",
+    "noData": "No hay {entity} disponibles",
+    "addItem": "Agregar {entity}"
+  }
+}
+```
+
+#### **Public i18n File Benefits**
+
+##### **1. Runtime Language Switching**
+- **Dynamic loading** of language files without rebuilding
+- **User preference** persistence across sessions
+- **A/B testing** of different translations
+- **Content management** system integration
+
+##### **2. Static File Serving**
+- **CDN optimization** for global distribution
+- **Caching strategies** for better performance
+- **Version control** for translation updates
+- **Deployment flexibility** independent of code
+
+##### **3. Integration with CMS**
+- **Translation management** through external systems
+- **Content editor** access to translation files
+- **Workflow integration** for translation approval
+- **Multi-team collaboration** on translations
+
+#### **Loading Public i18n Files**
+
+```typescript
+// Dynamic language loading
+async function loadLanguageFile(language: string) {
+  try {
+    const response = await fetch(`/i18n/${language}.json`);
+    const translations = await response.json();
+    return translations;
+  } catch (error) {
+    console.error(`Failed to load ${language} translations:`, error);
+    // Fallback to default language
+    return await loadLanguageFile('en');
+  }
+}
+
+// Usage in components
+useEffect(() => {
+  const loadTranslations = async () => {
+    const userLanguage = getUserPreferredLanguage(); // 'en', 'es', etc.
+    const translations = await loadLanguageFile(userLanguage);
+    setTranslations(translations);
+  };
+  
+  loadTranslations();
+}, []);
+```
+
+#### **File Organization Strategy**
+
+```
+public/
+└── i18n/
+    ├── en.json          # English translations
+    ├── es.json          # Spanish translations
+    ├── fr.json          # French translations (future)
+    ├── de.json          # German translations (future)
+    └── index.json       # Language metadata and fallbacks
+```
+
+##### **Language Metadata (index.json)**
+```json
+{
+  "languages": {
+    "en": {
+      "name": "English",
+      "nativeName": "English",
+      "direction": "ltr",
+      "fallback": null
+    },
+    "es": {
+      "name": "Spanish",
+      "nativeName": "Español",
+      "direction": "ltr",
+      "fallback": "en"
+    },
+    "fr": {
+      "name": "French",
+      "nativeName": "Français",
+      "direction": "ltr",
+      "fallback": "en"
+    }
+  },
+  "defaultLanguage": "en",
+  "supportedLanguages": ["en", "es", "fr"]
+}
 ```
 
 #### **Usage in Components**
