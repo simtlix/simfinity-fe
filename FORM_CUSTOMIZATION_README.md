@@ -280,6 +280,10 @@ Executed before the form is submitted to the server. Use this for final validati
 - `transformedData`: Data prepared for the GraphQL mutation
 - `actions`: Object containing functions to modify form state
 
+**Return Value:**
+- `true` or `undefined`: Continue with form submission (default behavior)
+- `false`: Cancel form submission and prevent the mutation from executing
+
 **Available Actions:**
 - `setFieldData(fieldName, value)`: Set a field's value
 - `setFieldVisible(fieldName, visible)`: Show/hide a field
@@ -291,7 +295,7 @@ Executed before the form is submitted to the server. Use this for final validati
 **Example:**
 ```typescript
 beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
-  // Validate business rules
+  // Validate business rules that can block submission
   const title = formData.title?.value;
   const genre = formData.genre?.value;
   
@@ -300,7 +304,7 @@ beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
       type: 'error',
       message: 'Horror content cannot be marketed to children'
     });
-    throw new Error('Validation failed'); // Prevents submission
+    return false; // Prevents submission cleanly
   }
   
   // Auto-generate missing data
@@ -309,13 +313,16 @@ beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
     actions.setFieldData('slug', slug);
   }
   
-  // Validate collection changes
+  // Validate collection changes with warning
   if (collectionChanges.episodes?.added.length > 50) {
     actions.setFormMessage({
       type: 'warning',
       message: 'You are adding many episodes. This may take longer to process.'
     });
   }
+  
+  // Return true to continue, or omit return for same effect
+  return true;
 }
 ```
 
@@ -735,7 +742,7 @@ Type definition for the configuration object:
 ```typescript
 type FormCustomizationConfig = {
   fieldsCustomization?: Record<string, FieldCustomization | EmbeddedSectionCustomization | CollectionFieldCustomization>;
-  beforeSubmit?: (formData: Record<string, unknown>, collectionChanges: Record<string, CollectionFieldState>, transformedData: Record<string, unknown>, actions: EntityFormCallbackActions) => void | Promise<void>;
+  beforeSubmit?: (formData: Record<string, unknown>, collectionChanges: Record<string, CollectionFieldState>, transformedData: Record<string, unknown>, actions: EntityFormCallbackActions) => boolean | void | Promise<boolean | void>;
   onSuccess?: (result: unknown) => EntityFormSuccessResult | void | Promise<EntityFormSuccessResult | void>;
   onError?: (error: unknown, formData: Record<string, unknown>, actions: EntityFormCallbackActions) => void | Promise<void>;
 };

@@ -40,12 +40,13 @@ export type CollectionFieldState = {
 // Entity-level callback functions
 export type EntityFormCallbacks = {
   // Called before create/update operations
+  // Return false to prevent form submission, true or undefined to continue
   beforeSubmit?: (
     formData: Record<string, unknown>,
     collectionChanges: Record<string, CollectionFieldState>,
     transformedData: Record<string, unknown>,
     actions: EntityFormCallbackActions
-  ) => void | Promise<void>;
+  ) => boolean | void | Promise<boolean | void>;
   
   // Called after successful create/update operations
   onSuccess?: (

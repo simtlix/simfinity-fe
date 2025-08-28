@@ -12,41 +12,44 @@ export function setupEntityLevelCallbacksExample() {
         order: 1
       }
     },
-    beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
-      console.log('Before creating episode:', { formData, collectionChanges, transformedData });
-      
-      // Example: Validate episode number uniqueness
-      const episodeNumber = (formData.number as { value?: unknown })?.value;
-      const seasonId = (formData.season as { value?: unknown })?.value;
-      
-      if (episodeNumber && seasonId && typeof seasonId === 'object' && 'id' in seasonId) {
-        if (episodeNumber === 1) {
-          actions.setFormMessage({
-            type: 'warning',
-            message: 'Episode 1 is typically the pilot. Please verify this is correct.'
-          });
-        }
+      beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+    console.log('Before creating episode:', { formData, collectionChanges, transformedData });
+    
+    // Example: Validate episode number uniqueness
+    const episodeNumber = (formData.number as { value?: unknown })?.value;
+    const seasonId = (formData.season as { value?: unknown })?.value;
+    
+    if (episodeNumber && seasonId && typeof seasonId === 'object' && 'id' in seasonId) {
+      if (episodeNumber === 1) {
+        actions.setFormMessage({
+          type: 'warning',
+          message: 'Episode 1 is typically the pilot. Please verify this is correct.'
+        });
       }
-      
-      // Example: Auto-generate description if empty
-      if (!(formData.description as { value?: unknown })?.value || String((formData.description as { value?: unknown }).value).trim() === '') {
-        const name = (formData.name as { value?: unknown })?.value;
-        if (name) {
-          actions.setFieldData('description', `Episode ${episodeNumber}: ${name}`);
-        }
+    }
+    
+    // Example: Auto-generate description if empty
+    if (!(formData.description as { value?: unknown })?.value || String((formData.description as { value?: unknown }).value).trim() === '') {
+      const name = (formData.name as { value?: unknown })?.value;
+      if (name) {
+        actions.setFieldData('description', `Episode ${episodeNumber}: ${name}`);
       }
-      
-      // Example: Validate collection changes
-      if (collectionChanges.guestStars) {
-        const { added, modified } = collectionChanges.guestStars;
-        if (added.length + modified.length > 5) {
-          actions.setFormMessage({
-            type: 'warning',
-            message: 'You have many guest stars. Consider if this is a special episode.'
-          });
-        }
+    }
+    
+    // Example: Validate collection changes
+    if (collectionChanges.guestStars) {
+      const { added, modified } = collectionChanges.guestStars;
+      if (added.length + modified.length > 5) {
+        actions.setFormMessage({
+          type: 'warning',
+          message: 'You have many guest stars. Consider if this is a special episode.'
+        });
       }
-    },
+    }
+    
+    // Return true to continue (or undefined/void for same effect)
+    return true;
+  },
     onSuccess: async (result) => {
       console.log('Episode created successfully:', result);
       
@@ -91,7 +94,7 @@ export function setupEntityLevelCallbacksExample() {
     async (formData, collectionChanges, transformedData, actions) => {
       console.log('Before creating series:', { formData, collectionChanges, transformedData });
       
-      // Example: Business rule validation
+      // Example: Business rule validation that prevents submission
       const genre = (formData.genre as { value?: unknown })?.value;
       const targetAudience = (formData.targetAudience as { value?: unknown })?.value;
       
@@ -101,9 +104,8 @@ export function setupEntityLevelCallbacksExample() {
           message: 'Horror content is not suitable for children. Please adjust the genre or target audience.'
         });
         
-        // Disable submission by setting required fields to invalid state
-        actions.setFieldData('genre', '');
-        return; // This will prevent form submission
+        // Return false to prevent form submission
+        return false;
       }
       
       // Example: Auto-generate slug from title
@@ -114,6 +116,9 @@ export function setupEntityLevelCallbacksExample() {
           .replace(/^-+|-+$/g, '');
         actions.setFieldData('slug', slug);
       }
+      
+      // Return true to continue submission
+      return true;
     },
     onSuccess: async (result) => {
       console.log('Series created successfully:', result);
@@ -168,7 +173,7 @@ export function setupEntityLevelCallbacksExample() {
         });
       }
       
-      // Example: Validate episode count changes
+      // Example: Validate episode count changes with potential blocking
       if (collectionChanges.episodes) {
         const { added, deleted } = collectionChanges.episodes;
         const netChange = added.length - deleted.length;
@@ -179,12 +184,24 @@ export function setupEntityLevelCallbacksExample() {
             message: `Added ${netChange} episode(s) to this season.`
           });
         } else if (netChange < 0) {
-          actions.setFormMessage({
-            type: 'warning',
-            message: `Removed ${Math.abs(netChange)} episode(s) from this season. This action cannot be undone.`
-          });
+          // Warn about deleting too many episodes
+          if (Math.abs(netChange) > 10) {
+            actions.setFormMessage({
+              type: 'error',
+              message: `You are trying to delete ${Math.abs(netChange)} episodes. This is not allowed for data integrity.`
+            });
+            return false; // Block submission
+          } else {
+            actions.setFormMessage({
+              type: 'warning',
+              message: `Removed ${Math.abs(netChange)} episode(s) from this season. This action cannot be undone.`
+            });
+          }
         }
       }
+      
+      // Continue with submission
+      return true;
     },
     onSuccess: async (result) => {
       console.log('Season updated successfully:', result);

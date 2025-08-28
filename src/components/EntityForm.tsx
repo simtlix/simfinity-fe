@@ -1201,7 +1201,13 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       // Execute beforeSubmit callback if available
       if (callbacks?.beforeSubmit) {
         try {
-          await callbacks.beforeSubmit(formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, callbackActions);
+          const shouldContinue = await callbacks.beforeSubmit(formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, callbackActions);
+          
+          // If callback explicitly returns false, stop form submission
+          if (shouldContinue === false) {
+            console.log('Form submission cancelled by beforeSubmit callback');
+            return;
+          }
         } catch (beforeSubmitError) {
           console.error('Error in beforeSubmit callback:', beforeSubmitError);
           // If beforeSubmit throws an error, stop form submission
