@@ -1002,42 +1002,214 @@ export function setupEpisodeFormCustomization() {
 - **Responsive Design**: Mobile-friendly column layouts
 - **Integration**: Seamless integration with EntityTable
 
-## Examples
+## Simfinity.js Compatibility
 
-### 📺 **TV Series Management**
+This frontend application is designed to work seamlessly with **Simfinity.js**, a Node.js framework that automatically generates GraphQL schemas, mutations, and queries. The components automatically introspect the GraphQL schema to understand entity structures and generate appropriate forms and tables.
 
-#### **Entity Structure**
+### 🔗 **Simfinity.js Integration**
+
+- **Automatic Schema Introspection**: Components read GraphQL schema metadata to understand entity structures
+- **Generated Mutations**: All mutations follow Simfinity.js naming conventions (`addserie`, `updateserie`, `deleteserie`)
+- **Generated Queries**: Queries and filters are compatible with Simfinity.js generated endpoints
+- **Metadata-Driven**: Forms and tables are automatically generated based on schema extensions
+
+### 📊 **Schema Metadata Fields**
+
+Simfinity.js uses GraphQL schema extensions to define relationships and behavior:
+
+#### **1. `displayField` - Object Reference Display**
 ```typescript
-interface Serie {
-  id: string;
-  name: string;
-  description: string;
-  year: number;
-  categories: string[];
-  director: Director;        // Embedded object
-  seasons: Season[];         // Collection
-}
-
-interface Director {
-  name: string;
-  country: string;
-}
-
-interface Season {
-  id: string;
-  number: number;
-  year: number;
-  episodes: Episode[];       // Nested collection
-}
-
-interface Episode {
-  id: string;
-  number: number;
-  name: string;
-  date: string;
-  season: Season;            // Reference
+// In Simfinity.js type definition
+director: {
+  type: new GraphQLNonNull(directorType),
+  extensions: {
+    relation: {
+      displayField: 'name'  // Shows director name instead of ID
+    }
+  }
 }
 ```
+
+**Usage in EntityForm/EntityTable:**
+- **ObjectFieldSelector**: Uses `displayField` to show human-readable values
+- **Table Display**: Shows the `displayField` value instead of raw object data
+- **Search**: Users can search by the display field value
+
+#### **2. `connectionField` - Collection Relationships**
+```typescript
+// In Simfinity.js type definition
+seasons: {
+  type: new GraphQLList(seasonType),
+  extensions: {
+    relation: {
+      connectionField: 'serie'  // Links seasons to parent serie
+    }
+  }
+}
+```
+
+**Usage in CollectionFieldGrid:**
+- **Data Filtering**: Automatically filters collection data by parent entity ID
+- **Mutation Handling**: Removes connection field from collection items during mutations
+- **Query Generation**: Generates proper GraphQL queries with connection filters
+
+#### **3. `embedded: true` - Embedded Objects**
+```typescript
+// In Simfinity.js type definition
+director: {
+  type: new GraphQLNonNull(directorType),
+  extensions: {
+    relation: {
+      embedded: true,  // Director data stored within serie document
+      displayField: 'name'
+    }
+  }
+}
+```
+
+**Usage in EntityForm:**
+- **Form Sections**: Renders embedded objects as collapsible accordion sections
+- **Field Validation**: Validates individual embedded fields recursively
+- **Data Structure**: Sends embedded data as direct properties in mutations
+
+### 📺 **TV Series Management Example**
+
+Based on the [Simfinity.js series-sample project](https://github.com/simtlix/series-sample), here's how the schema metadata works:
+
+#### **Simfinity.js Type Definition**
+```typescript
+// types/serie.js (from series-sample)
+const serieType = new GraphQLObjectType({
+  name: 'serie',
+  fields: () => ({
+    id: { type: GraphQLID },
+    name: { type: new GraphQLNonNull(GraphQLString) },
+    categories: { type: new GraphQLList(GraphQLString) },
+    
+    // Embedded object - stored within serie document
+    director: {
+      type: new GraphQLNonNull(directorType),
+      extensions: {
+        relation: {
+          embedded: true,
+          displayField: 'name'
+        }
+      }
+    },
+    
+    // Collection - references separate season documents
+    seasons: {
+      type: new GraphQLList(seasonType),
+      extensions: {
+        relation: {
+          connectionField: 'serie'  // Links seasons to this serie
+        }
+      }
+    }
+  })
+});
+```
+
+#### **Generated GraphQL Schema**
+```graphql
+type Serie {
+  id: ID!
+  name: String!
+  categories: [String]
+  director: Director!  # Embedded object
+  seasons: [Season]    # Collection reference
+}
+
+type Director {
+  id: ID!
+  name: String!
+  country: String
+}
+
+type Season {
+  id: ID!
+  number: Int!
+  year: Int!
+  serie: Serie!  # Back-reference to parent
+}
+```
+
+#### **Generated Mutations**
+```graphql
+# Create serie with embedded director and collection seasons
+mutation AddSerie($input: serieInput!) {
+  addserie(input: $input) {
+    id
+    name
+    director { name country }
+    seasons { number year }
+  }
+}
+
+# Update serie
+mutation UpdateSerie($input: serieInputForUpdate!) {
+  updateserie(input: $input) {
+    id
+    name
+    director { name country }
+    seasons { number year }
+  }
+}
+```
+
+#### **Generated Queries**
+```graphql
+# List series with embedded and collection data
+query Series {
+  series {
+    id
+    name
+    director { name country }
+    seasons { number year }
+  }
+}
+
+# Get single serie
+query Serie($id: ID!) {
+  serie(id: $id) {
+    id
+    name
+    director { name country }
+    seasons { number year }
+  }
+}
+```
+
+### 🔄 **How Metadata Drives Component Behavior**
+
+#### **EntityForm Behavior**
+1. **Schema Introspection**: Reads GraphQL schema to discover fields and metadata
+2. **Field Detection**: Identifies embedded objects, collections, and references
+3. **Form Generation**: Automatically generates appropriate form controls
+4. **Validation**: Applies validation rules based on field types and metadata
+5. **Mutation Generation**: Creates proper Simfinity.js compatible mutations
+
+#### **EntityTable Behavior**
+1. **Column Generation**: Creates columns based on schema fields and metadata
+2. **Object Display**: Uses `displayField` to show human-readable values
+3. **Collection Handling**: Manages collection fields with proper filtering
+4. **Filtering**: Generates Simfinity.js compatible filter queries
+5. **Sorting**: Supports sorting by object display fields
+
+#### **CollectionFieldGrid Behavior**
+1. **Connection Filtering**: Uses `connectionField` to filter collection data
+2. **Data Management**: Handles added, modified, and deleted collection items
+3. **Mutation Integration**: Prepares collection data for Simfinity.js mutations
+4. **Field Cleaning**: Removes metadata fields before sending to backend
+
+### 🎯 **Key Benefits of Simfinity.js Integration**
+
+- **Zero Configuration**: Forms and tables automatically adapt to schema changes
+- **Type Safety**: Full TypeScript support with generated types
+- **Consistent API**: All mutations follow Simfinity.js naming conventions
+- **Automatic Validation**: Field validation based on GraphQL schema types
+- **Real-time Updates**: Apollo Client cache management for fresh data
+- **Scalable**: Handles complex nested structures and collections automatically
 
 #### **Usage Example**
 ```tsx
