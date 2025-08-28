@@ -573,7 +573,212 @@ The system automatically detects the user's preferred language:
 - **Environment variable** `NEXT_PUBLIC_LOCALE`
 - **Fallback** to English ("en")
 
-#### **Usage in Components**
+#### **Function-Based Labels with registerFunctionLabels**
+
+The project supports both static JSON translations and dynamic function-based labels through the `registerFunctionLabels` system:
+
+##### **1. Function-Based Label Registration**
+```typescript
+// src/i18n/en.ts
+import { registerFunctionLabels, type LabelValue } from "@/lib/i18n";
+
+export const labels: Record<string, LabelValue> = {
+  // Dynamic labels with context
+  "serie.name": "Title", // Override default "Name"
+  "season.year": (ctx) => `Year (${ctx.entity})`, // Dynamic with context
+  "episode.date": (ctx) => `Air Date for ${ctx.entity}`,
+};
+
+// Register on load
+registerFunctionLabels("en", labels);
+```
+
+##### **2. LabelValue Types**
+```typescript
+type LabelValue = string | ((ctx: LabelContext) => string);
+
+type LabelContext = { 
+  entity: string; 
+  field?: string 
+};
+```
+
+##### **3. Context-Aware Labels**
+```typescript
+// Function-based labels receive context
+"season.year": (ctx) => `Year (${ctx.entity})`,
+// When used: ctx.entity = "season" → "Year (season)"
+
+// Static labels work as before
+"serie.name": "Title"
+```
+
+#### **Required i18n Keys for EntityForm and EntityTable**
+
+Based on the actual usage in the codebase, here are the required translation keys:
+
+##### **1. Entity Labels (Required)**
+```json
+{
+  "entity.serie.single": "Serie",
+  "entity.serie.plural": "Series",
+  "entity.season.single": "Season", 
+  "entity.season.plural": "Seasons",
+  "entity.episode.single": "Episode",
+  "entity.episode.plural": "Episodes",
+  "entity.director.single": "Director",
+  "entity.director.plural": "Directors",
+  "entity.star.single": "Star",
+  "entity.star.plural": "Stars",
+  "entity.category.single": "Category",
+  "entity.category.plural": "Categories"
+}
+```
+
+##### **2. Field Labels (Required)**
+```json
+{
+  "serie.name": "Name",
+  "serie.categories": "Categories",
+  "serie.director": "Director",
+  "serie.seasons": "Seasons",
+  "serie.stars": "Stars",
+  
+  "director.name": "Name",
+  "director.country": "Country",
+  
+  "season.number": "Number",
+  "season.year": "Year",
+  "season.state": "State",
+  "season.serie": "Series",
+  
+  "episode.number": "Number",
+  "episode.name": "Name",
+  "episode.date": "Air Date",
+  "episode.season": "Season",
+  
+  "star.name": "Name",
+  "star.country": "Country"
+}
+```
+
+##### **3. Form Labels (Required)**
+```json
+{
+  "form.create": "Create",
+  "form.edit": "Edit", 
+  "form.view": "View",
+  "form.cancel": "Cancel",
+  "form.update": "Update",
+  "form.submit": "Submit",
+  "form.required": "This field is required",
+  "form.invalidNumber": "Must be a valid number",
+  "form.invalidDate": "Must be a valid date",
+  "form.successCreated": "Entity created successfully!",
+  "form.successUpdated": "Entity updated successfully!",
+  "form.errorOccurred": "An error occurred",
+  "form.searchAnother": "Search for another...",
+  "form.searchObject": "Search {entity}...",
+  "form.addField": "Add {field}",
+  "form.selectField": "Select {field}"
+}
+```
+
+##### **4. Collection Labels (Required)**
+```json
+{
+  "collection.loading": "Loading...",
+  "collection.error": "Error loading data",
+  "collection.noData": "No data available"
+}
+```
+
+##### **5. Grid/Table Labels (Required)**
+```json
+{
+  "grid.filter.columns": "Columns",
+  "grid.filter.operator": "Operator",
+  "grid.filter.value": "Value",
+  "grid.filter.contains": "contains",
+  "grid.filter.equals": "equals",
+  "grid.filter.startsWith": "starts with",
+  "grid.filter.endsWith": "ends with",
+  "grid.filter.is": "is",
+  "grid.filter.not": "not",
+  "grid.filter.isAnyOf": "is any of",
+  "grid.filter.greaterThan": "greater than",
+  "grid.filter.greaterThanOrEqual": "greater than or equal to",
+  "grid.filter.lessThan": "less than",
+  "grid.filter.lessThanOrEqual": "less than or equal to"
+}
+```
+
+##### **6. Action Labels (Required)**
+```json
+{
+  "actions.view": "View",
+  "actions.edit": "Edit",
+  "actions.column": "Actions",
+  "button.create": "Create"
+}
+```
+
+#### **Label Resolution Priority**
+
+The `resolveLabel` function tries multiple sources in order:
+
+```typescript
+const resolveLabel = (keys: string[], ctx: LabelContext, fallback: string): string => {
+  for (const key of keys) {
+    // 1. First try function-based labels (highest priority)
+    const fv = funcLabels[key];
+    if (typeof fv === "function") return fv(ctx);
+    if (typeof fv === "string") return fv;
+    
+    // 2. Then try static JSON labels
+    const sv = stringLabels[key];
+    if (typeof sv === "string") return sv;
+  }
+  // 3. Finally use fallback
+  return fallback;
+};
+```
+
+**Priority Order:**
+1. **Function-based labels** (from `registerFunctionLabels`)
+2. **Static JSON labels** (from `public/i18n/{locale}.json`)
+3. **Fallback string** (hardcoded in component)
+
+#### **Complete i18n System Example**
+
+Here's how all parts work together:
+
+##### **1. Source i18n File (src/i18n/en.ts)**
+```typescript
+import { registerFunctionLabels, type LabelValue } from "@/lib/i18n";
+
+export const labels: Record<string, LabelValue> = {
+  // Override default labels with custom ones
+  "serie.name": "Title", // Instead of "Name"
+  "episode.date": (ctx) => `Air Date for ${ctx.entity}`, // Dynamic
+};
+
+registerFunctionLabels("en", labels);
+```
+
+##### **2. Public i18n File (public/i18n/en.json)**
+```json
+{
+  "entity.serie.single": "Serie",
+  "entity.serie.plural": "Series",
+  "serie.name": "Name", // Will be overridden by function-based label
+  "serie.director": "Director",
+  "form.create": "Create",
+  "form.required": "This field is required"
+}
+```
+
+##### **3. Component Usage**
 ```typescript
 import { useI18n } from '@/lib/i18n';
 
