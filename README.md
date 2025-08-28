@@ -228,18 +228,120 @@ import EntityForm from '@/components/EntityForm';
 
 The system provides extensive customization capabilities for form behavior and appearance.
 
+### 📊 **Column Customization System**
+
+The column customization system allows you to create specialized renderers for different data types in EntityTable columns.
+
+#### **Column Renderer Types**
+```typescript
+type ColumnRenderer = (params: {
+  entity: string;           // Entity type name (e.g., "episode")
+  field: string;            // Field name (e.g., "date")
+  row: Record<string, unknown>; // Row data
+  value: unknown;           // Field value
+  gridParams: any;          // MUI DataGrid parameters
+}) => React.ReactElement;
+
+// Registration function
+function registerColumnRenderer(key: string, renderer: ColumnRenderer): void;
+```
+
+#### **Column Customization Examples**
+
+##### **Date Column Renderer**
+```typescript
+import { registerColumnRenderer } from '@/lib/columnRenderers';
+
+// Register a custom date renderer
+registerColumnRenderer("episode.date", ({ value }) => {
+  if (!value) return <span>-</span>;
+  
+  const date = new Date(String(value));
+  const formattedDate = date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+  
+  return (
+    <span style={{ 
+      color: date < new Date() ? '#4caf50' : '#ff9800',
+      fontWeight: '500'
+    }}>
+      {formattedDate}
+    </span>
+  );
+});
+```
+
+##### **Status Column Renderer**
+```typescript
+registerColumnRenderer("episode.status", ({ value }) => {
+  const status = String(value).toLowerCase();
+  
+  const statusConfig = {
+    'published': { color: '#4caf50', label: 'Published' },
+    'draft': { color: '#ff9800', label: 'Draft' },
+    'archived': { color: '#9e9e9e', label: 'Archived' }
+  };
+  
+  const config = statusConfig[status] || { color: '#f44336', label: 'Unknown' };
+  
+  return (
+    <Chip
+      label={config.label}
+      size="small"
+      sx={{ 
+        backgroundColor: config.color,
+        color: 'white',
+        fontWeight: '500'
+      }}
+    />
+  );
+});
+```
+
+##### **Complex Object Column Renderer**
+```typescript
+registerColumnRenderer("episode.director", ({ value }) => {
+  if (!value || typeof value !== 'object') return <span>-</span>;
+  
+  const director = value as { name: string; country: string };
+  
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <Typography variant="body2" fontWeight="500">
+        {director.name}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {director.country}
+      </Typography>
+    </Box>
+  );
+});
+```
+
 #### **Field-Level Customization**
 ```typescript
 type FieldCustomization = {
-  visible?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
-  enabled?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
-  size?: GridSize; // Material-UI grid sizing
+  size?: FieldSize; // Material-UI grid sizing
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
+  visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
   order?: number;  // Display order
-  onChange?: (fieldName: string, value: unknown, formData: FormData, actions: FormCustomizationActions) => FieldChangeResult;
+  onChange?: (
+    fieldName: string,
+    value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown },
+    formData: Record<string, unknown>,
+    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
+    setFieldVisible: (fieldName: string, visible: boolean) => void,
+    setFieldEnabled: (fieldName: string, enabled: boolean) => void
+  ) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
 };
 ```
 
 #### **Customization Examples**
+
+##### **Basic Field Customization**
 ```typescript
 // Field visibility based on business logic
 const customization = {
@@ -270,6 +372,75 @@ const customization = {
 };
 ```
 
+##### **Complete Episode Form Customization**
+```typescript
+import { registerFormCustomization } from '@/lib/formCustomization';
+
+export function setupEpisodeFormCustomization() {
+  // Register customization for create mode
+  registerFormCustomization("episode", "create", {
+    name: {
+      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices
+      order: 1, // First in the row
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+        // If name has a value, enable number and season fields and set number to 1
+        if (value && String(value).trim() !== '') {
+          setFieldEnabled('number', true);
+          setFieldEnabled('season', true);
+          setFieldData('number', 1);
+        } else {
+          // If name is empty, disable number and season fields and clear their values
+          setFieldEnabled('number', false);
+          setFieldEnabled('season', false);
+          setFieldData('number', "");
+          setFieldData('season', "");
+        }
+        
+        return { value, error: undefined };
+      }
+    },
+    
+    number: {
+      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices
+      order: 2, // Second in the row (same row as name)
+      // Dynamic enabled: only enabled when name has a value
+      enabled: (fieldName, value, formData) => {
+        const formDataTyped = formData as Record<string, { value?: unknown }>;
+        const nameValue = formDataTyped.name?.value;
+        return !!(nameValue && String(nameValue).trim() !== '');
+      }
+    },
+    
+    date: {
+      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices (second row)
+      order: 3, // Third in order (second row)
+    },
+    
+    season: {
+      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices (second row)
+      order: 4, // Fourth in order (second row, at the end)
+      // Dynamic enabled: only enabled when name has a value
+      enabled: (fieldName, value, formData) => {
+        const formDataTyped = formData as Record<string, { value?: unknown }>;
+        const nameValue = formDataTyped.name?.value;
+        return !!(nameValue && String(nameValue).trim() !== '');
+      }
+    }
+  });
+
+  // Register customization for edit mode (different behavior)
+  registerFormCustomization("episode", "edit", {
+    name: { size: { xs: 12, sm: 6, md: 6 }, order: 1 },
+    number: { size: { xs: 12, sm: 6, md: 6 }, order: 2, enabled: true },
+    date: { size: { xs: 12, sm: 6, md: 6 }, order: 3 },
+    season: { size: { xs: 12, sm: 6, md: 6 }, order: 4, enabled: true }
+  });
+}
+
+// Call this function in your app initialization
+// setupEpisodeFormCustomization();
+```
+
 ### 🔧 **Advanced Features**
 
 #### **Collection Management**
@@ -295,6 +466,12 @@ const customization = {
 - **Dynamic Labels**: Field labels resolved from i18n system
 - **Context-Aware**: Entity and field-specific translations
 - **Fallback Support**: Graceful degradation for missing keys
+
+#### **Column Customization**
+- **Custom Renderers**: Specialized display for different data types
+- **Dynamic Content**: React components for complex column data
+- **Responsive Design**: Mobile-friendly column layouts
+- **Integration**: Seamless integration with EntityTable
 
 ## Examples
 
@@ -346,7 +523,40 @@ interface Episode {
 // 2. Create embedded section for Director
 // 3. Provide collection management for Seasons
 // 4. Support nested Episode collections within Seasons
+
+### 🚀 **Setting Up Customizations**
+
+To use the customization system in your application, you need to register your customizations early in the app lifecycle.
+
+#### **Form Customization Setup**
+```typescript
+// In your app initialization (e.g., layout.tsx or main component)
+import { setupEpisodeFormCustomization } from '@/examples/episodeFormCustomization';
+
+// Call setup functions
+setupEpisodeFormCustomization();
 ```
+
+#### **Column Customization Setup**
+```typescript
+// In your app initialization
+import { registerColumnRenderer } from '@/lib/columnRenderers';
+
+// Register custom column renderers
+registerColumnRenderer("episode.date", ({ value }) => {
+  // Your custom date renderer
+});
+
+registerColumnRenderer("episode.status", ({ value }) => {
+  // Your custom status renderer
+});
+```
+
+#### **Integration Points**
+- **Layout Component**: Set up form customizations
+- **Main App**: Register column renderers
+- **Entity Components**: Use customization state
+- **Custom Hooks**: Access customization data
 
 ### 🎬 **Movie Database**
 
