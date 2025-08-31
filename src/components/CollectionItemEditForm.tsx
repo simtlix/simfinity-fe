@@ -347,7 +347,25 @@ export default function CollectionItemEditForm({
     const customOnChange = fieldCustomization && 'onChange' in fieldCustomization ? fieldCustomization.onChange : undefined;
 
     if (customOnChange) {
-      const result = customOnChange(fieldName, value, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled);
+      // Create default parent form access if not provided
+      const defaultParentFormAccess: ParentFormAccess = {
+        parentFormData: {},
+        parentFieldVisibility: {},
+        parentFieldEnabled: {},
+        setParentFieldData: () => {},
+        setParentFieldVisible: () => {},
+        setParentFieldEnabled: () => {},
+      };
+
+      const result = customOnChange(
+        fieldName, 
+        value, 
+        formData, 
+        customizationActions.setFieldData, 
+        customizationActions.setFieldVisible, 
+        customizationActions.setFieldEnabled,
+        parentFormAccess || defaultParentFormAccess
+      );
       customizationActions.setFieldData(fieldName, result.value as string | number | boolean | string[] | null);
       
       // Handle error if any

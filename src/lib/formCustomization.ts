@@ -90,7 +90,8 @@ export type FieldCustomization = {
     formData: Record<string, unknown>,
     setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
     setFieldVisible: (fieldName: string, visible: boolean) => void,
-    setFieldEnabled: (fieldName: string, enabled: boolean) => void
+    setFieldEnabled: (fieldName: string, enabled: boolean) => void,
+    parentFormAccess?: ParentFormAccess // Optional: only available in collection item context
   ) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
 };
 
@@ -136,7 +137,8 @@ export type CollectionItemCustomization = {
     formData: Record<string, unknown>,
     setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
     setFieldVisible: (fieldName: string, visible: boolean) => void,
-    setFieldEnabled: (fieldName: string, enabled: boolean) => void
+    setFieldEnabled: (fieldName: string, enabled: boolean) => void,
+    parentFormAccess?: ParentFormAccess // Optional: only available in collection item context
   ) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
   // Mode-specific customizations for collection items
   onEdit?: CollectionItemModeCustomization;

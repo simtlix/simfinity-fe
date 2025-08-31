@@ -32,10 +32,12 @@ registerFormCustomization("serie", "create", {
       order: 1,
       enabled: true,
       visible: true,
-      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled, parentFormAccess) => {
         if (!value || String(value).trim() === '') {
           return { value, error: "Name is required" };
         }
+        // Note: parentFormAccess is undefined for main entity fields (only available in collection item context)
+        console.log('Parent form access:', parentFormAccess);
         return { value, error: undefined };
       }
     }
@@ -112,8 +114,10 @@ Control individual fields within the embedded object, with sizes relative to the
 "director.name": {
   size: { xs: 12, sm: 6, md: 6 }, // Field takes half the section width
   errorMessage: (value) => { /* validation logic */ },
-  onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+  onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled, parentFormAccess) => {
     // Custom logic for this specific field
+    // Note: parentFormAccess is undefined for main entity fields (only available in collection item context)
+    console.log('Parent form access:', parentFormAccess);
     return { value, error: undefined };
   }
 }
@@ -160,7 +164,7 @@ enabled: false  // Field is disabled
 Implement complex field interactions:
 
 ```typescript
-onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled, parentFormAccess) => {
   // Your custom logic here
   
   // Example: Show/hide fields based on value
@@ -170,6 +174,12 @@ onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEn
   } else {
     setFieldVisible('director', false);
     setFieldVisible('year', false);
+  }
+  
+  // Note: parentFormAccess is only available in collection item context
+  if (parentFormAccess) {
+    // Can read and modify parent form data
+    console.log('Parent form data:', parentFormAccess.parentFormData);
   }
   
   // Example: Enable/disable fields
@@ -198,6 +208,40 @@ onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEn
 - `setFieldData`: Function to set a field's value
 - `setFieldVisible`: Function to show/hide a field
 - `setFieldEnabled`: Function to enable/disable a field
+- `parentFormAccess` (optional): Access to parent form data and actions (only available in collection item context)
+
+#### Parent Form Access in Field onChange
+
+When field-level `onChange` callbacks are executed within collection item forms, they receive an optional `parentFormAccess` parameter that provides access to the parent form's data and state management functions:
+
+```typescript
+onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled, parentFormAccess) => {
+  // Only available when editing collection items
+  if (parentFormAccess) {
+    // Read parent form data
+    const seriesTitle = parentFormAccess.parentFormData.title?.value;
+    const seriesRating = parentFormAccess.parentFormData.rating?.value;
+    
+    // Modify parent form fields
+    if (value === 'final episode') {
+      parentFormAccess.setParentFieldData('isCompleted', true);
+    }
+    
+    // Control parent form field visibility/state
+    parentFormAccess.setParentFieldVisible('sequel', false);
+    parentFormAccess.setParentFieldEnabled('status', false);
+    
+    // Access parent form field visibility/enabled state
+    if (parentFormAccess.parentFieldVisibility.director) {
+      // Director field is visible in parent form
+    }
+  }
+  
+  return { value, error: undefined };
+}
+```
+
+**Note**: `parentFormAccess` is `undefined` for main entity fields and only provided when the `onChange` callback is executed within a collection item form.
 
 #### setFieldData Usage Examples
 
@@ -731,7 +775,7 @@ registerFormCustomization("serie", "create", {
     name: {
       size: { xs: 12, sm: 6, md: 4 },
       order: 1,
-      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled, parentFormAccess) => {
         // Auto-capitalize first letter
         const capitalized = String(value).charAt(0).toUpperCase() + String(value).slice(1);
         
@@ -743,6 +787,9 @@ registerFormCustomization("serie", "create", {
           setFieldVisible('director', false);
           setFieldVisible('year', false);
         }
+        
+        // Note: parentFormAccess is undefined for main entity fields (only available in collection item context)
+        console.log('Parent form access:', parentFormAccess);
         
         // Validation
         if (!value || String(value).trim() === '') {
@@ -980,7 +1027,7 @@ type FieldCustomization = {
   enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
   visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
   order?: number;
-  onChange?: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, formData: Record<string, unknown>, setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, setFieldVisible: (fieldName: string, visible: boolean) => void, setFieldEnabled: (fieldName: string, enabled: boolean) => void) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
+  onChange?: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, formData: Record<string, unknown>, setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, setFieldVisible: (fieldName: string, visible: boolean) => void, setFieldEnabled: (fieldName: string, enabled: boolean) => void, parentFormAccess?: ParentFormAccess) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
 };
 ```
 
