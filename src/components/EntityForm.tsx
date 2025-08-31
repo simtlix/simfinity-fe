@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
-import { getEntityFormCallbacks, EntityFormCallbackActions, FormMessage, CollectionFieldState as FormCustomizationCollectionFieldState } from "@/lib/formCustomization";
+import { getEntityFormCallbacks, EntityFormCallbackActions, FormMessage, CollectionFieldState as FormCustomizationCollectionFieldState, ParentFormAccess } from "@/lib/formCustomization";
 import {
   Box,
   Breadcrumbs,
@@ -310,6 +310,16 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       }));
     },
   }), []);
+
+  // Parent form access for collection items
+  const parentFormAccess: ParentFormAccess = React.useMemo(() => ({
+    parentFormData: formData,
+    parentFieldVisibility: customizationState.fieldVisibility,
+    parentFieldEnabled: customizationState.fieldEnabled,
+    setParentFieldData: customizationActions.setFieldData,
+    setParentFieldVisible: customizationActions.setFieldVisible,
+    setParentFieldEnabled: customizationActions.setFieldEnabled,
+  }), [formData, customizationState.fieldVisibility, customizationState.fieldEnabled, customizationActions]);
 
   // Build form fields based on schema first
   const formFields = React.useMemo(() => {
@@ -1762,6 +1772,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               isEditMode={action === "edit"}
               collectionState={getCollectionState(field.name)}
               onCollectionStateChange={updateCollectionState}
+              parentFormAccess={parentFormAccess}
             />
           </Box>
         ));

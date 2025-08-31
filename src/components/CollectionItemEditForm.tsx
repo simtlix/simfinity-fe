@@ -19,7 +19,8 @@ import {
   Box,
   Grid,
   Typography,
-  CircularProgress
+  CircularProgress,
+  Alert
 } from "@mui/material";
 import {
   INTROSPECTION_QUERY,
@@ -39,6 +40,9 @@ import {
   getCollectionItemFieldSize,
   getFormCustomization,
   FormCustomization,
+  getCollectionItemOnSubmit,
+  FormMessage,
+  ParentFormAccess,
 } from "@/lib/formCustomization";
 import { CollectionItem } from "./CollectionFieldGrid";
 
@@ -51,6 +55,7 @@ type CollectionItemEditFormProps = {
   parentEntityType: string;
   onSave: (updatedItem: CollectionItem) => void;
   isAddingNew?: boolean; // Indicates if this is a new item being added
+  parentFormAccess?: ParentFormAccess; // Access to parent form data and actions
 };
 
 type FormField = {
@@ -89,12 +94,14 @@ export default function CollectionItemEditForm({
   parentEntityType,
   onSave,
   isAddingNew = false,
+  parentFormAccess,
 }: CollectionItemEditFormProps) {
   const { data: schemaData } = useQuery(INTROSPECTION_QUERY);
   const { resolveLabel } = useI18n();
   const [formData, setFormData] = React.useState<FormData>({} as FormData);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [message, setMessage] = React.useState<FormMessage | null>(null);
 
   // Form customization state
   const [customizationState, setCustomizationState] = React.useState<FormCustomizationState>({
@@ -370,6 +377,7 @@ export default function CollectionItemEditForm({
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setMessage(null);
 
     try {
       // Build updated item data
@@ -398,6 +406,50 @@ export default function CollectionItemEditForm({
         const connectionFieldName = parentEntityType.toLowerCase();
         if (connectionFieldName in updatedItem) {
           updatedItem[connectionFieldName] = null;
+        }
+      }
+
+      // Get onSubmit callback for collection item
+      const parentCustomization = getFormCustomization(parentEntityType, "edit");
+      const onSubmitCallback = getCollectionItemOnSubmit(
+        parentCustomization || {},
+        collectionFieldName,
+        objectTypeName,
+        isAddingNew ? "create" : "edit"
+      );
+
+      // Execute onSubmit callback if available
+      if (onSubmitCallback) {
+        try {
+          // Create default parent form access if not provided
+          const defaultParentFormAccess: ParentFormAccess = {
+            parentFormData: {},
+            parentFieldVisibility: {},
+            parentFieldEnabled: {},
+            setParentFieldData: () => {},
+            setParentFieldVisible: () => {},
+            setParentFieldEnabled: () => {},
+          };
+
+          const shouldContinue = await onSubmitCallback(
+            updatedItem,
+            customizationActions.setFieldData,
+            formData,
+            customizationActions.setFieldVisible,
+            customizationActions.setFieldEnabled,
+            setMessage,
+            parentFormAccess || defaultParentFormAccess
+          );
+
+          // If callback explicitly returns false, stop form submission
+          if (shouldContinue === false) {
+            console.log('Collection item submission cancelled by onSubmit callback');
+            return;
+          }
+        } catch (onSubmitError) {
+          console.error('Error in collection item onSubmit callback:', onSubmitError);
+          // If onSubmit throws an error, stop form submission
+          return;
         }
       }
 
@@ -577,6 +629,11 @@ export default function CollectionItemEditForm({
             </Grid>
           </form>
         </Box>
+        {message && (
+          <Alert severity={message.type} sx={{ mt: 2 }}>
+            {typeof message.message === 'string' ? message.message : message.message}
+          </Alert>
+        )}
         {error && (
           <Typography color="error" sx={{ mt: 2 }}>
             {error}

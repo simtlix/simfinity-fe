@@ -499,6 +499,228 @@ registerFormCustomization("serie", "edit", {
 });
 ```
 
+## Collection Field Customization
+
+Collection fields represent relationships where one entity can have multiple instances of another entity (e.g., a series has multiple seasons, a season has multiple episodes). The form customization system provides comprehensive support for customizing collection field behavior.
+
+### Collection Field Structure
+
+```typescript
+registerFormCustomization("serie", "edit", {
+  fieldsCustomization: {
+    // Regular field customizations...
+    
+    // Collection field customization
+    seasons: {
+      size: { xs: 12, sm: 12, md: 12 }, // Collection section size
+      order: 2,
+      visible: true,
+      enabled: true,
+      
+      // Delete callback - executed when delete button is pressed
+      onDelete: async (item, setMessage) => {
+        // Validate deletion conditions
+        if (item.episodeCount > 0) {
+          setMessage({
+            type: 'error',
+            message: `Cannot delete season "${item.name}" - it has episodes`
+          });
+          return false; // Cancel deletion
+        }
+        return true; // Allow deletion
+      },
+      
+      // Edit mode customization for collection items
+      onEdit: {
+        fieldsCustomization: {
+          name: {
+            size: { xs: 12, sm: 6, md: 6 },
+            order: 1,
+            onChange: (fieldName, value, formData) => {
+              console.log('Season name changed:', value);
+              return { value, error: undefined };
+            }
+          },
+          number: {
+            size: { xs: 12, sm: 6, md: 6 },
+            order: 2
+          }
+        },
+        // Submit callback for editing collection items
+        onSubmit: async (item, setFieldData, formData, setFieldVisible, setFieldEnabled, setMessage) => {
+          // Validate item before saving
+          if (!item.name?.trim()) {
+            setMessage({
+              type: 'error',
+              message: 'Season name is required'
+            });
+            return false; // Cancel submission
+          }
+          
+          // Auto-generate data
+          if (!item.slug) {
+            const slug = String(item.name).toLowerCase().replace(/\s+/g, '-');
+            setFieldData('slug', slug);
+          }
+          
+          return true; // Allow submission
+        }
+      },
+      
+      // Create mode customization for collection items
+      onCreate: {
+        fieldsCustomization: {
+          name: {
+            size: { xs: 12, sm: 6, md: 6 },
+            order: 1
+          },
+          number: {
+            size: { xs: 12, sm: 6, md: 6 },
+            order: 2
+          }
+        },
+        onSubmit: async (item, setFieldData, formData, setFieldVisible, setFieldEnabled, setMessage) => {
+          // Auto-increment season number for new items
+          if (!item.number) {
+            // Logic to determine next season number
+            const nextNumber = getNextSeasonNumber(); // Your implementation
+            setFieldData('number', nextNumber);
+          }
+          
+          return true; // Allow submission
+        }
+      }
+    }
+  }
+});
+```
+
+### Collection Callbacks
+
+#### onDelete Callback
+
+Executed when the delete button is pressed on a collection item. Use this to validate deletion conditions or prevent deletion of important data.
+
+**Parameters:**
+- `item`: The collection item being deleted
+- `setMessage`: Function to display form-level messages
+
+**Return Value:**
+- `true` or `undefined`: Allow deletion (default)
+- `false`: Cancel deletion
+
+**Examples:**
+```typescript
+// Prevent deletion with conditions
+onDelete: async (item, setMessage) => {
+  if (item.status === 'published') {
+    setMessage({
+      type: 'error',
+      message: 'Cannot delete published episodes'
+    });
+    return false;
+  }
+  
+  // Show confirmation message
+  setMessage({
+    type: 'warning',
+    message: `Deleting "${item.name}" - this action cannot be undone`
+  });
+  
+  return true;
+}
+```
+
+#### onSubmit Callback
+
+Executed when a collection item form is submitted (both create and edit modes). Use this for validation, data transformation, or business logic specific to collection items.
+
+**Parameters:**
+- `item`: The collection item data being submitted
+- `setFieldData`: Function to modify field values
+- `formData`: Current form field values
+- `setFieldVisible`: Function to show/hide fields
+- `setFieldEnabled`: Function to enable/disable fields
+- `setMessage`: Function to display form-level messages
+- `parentFormAccess`: Object providing access to parent form data and actions
+
+**Parent Form Access:**
+```typescript
+{
+  parentFormData: Record<string, unknown>;              // Current parent form field values
+  parentFieldVisibility: Record<string, boolean>;      // Parent form field visibility state
+  parentFieldEnabled: Record<string, boolean>;         // Parent form field enabled state
+  setParentFieldData: (fieldName: string, value: unknown) => void;     // Modify parent form fields
+  setParentFieldVisible: (fieldName: string, visible: boolean) => void; // Show/hide parent form fields
+  setParentFieldEnabled: (fieldName: string, enabled: boolean) => void; // Enable/disable parent form fields
+}
+```
+
+**Return Value:**
+- `true` or `undefined`: Allow submission (default)
+- `false`: Cancel submission
+
+**Examples:**
+```typescript
+// Validation and parent form interaction
+onSubmit: async (item, setFieldData, formData, setFieldVisible, setFieldEnabled, setMessage, parentFormAccess) => {
+  // Validate required fields
+  if (!item.title?.trim()) {
+    setMessage({
+      type: 'error',
+      message: 'Episode title is required'
+    });
+    return false;
+  }
+  
+  // Access parent form data for validation
+  const seriesRating = parentFormAccess.parentFormData.rating?.value;
+  if (seriesRating === 'R' && item.audience === 'children') {
+    setMessage({
+      type: 'error',
+      message: 'Cannot create child-friendly episode for R-rated series'
+    });
+    return false;
+  }
+  
+  // Auto-generate data using parent form info
+  const seriesCode = parentFormAccess.parentFormData.code?.value;
+  if (seriesCode && item.number && !item.code) {
+    const episodeCode = `${seriesCode}-E${String(item.number).padStart(2, '0')}`;
+    setFieldData('code', episodeCode);
+  }
+  
+  // Update parent form based on collection item data
+  if (item.isSpecial) {
+    parentFormAccess.setParentFieldData('hasSpecialEpisodes', true);
+    setMessage({
+      type: 'info',
+      message: 'Series marked as having special episodes'
+    });
+  }
+  
+  // Inherit defaults from parent
+  const seriesGenre = parentFormAccess.parentFormData.genre?.value;
+  if (seriesGenre && !item.genre) {
+    setFieldData('genre', seriesGenre);
+  }
+  
+  return true;
+}
+```
+
+### Collection Management
+
+The collection field system automatically handles:
+- **Add Operations**: Adding new items to collections
+- **Edit Operations**: Modifying existing collection items
+- **Delete Operations**: Removing items from collections
+- **State Tracking**: Monitoring changes (added, modified, deleted)
+- **Form Validation**: Running onSubmit callbacks before saving
+- **Message Display**: Showing validation and status messages
+
+Collection changes are processed both in create and edit modes, allowing you to build and modify collections regardless of the parent entity's state.
+
 ## Complete Examples
 
 ### Basic Field Customization

@@ -19,7 +19,8 @@ import {
   TableRow,
   Paper,
   IconButton,
-  Tooltip
+  Tooltip,
+  Alert
 } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel } from "@mui/x-data-grid";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -31,6 +32,7 @@ import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getList
 import { resolveColumnRenderer } from "@/lib/columnRenderers";
 import { useI18n } from "@/lib/i18n";
 import CollectionItemEditForm from "./CollectionItemEditForm";
+import { getFormCustomization, getCollectionOnDelete, FormMessage, ParentFormAccess } from "@/lib/formCustomization";
 
 // Types for collection item management
 export type CollectionItemStatus = 'original' | 'added' | 'modified' | 'deleted';
@@ -59,6 +61,7 @@ type CollectionFieldGridProps = {
   isEditMode?: boolean;
   collectionState?: CollectionFieldState;
   onCollectionStateChange?: (fieldName: string, newState: CollectionFieldState) => void;
+  parentFormAccess?: ParentFormAccess; // Access to parent form data and actions
 };
 
 export default function CollectionFieldGrid({
@@ -67,7 +70,8 @@ export default function CollectionFieldGrid({
   parentEntityId,
   isEditMode = false,
   collectionState,
-  onCollectionStateChange
+  onCollectionStateChange,
+  parentFormAccess
 }: CollectionFieldGridProps) {
   const { data: schemaData } = useQuery(INTROSPECTION_QUERY);
   const { resolveLabel } = useI18n();
@@ -83,6 +87,9 @@ export default function CollectionFieldGrid({
   const [editFormOpen, setEditFormOpen] = React.useState(false);
   const [editingItem, setEditingItem] = React.useState<CollectionItem | null>(null);
   const [isAddingNew, setIsAddingNew] = React.useState(false);
+  
+  // Message state for delete callbacks
+  const [message, setMessage] = React.useState<FormMessage | null>(null);
 
 
 
@@ -294,7 +301,31 @@ export default function CollectionFieldGrid({
     setEditFormOpen(true);
   }, []);
 
-  const handleDeleteItem = React.useCallback((item: Record<string, unknown>) => {
+  const handleDeleteItem = React.useCallback(async (item: Record<string, unknown>) => {
+    // Get onDelete callback for collection
+    const parentCustomization = getFormCustomization(parentEntityType, "edit");
+    const onDeleteCallback = getCollectionOnDelete(
+      parentCustomization || {},
+      collectionField.name
+    );
+
+    // Execute onDelete callback if available
+    if (onDeleteCallback) {
+      try {
+        const shouldContinue = await onDeleteCallback(item, setMessage);
+
+        // If callback explicitly returns false, stop deletion
+        if (shouldContinue === false) {
+          console.log('Collection item deletion cancelled by onDelete callback');
+          return;
+        }
+      } catch (onDeleteError) {
+        console.error('Error in collection onDelete callback:', onDeleteError);
+        // If onDelete throws an error, stop deletion
+        return;
+      }
+    }
+
     // If item was added, remove it completely
     if (currentState.added.some(i => i.id === item.id)) {
       setCurrentState(prev => ({
@@ -330,7 +361,7 @@ export default function CollectionFieldGrid({
       ...prev,
       deleted: [...prev.deleted, deletedItem]
     }));
-  }, [currentState.added, currentState.modified, setCurrentState]);
+  }, [currentState.added, currentState.modified, setCurrentState, parentEntityType, collectionField.name]);
 
   const handleRestoreItem = React.useCallback((item: CollectionItem) => {
     if (item.__status === 'deleted') {
@@ -756,6 +787,13 @@ export default function CollectionFieldGrid({
       </AccordionDetails>
     </Accordion>
 
+    {/* Message display */}
+    {message && (
+      <Alert severity={message.type} sx={{ mt: 2 }} onClose={() => setMessage(null)}>
+        {typeof message.message === 'string' ? message.message : message.message}
+      </Alert>
+    )}
+
     {/* Edit form dialog */}
     {editingItem && editFormOpen && (
       <CollectionItemEditForm
@@ -771,6 +809,7 @@ export default function CollectionFieldGrid({
         parentEntityType={parentEntityType}
         onSave={handleSaveEditedItem}
         isAddingNew={isAddingNew}
+        parentFormAccess={parentFormAccess}
       />
     )}
   </Box>

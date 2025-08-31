@@ -101,6 +101,30 @@ export type EmbeddedSectionCustomization = {
   enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire section is enabled
 };
 
+// Parent form access for collection item callbacks
+export type ParentFormAccess = {
+  parentFormData: Record<string, unknown>;
+  parentFieldVisibility: Record<string, boolean>;
+  parentFieldEnabled: Record<string, boolean>;
+  setParentFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void;
+  setParentFieldVisible: (fieldName: string, visible: boolean) => void;
+  setParentFieldEnabled: (fieldName: string, enabled: boolean) => void;
+};
+
+// Collection item mode-specific customization
+export type CollectionItemModeCustomization = {
+  fieldsCustomization?: Record<string, FieldCustomization>;
+  onSubmit?: (
+    item: Record<string, unknown>,
+    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
+    formData: Record<string, unknown>,
+    setFieldVisible: (fieldName: string, visible: boolean) => void,
+    setFieldEnabled: (fieldName: string, enabled: boolean) => void,
+    setMessage: (message: FormMessage) => void,
+    parentFormAccess: ParentFormAccess
+  ) => boolean | void | Promise<boolean | void>;
+};
+
 export type CollectionItemCustomization = {
   size?: FieldSize;
   enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
@@ -115,8 +139,8 @@ export type CollectionItemCustomization = {
     setFieldEnabled: (fieldName: string, enabled: boolean) => void
   ) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
   // Mode-specific customizations for collection items
-  onEdit?: Record<string, FieldCustomization>;
-  onCreate?: Record<string, FieldCustomization>;
+  onEdit?: CollectionItemModeCustomization;
+  onCreate?: CollectionItemModeCustomization;
   // Legacy support - will be deprecated
   fields?: Record<string, FieldCustomization>;
 };
@@ -126,9 +150,14 @@ export type CollectionFieldCustomization = {
   order?: number;   // Controls the collection section's order relative to other fields/sections
   visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire collection section is visible
   enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire collection section is enabled
+  // Callback for when delete button is pressed on a collection item
+  onDelete?: (
+    item: Record<string, unknown>,
+    setMessage: (message: FormMessage) => void
+  ) => boolean | void | Promise<boolean | void>;
   // Mode-specific customizations for collection items
-  onEdit?: Record<string, FieldCustomization>;    // Edit mode customizations for collection item fields
-  onCreate?: Record<string, FieldCustomization>;  // Create mode customizations for collection item fields
+  onEdit?: CollectionItemModeCustomization;    // Edit mode customizations for collection item fields
+  onCreate?: CollectionItemModeCustomization;  // Create mode customizations for collection item fields
   // Legacy support - will be deprecated
   items?: Record<string, CollectionItemCustomization>;
 };
@@ -353,13 +382,13 @@ export function getCollectionItemFieldCustomization(
   const collectionCustomization = getCollectionFieldCustomization(customization, collectionFieldName);
   
   if (collectionCustomization) {
-    // First check mode-specific customizations at collection level
-    if (mode === "edit" && collectionCustomization.onEdit && collectionCustomization.onEdit[fieldName]) {
-      return collectionCustomization.onEdit[fieldName];
+    // First check mode-specific customizations at collection level (new structure)
+    if (mode === "edit" && collectionCustomization.onEdit?.fieldsCustomization && collectionCustomization.onEdit.fieldsCustomization[fieldName]) {
+      return collectionCustomization.onEdit.fieldsCustomization[fieldName];
     }
     
-    if (mode === "create" && collectionCustomization.onCreate && collectionCustomization.onCreate[fieldName]) {
-      return collectionCustomization.onCreate[fieldName];
+    if (mode === "create" && collectionCustomization.onCreate?.fieldsCustomization && collectionCustomization.onCreate.fieldsCustomization[fieldName]) {
+      return collectionCustomization.onCreate.fieldsCustomization[fieldName];
     }
     
     // Fallback to legacy items structure
@@ -367,12 +396,12 @@ export function getCollectionItemFieldCustomization(
       const itemCustomization = collectionCustomization.items[itemTypeName];
       
       // Check mode-specific customizations in legacy structure
-      if (mode === "edit" && itemCustomization.onEdit && itemCustomization.onEdit[fieldName]) {
-        return itemCustomization.onEdit[fieldName];
+      if (mode === "edit" && itemCustomization.onEdit?.fieldsCustomization && itemCustomization.onEdit.fieldsCustomization[fieldName]) {
+        return itemCustomization.onEdit.fieldsCustomization[fieldName];
       }
       
-      if (mode === "create" && itemCustomization.onCreate && itemCustomization.onCreate[fieldName]) {
-        return itemCustomization.onCreate[fieldName];
+      if (mode === "create" && itemCustomization.onCreate?.fieldsCustomization && itemCustomization.onCreate.fieldsCustomization[fieldName]) {
+        return itemCustomization.onCreate.fieldsCustomization[fieldName];
       }
       
       // Fallback to legacy fields format
@@ -415,4 +444,49 @@ export function isCollectionField(
 ): boolean {
   const fieldCustomization = customization[fieldName];
   return fieldCustomization && 'items' in fieldCustomization;
+}
+
+// Helper function to get collection item onSubmit callback
+export function getCollectionItemOnSubmit(
+  customization: FormCustomization,
+  collectionFieldName: string,
+  itemTypeName: string,
+  mode: "edit" | "create" = "edit"
+): CollectionItemModeCustomization['onSubmit'] | undefined {
+  const collectionCustomization = getCollectionFieldCustomization(customization, collectionFieldName);
+  
+  if (collectionCustomization) {
+    // Check mode-specific customizations at collection level (new structure)
+    if (mode === "edit" && collectionCustomization.onEdit?.onSubmit) {
+      return collectionCustomization.onEdit.onSubmit;
+    }
+    
+    if (mode === "create" && collectionCustomization.onCreate?.onSubmit) {
+      return collectionCustomization.onCreate.onSubmit;
+    }
+    
+    // Fallback to legacy items structure
+    if (collectionCustomization.items && collectionCustomization.items[itemTypeName]) {
+      const itemCustomization = collectionCustomization.items[itemTypeName];
+      
+      if (mode === "edit" && itemCustomization.onEdit?.onSubmit) {
+        return itemCustomization.onEdit.onSubmit;
+      }
+      
+      if (mode === "create" && itemCustomization.onCreate?.onSubmit) {
+        return itemCustomization.onCreate.onSubmit;
+      }
+    }
+  }
+  
+  return undefined;
+}
+
+// Helper function to get collection onDelete callback
+export function getCollectionOnDelete(
+  customization: FormCustomization,
+  collectionFieldName: string
+): CollectionFieldCustomization['onDelete'] | undefined {
+  const collectionCustomization = getCollectionFieldCustomization(customization, collectionFieldName);
+  return collectionCustomization?.onDelete;
 }
