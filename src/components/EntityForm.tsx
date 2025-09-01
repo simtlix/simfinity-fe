@@ -72,7 +72,8 @@ import {
   getFieldOrder,
   getEmbeddedFieldCustomization,
   getEmbeddedSectionCustomization,
-  getEmbeddedFieldSize
+  getEmbeddedFieldSize,
+  getCollectionFieldCustomization
 } from "@/lib/formCustomization";
 
 type EntityFormProps = {
@@ -1407,14 +1408,26 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     const fieldLabel = getFieldLabel(field.name);
     const isViewMode = action === "view";
     
-    // Get field customization for custom onChange
+    // Get field customization for custom onChange and custom renderer
     const fieldCustomization = customizationState.customization[field.name];
     const customOnChange = fieldCustomization && 'onChange' in fieldCustomization ? fieldCustomization.onChange : undefined;
+    const customRenderer = fieldCustomization && 'customRenderer' in fieldCustomization ? fieldCustomization.customRenderer : undefined;
+    
+    // Use custom renderer if provided
+    if (customRenderer) {
+      return (customRenderer as (field: FormField, actions: FormCustomizationActions, handler: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, disabled: boolean) => React.ReactElement)(
+        field,
+        customizationActions,
+        (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => 
+          handleFieldChange(fieldName, value),
+        isViewMode || !enabled
+      );
+    }
     
     // Use custom onChange if provided, otherwise use the default handleFieldChange
     const onChange = customOnChange 
       ? (value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => {
-          const result = customOnChange(field.name, value, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled);
+          const result = customOnChange(field.name, value, formData, customizationActions.setFieldData, customizationActions.setFieldVisible, customizationActions.setFieldEnabled, undefined);
           // Pass both value and error to handleFieldChange to handle state properly
           handleFieldChange(field.name, result.value as string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, result.error);
         }
@@ -1759,23 +1772,45 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           }))
         });
         
-        return validCollectionFields.map(field => (
-          <Box key={field.name} sx={{ mt: 3 }}>
-            <CollectionFieldGrid
-              collectionField={{
-                name: field.name,
-                objectTypeName: field.collectionObjectTypeName!,
-                connectionField: field.connectionField!,
-              }}
-              parentEntityId={entityId || ""}
-              parentEntityType={entityTypeName || ""}
-              isEditMode={action === "edit"}
-              collectionState={getCollectionState(field.name)}
-              onCollectionStateChange={updateCollectionState}
-              parentFormAccess={parentFormAccess}
-            />
-          </Box>
-        ));
+        return validCollectionFields.map(field => {
+          // Check for custom collection renderer
+          const collectionCustomization = getCollectionFieldCustomization(customizationState.customization, field.name);
+          const customCollectionRenderer = collectionCustomization?.customCollectionRenderer;
+          
+          if (customCollectionRenderer) {
+            return (
+              <Box key={field.name} sx={{ mt: 3 }}>
+                {customCollectionRenderer(
+                  field.name,
+                  parentFormAccess,
+                  getCollectionState(field.name) as unknown as Record<string, unknown>,
+                  (newState: Record<string, unknown>) => updateCollectionState(field.name, newState as unknown as CollectionFieldState),
+                  entityId || null,
+                  action === "edit"
+                )}
+              </Box>
+            );
+          }
+          
+          // Default collection rendering
+          return (
+            <Box key={field.name} sx={{ mt: 3 }}>
+              <CollectionFieldGrid
+                collectionField={{
+                  name: field.name,
+                  objectTypeName: field.collectionObjectTypeName!,
+                  connectionField: field.connectionField!,
+                }}
+                parentEntityId={entityId || ""}
+                parentEntityType={entityTypeName || ""}
+                isEditMode={action === "edit"}
+                collectionState={getCollectionState(field.name)}
+                onCollectionStateChange={updateCollectionState}
+                parentFormAccess={parentFormAccess}
+              />
+            </Box>
+          );
+        });
       })()}
 
       {/* Snackbar for success messages */}

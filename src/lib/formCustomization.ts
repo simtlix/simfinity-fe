@@ -1,3 +1,5 @@
+import * as React from 'react';
+
 export type FieldSize = {
   xs?: number;
   sm?: number;
@@ -20,19 +22,19 @@ export type CollectionFieldState = {
   added: Array<{
     id?: string;
     [key: string]: unknown;
-    __status?: 'added' | 'modified' | 'deleted';
+    __status?: 'original' | 'added' | 'modified' | 'deleted';
     __originalData?: Record<string, unknown>;
   }>;
   modified: Array<{
     id?: string;
     [key: string]: unknown;
-    __status?: 'added' | 'modified' | 'deleted';
+    __status?: 'original' | 'added' | 'modified' | 'deleted';
     __originalData?: Record<string, unknown>;
   }>;
   deleted: Array<{
     id?: string;
     [key: string]: unknown;
-    __status?: 'added' | 'modified' | 'deleted';
+    __status?: 'original' | 'added' | 'modified' | 'deleted';
     __originalData?: Record<string, unknown>;
   }>;
 };
@@ -79,6 +81,32 @@ export type EntityFormSuccessResult = {
   action?: () => void;
 };
 
+// Form field structure for custom renderers
+export type FormField = {
+  name: string;
+  type: string;
+  required: boolean;
+  value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown };
+  error?: string;
+  isNumeric: boolean;
+  isBoolean: boolean;
+  isDate: boolean;
+  isList: boolean;
+  isEnum: boolean;
+  enumValues?: string[];
+  isObject: boolean;
+  objectTypeName?: string;
+  descriptionField?: string;
+  descriptionFieldType?: string;
+  listQueryName?: string;
+  singleQueryName?: string;
+  isEmbedded?: boolean;
+  embeddedFields?: FormField[];
+  isCollection?: boolean;
+  collectionObjectTypeName?: string;
+  connectionField?: string;
+};
+
 export type FieldCustomization = {
   size?: FieldSize;
   enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
@@ -93,6 +121,12 @@ export type FieldCustomization = {
     setFieldEnabled: (fieldName: string, enabled: boolean) => void,
     parentFormAccess?: ParentFormAccess // Optional: only available in collection item context
   ) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
+  customRenderer?: (
+    field: FormField,
+    customizationActions: FormCustomizationActions,
+    handleFieldChange: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
+    disabled: boolean
+  ) => React.ReactElement;
 };
 
 export type EmbeddedSectionCustomization = {
@@ -157,6 +191,15 @@ export type CollectionFieldCustomization = {
     item: Record<string, unknown>,
     setMessage: (message: FormMessage) => void
   ) => boolean | void | Promise<boolean | void>;
+  // Custom renderer for the entire collection field
+  customCollectionRenderer?: (
+    collectionFieldName: string,
+    parentFormAccess: ParentFormAccess,
+    collectionState: Record<string, unknown>, // Compatible with CollectionFieldGrid's CollectionFieldState
+    onCollectionStateChange: (newState: Record<string, unknown>) => void, // Compatible with CollectionFieldGrid's CollectionFieldState
+    parentEntityId: string | null,
+    isEditMode: boolean
+  ) => React.ReactElement;
   // Mode-specific customizations for collection items
   onEdit?: CollectionItemModeCustomization;    // Edit mode customizations for collection item fields
   onCreate?: CollectionItemModeCustomization;  // Create mode customizations for collection item fields

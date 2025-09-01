@@ -993,6 +993,223 @@ The EntityForm component automatically detects and applies customizations:
 - Check that order values are unique and sequential
 - Ensure responsive breakpoints are properly configured
 
+## Custom Renderers
+
+The form customization system supports custom renderers for both individual fields and entire collection fields, allowing you to replace the default form controls with completely custom UI components.
+
+### Field Custom Renderers
+
+Custom field renderers allow you to replace the default field rendering with your own React component:
+
+```typescript
+registerFormCustomization("serie", "edit", {
+  fieldsCustomization: {
+    description: {
+      customRenderer: (field, customizationActions, handleFieldChange, disabled) => {
+        // Custom rich text editor
+        return React.createElement(MyRichTextEditor, {
+          value: field.value as string,
+          onChange: (value) => handleFieldChange(field.name, value),
+          disabled,
+          error: field.error
+        });
+      }
+    }
+  }
+});
+```
+
+#### Field Custom Renderer Parameters
+
+- **`field`**: FormField - Complete field information including value, type, validation state
+- **`customizationActions`**: FormCustomizationActions - Actions to manipulate form state
+- **`handleFieldChange`**: Function - Callback to update field value `(fieldName, value) => void`
+- **`disabled`**: boolean - Whether the field should be rendered as disabled
+
+#### Field Custom Renderer Return Value
+
+Must return a React.ReactElement that represents the custom field UI.
+
+### Collection Custom Renderers
+
+Custom collection renderers allow you to completely replace the default collection grid with your own UI:
+
+```typescript
+registerFormCustomization("serie", "edit", {
+  fieldsCustomization: {
+    episodes: {
+      customCollectionRenderer: (collectionFieldName, parentFormAccess, collectionState, onCollectionStateChange, parentEntityId, isEditMode) => {
+        // Custom card-based episode manager
+        return React.createElement(MyEpisodeCardManager, {
+          episodes: collectionState,
+          onUpdate: onCollectionStateChange,
+          parentSeries: parentFormAccess.parentFormData,
+          readonly: !isEditMode
+        });
+      }
+    }
+  }
+});
+```
+
+#### Collection Custom Renderer Parameters
+
+- **`collectionFieldName`**: string - Name of the collection field
+- **`parentFormAccess`**: ParentFormAccess - Access to parent form data and actions
+- **`collectionState`**: Record<string, unknown> - Current state of collection items (added, modified, deleted)
+- **`onCollectionStateChange`**: Function - Callback to update collection state `(newState) => void`
+- **`parentEntityId`**: string | null - ID of the parent entity (null for new entities)
+- **`isEditMode`**: boolean - Whether the form is in edit mode
+
+#### Collection Custom Renderer Return Value
+
+Must return a React.ReactElement that represents the custom collection UI.
+
+**Note**: Use `customCollectionRenderer` for collection fields and `customRenderer` for regular form fields to avoid signature conflicts.
+
+### Custom Renderer Examples
+
+#### Rich Text Field Renderer
+
+```typescript
+const richTextRenderer = (field, customizationActions, handleFieldChange, disabled) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  
+  return React.createElement(Box, null, [
+    React.createElement(TextField, {
+      fullWidth: true,
+      label: 'Description',
+      multiline: true,
+      rows: isExpanded ? 8 : 3,
+      value: field.value as string || '',
+      onChange: (e) => handleFieldChange(field.name, e.target.value),
+      disabled,
+      error: !!field.error,
+      helperText: field.error
+    }),
+    React.createElement(Button, {
+      size: 'small',
+      onClick: () => setIsExpanded(!isExpanded)
+    }, isExpanded ? 'Collapse' : 'Expand')
+  ]);
+};
+```
+
+#### Tag Management Field Renderer
+
+```typescript
+const tagRenderer = (field, customizationActions, handleFieldChange, disabled) => {
+  const [newTag, setNewTag] = React.useState('');
+  const tags = (field.value as string[]) || [];
+  
+  const addTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      handleFieldChange(field.name, [...tags, newTag.trim()]);
+      setNewTag('');
+    }
+  };
+  
+  const removeTag = (tagToRemove) => {
+    handleFieldChange(field.name, tags.filter(tag => tag !== tagToRemove));
+  };
+  
+  return React.createElement(Box, null, [
+    // Render existing tags as chips
+    React.createElement(Box, {
+      sx: { display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }
+    }, tags.map(tag => 
+      React.createElement(Chip, {
+        key: tag,
+        label: tag,
+        onDelete: disabled ? undefined : () => removeTag(tag)
+      })
+    )),
+    // Input for new tags
+    React.createElement(TextField, {
+      size: 'small',
+      placeholder: 'Add new tag',
+      value: newTag,
+      onChange: (e) => setNewTag(e.target.value),
+      onKeyPress: (e) => e.key === 'Enter' && addTag(),
+      disabled
+    })
+  ]);
+};
+```
+
+#### Card-Based Collection Renderer
+
+```typescript
+const cardCollectionRenderer = (collectionFieldName, parentFormAccess, collectionState, onCollectionStateChange, parentEntityId, isEditMode) => {
+  const allItems = [
+    ...collectionState.added,
+    ...collectionState.modified,
+    ...collectionState.original || []
+  ].filter(item => item.__status !== 'deleted');
+  
+  const handleAddItem = (newItem) => {
+    const updatedState = {
+      ...collectionState,
+      added: [...collectionState.added, { ...newItem, __status: 'added' }]
+    };
+    onCollectionStateChange(updatedState);
+  };
+  
+  const handleEditItem = (itemId, updates) => {
+    const updatedState = {
+      ...collectionState,
+      modified: collectionState.modified.map(item =>
+        item.id === itemId ? { ...item, ...updates, __status: 'modified' } : item
+      )
+    };
+    onCollectionStateChange(updatedState);
+  };
+  
+  return React.createElement(Box, null, [
+    React.createElement(Typography, { variant: 'h6' }, 'Custom Collection'),
+    React.createElement(Grid, { container: true, spacing: 2 },
+      allItems.map(item =>
+        React.createElement(Grid, { item: true, xs: 12, sm: 6, md: 4, key: item.id },
+          React.createElement(Card, null, [
+            React.createElement(CardContent, null, [
+              React.createElement(Typography, { variant: 'h6' }, item.name),
+              React.createElement(Typography, { variant: 'body2' }, item.description)
+            ])
+          ])
+        )
+      )
+    )
+  ]);
+};
+```
+
+### Custom Renderer Best Practices
+
+#### 1. State Management
+- Use React hooks for internal component state
+- Call `handleFieldChange` to update form state
+- Use `customizationActions` for advanced form manipulation
+
+#### 2. Accessibility
+- Ensure custom renderers are keyboard navigable
+- Include proper ARIA labels and roles
+- Maintain focus management
+
+#### 3. Error Handling
+- Display field errors using `field.error`
+- Validate input before calling `handleFieldChange`
+- Provide clear feedback for invalid states
+
+#### 4. Performance
+- Memoize expensive calculations
+- Avoid creating new objects/functions in render
+- Use React.createElement efficiently
+
+#### 5. Integration
+- Respect the `disabled` parameter
+- Handle both controlled and uncontrolled scenarios
+- Maintain consistent styling with the rest of the form
+
 ## API Reference
 
 ### `registerFormCustomization(entityType, mode, config)`
@@ -1028,6 +1245,7 @@ type FieldCustomization = {
   visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
   order?: number;
   onChange?: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, formData: Record<string, unknown>, setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, setFieldVisible: (fieldName: string, visible: boolean) => void, setFieldEnabled: (fieldName: string, enabled: boolean) => void, parentFormAccess?: ParentFormAccess) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
+  customRenderer?: (field: FormField, customizationActions: FormCustomizationActions, handleFieldChange: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, disabled: boolean) => React.ReactElement;
 };
 ```
 
