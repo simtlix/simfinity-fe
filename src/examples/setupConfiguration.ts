@@ -1,0 +1,21 @@
+import { createTheme } from "@mui/material";
+import { setupEpisodeFormCustomization } from "./episodeFormCustomization";
+import { setupI18n } from "./i18nSetup";
+import { setupColumnRenderers } from "./columnRenderersSetup";
+
+// Create the MUI theme configuration
+export const theme = createTheme({
+  palette: { mode: "light" },
+});
+
+// Setup all configurations
+export const setupConfigurations = () => {
+  // Setup i18n labels
+  setupI18n();
+  
+  // Setup custom column renderers
+  setupColumnRenderers();
+  
+  // Setup form customizations
+  setupEpisodeFormCustomization();
+};

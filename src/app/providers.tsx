@@ -3,22 +3,14 @@
 import * as React from "react";
 import { ApolloProvider } from "@apollo/client";
 import { apolloClient } from "@/lib/apolloClient";
-import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import { CssBaseline, ThemeProvider } from "@mui/material";
 import { I18nProvider } from "@/lib/i18n";
-// Ensure i18n function labels and custom column renderers are registered
-// before any UI renders. These modules perform side-effect registration.
-import "@/i18n/en";
-import "@/i18n/es";
 
-// Import and setup form customizations
-import { setupEpisodeFormCustomization } from "@/examples/episodeFormCustomization";
+// Import theme and setup configurations
+import { theme, setupConfigurations } from "@/examples/setupConfiguration";
 
-// Setup form customizations
-setupEpisodeFormCustomization();
-
-const theme = createTheme({
-  palette: { mode: "light" },
-});
+// Setup all configurations (i18n, form customizations, etc.)
+setupConfigurations();
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
