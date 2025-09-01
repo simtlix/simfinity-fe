@@ -123,6 +123,49 @@ Control individual fields within the embedded object, with sizes relative to the
 }
 ```
 
+#### Custom Embedded Section Renderer
+Replace the entire embedded section with a custom renderer:
+
+```typescript
+director: {
+  size: { xs: 12, sm: 6, md: 6 }, // Section size in main form
+  order: 3,
+  customEmbeddedRenderer: (field, customizationActions, handleEmbeddedFieldChange, disabled, formData) => {
+    // Extract field values from formData
+    const nameValue = formData[`${field.name}.name`]?.value as string || '';
+    const ageValue = formData[`${field.name}.age`]?.value as number || 0;
+    
+    return React.createElement(Paper, {
+      elevation: 2,
+      sx: { p: 3, mb: 2 }
+    }, [
+      React.createElement(Typography, { variant: 'h6', sx: { mb: 2 } }, '🎬 Director Information'),
+      React.createElement(Grid, { container: true, spacing: 2 }, [
+        React.createElement(Grid, { size: { xs: 12 } },
+          React.createElement(TextField, {
+            label: 'Director Name',
+            value: nameValue,
+            onChange: (e) => handleEmbeddedFieldChange(field.name, 'name', e.target.value),
+            disabled,
+            fullWidth: true
+          })
+        ),
+        React.createElement(Grid, { size: { xs: 12, sm: 6 } },
+          React.createElement(TextField, {
+            label: 'Age',
+            type: 'number',
+            value: ageValue,
+            onChange: (e) => handleEmbeddedFieldChange(field.name, 'age', parseInt(e.target.value) || 0),
+            disabled,
+            fullWidth: true
+          })
+        )
+      ])
+    ]);
+  }
+}
+```
+
 ### Field Order (`order`)
 
 Control the sequence of fields in the form. Lower numbers appear first:
@@ -1246,6 +1289,26 @@ type FieldCustomization = {
   order?: number;
   onChange?: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, formData: Record<string, unknown>, setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, setFieldVisible: (fieldName: string, visible: boolean) => void, setFieldEnabled: (fieldName: string, enabled: boolean) => void, parentFormAccess?: ParentFormAccess) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
   customRenderer?: (field: FormField, customizationActions: FormCustomizationActions, handleFieldChange: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, disabled: boolean) => React.ReactElement;
+};
+```
+
+### `EmbeddedSectionCustomization`
+
+Type definition for embedded object section customization:
+
+```typescript
+type EmbeddedSectionCustomization = {
+  size?: FieldSize; // Controls the section's size in the main form
+  order?: number;   // Controls the section's order relative to other fields/sections
+  visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire section is visible
+  enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire section is enabled
+  customEmbeddedRenderer?: (
+    field: FormField,
+    customizationActions: FormCustomizationActions,
+    handleEmbeddedFieldChange: (sectionName: string, fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, error?: string) => void,
+    disabled: boolean,
+    formData: Record<string, unknown>
+  ) => React.ReactElement;
 };
 ```
 

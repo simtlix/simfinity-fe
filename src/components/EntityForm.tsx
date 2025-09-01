@@ -731,7 +731,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   };
 
   // Handle embedded field changes
-  const handleEmbeddedFieldChange = (parentFieldName: string, embeddedFieldName: string, value: string | number | boolean | string[] | null, error?: string) => {
+  const handleEmbeddedFieldChange = (parentFieldName: string, embeddedFieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, error?: string) => {
     const fullFieldName = `${parentFieldName}.${embeddedFieldName}`;
     setFormData(prev => ({
       ...prev,
@@ -1334,6 +1334,22 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       : (sectionEnabled ?? true);
     
     if (!isSectionVisible) return null;
+
+    // Check for custom embedded renderer
+    const customEmbeddedRenderer = sectionCustomization?.customEmbeddedRenderer;
+    if (customEmbeddedRenderer) {
+      return (
+        <Grid key={field.name} size={sectionSize}>
+          {customEmbeddedRenderer(
+            field,
+            customizationActions,
+            handleEmbeddedFieldChange,
+            action === "view" || !isSectionEnabled || !enabled,
+            formData
+          )}
+        </Grid>
+      );
+    }
     
     return (
       <Grid key={field.name} size={sectionSize}>

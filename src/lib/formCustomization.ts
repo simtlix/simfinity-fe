@@ -134,6 +134,13 @@ export type EmbeddedSectionCustomization = {
   order?: number;   // Controls the section's order relative to other fields/sections
   visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire section is visible
   enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean); // Controls whether the entire section is enabled
+  customEmbeddedRenderer?: (
+    field: FormField,
+    customizationActions: FormCustomizationActions,
+    handleEmbeddedFieldChange: (sectionName: string, fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }, error?: string) => void,
+    disabled: boolean,
+    formData: Record<string, unknown>
+  ) => React.ReactElement;
 };
 
 // Parent form access for collection item callbacks
