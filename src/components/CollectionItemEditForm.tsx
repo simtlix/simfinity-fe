@@ -504,6 +504,29 @@ export default function CollectionItemEditForm({
     const fieldLabel = getFieldLabel(field.name);
     const formField = formData[field.name] || field;
 
+    // Check for custom renderer
+    const fieldCustomization = getCollectionItemFieldCustomization(
+      getFormCustomization(parentEntityType, "edit") || {},
+      collectionFieldName,
+      objectTypeName,
+      field.name,
+      "edit"
+    );
+    const customRenderer = fieldCustomization?.customRenderer;
+    
+    if (customRenderer) {
+      return (
+        <Grid key={field.name} size={fieldSize}>
+          {customRenderer(
+            field,
+            customizationActions,
+            (fieldName, value) => handleFieldChange(fieldName, value),
+            !isEnabled
+          )}
+        </Grid>
+      );
+    }
+
     if (field.isObject && field.objectTypeName && field.descriptionField && field.listQueryName && field.singleQueryName) {
       return (
         <Grid key={field.name} size={fieldSize}>
