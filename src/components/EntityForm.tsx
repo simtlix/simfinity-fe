@@ -1642,15 +1642,40 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         </Typography>
       </Breadcrumbs>
 
-      {/* Title */}
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        {action === "create" 
-          ? resolveLabel(["form.create"], { entity: listField }, "Create")
-          : action === "edit" 
-          ? resolveLabel(["form.edit"], { entity: listField }, "Edit")
-          : resolveLabel(["form.view"], { entity: listField }, "View")
-        } {resolveLabel([getEntityName(listField, 'single')], { entity: listField }, getEntityName(listField, 'single'))}
-      </Typography>
+      {/* Title and Action Buttons */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4">
+          {action === "create" 
+            ? resolveLabel(["form.create"], { entity: listField }, "Create")
+            : action === "edit" 
+            ? resolveLabel(["form.edit"], { entity: listField }, "Edit")
+            : resolveLabel(["form.view"], { entity: listField }, "View")
+          } {resolveLabel([getEntityName(listField, 'single')], { entity: listField }, getEntityName(listField, 'single'))}
+        </Typography>
+        
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            onClick={() => router.push(`/entities/${listField}`)}
+          >
+            {resolveLabel(["form.cancel"], { entity: listField }, "Cancel")}
+          </Button>
+          {action !== "view" && (
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={loading || createLoading || updateLoading}
+              form="entity-form"
+            >
+              {loading || createLoading || updateLoading ? <CircularProgress size={20} /> : action === "create" 
+                ? resolveLabel(["form.create"], { entity: listField }, "Create")
+                : resolveLabel(["form.update"], { entity: listField }, "Update")
+              }
+            </Button>
+          )}
+        </Box>
+      </Box>
 
       {/* Success/Error Messages */}
       {successMessage && (
@@ -1673,7 +1698,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
 
                 {/* Form */}
           <Paper sx={{ p: 3 }}>
-            <form onSubmit={handleSubmit}>
+            <form id="entity-form" onSubmit={handleSubmit}>
               <Grid container spacing={3} >
                 {(() => {
                   const mainFormFields = formFields.filter(field => !field.isCollection);
@@ -1742,29 +1767,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             );
           })()}
 
-          <Divider sx={{ my: 3 }} />
 
-          {/* Action Buttons */}
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-            <Button
-              variant="outlined"
-              onClick={() => router.push(`/entities/${listField}`)}
-            >
-              {resolveLabel(["form.cancel"], { entity: listField }, "Cancel")}
-            </Button>
-            {action !== "view" && (
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={loading || createLoading || updateLoading}
-              >
-                {loading || createLoading || updateLoading ? <CircularProgress size={20} /> : action === "create" 
-                  ? resolveLabel(["form.create"], { entity: listField }, "Create")
-                  : resolveLabel(["form.update"], { entity: listField }, "Update")
-                }
-              </Button>
-            )}
-          </Box>
         </form>
       </Paper>
 
