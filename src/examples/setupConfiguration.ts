@@ -1,5 +1,6 @@
 import { createTheme } from "@mui/material";
 import { setupEpisodeFormCustomization } from "./episodeFormCustomization";
+import { setupSerieFormCustomization } from "./serieFormCustomization";
 import { setupI18n } from "./i18nSetup";
 import { setupColumnRenderers } from "./columnRenderersSetup";
 
@@ -18,4 +19,5 @@ export const setupConfigurations = () => {
   
   // Setup form customizations
   setupEpisodeFormCustomization();
+  setupSerieFormCustomization();
 };
