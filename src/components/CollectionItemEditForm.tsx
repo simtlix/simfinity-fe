@@ -27,6 +27,10 @@ import {
   SchemaData,
   getTypeByName,
   getListEntityFieldNamesOfType,
+  isNumericScalarName,
+  isBooleanScalarName,
+  isDateTimeScalarName,
+  unwrapNamedType,
 } from "@/lib/introspection";
 import { useI18n } from "@/lib/i18n";
 import ObjectFieldSelector from "./ObjectFieldSelector";
@@ -216,15 +220,22 @@ export default function CollectionItemEditForm({
             console.log(`Field ${field.name}: using default value (item value was undefined/null):`, currentValue);
           }
           
+          // Debug validated scalar detection
+          const isNumeric = isNumericScalarName(typeName);
+          const isBoolean = isBooleanScalarName(typeName);
+          const isDate = isDateTimeScalarName(typeName);
+          
+          console.log(`Field ${field.name}: type=${typeName}, isNumeric=${isNumeric}, isBoolean=${isBoolean}, isDate=${isDate}`);
+          
           return {
             name: field.name,
             type: typeName || "String",
             required: isNonNull,
             value: currentValue,
             error: undefined,
-            isNumeric: isNumericScalarName(typeName),
-            isBoolean: isBooleanScalarName(typeName),
-            isDate: isDateTimeScalarName(typeName),
+            isNumeric,
+            isBoolean,
+            isDate,
             isList,
             isEnum,
             enumValues,
@@ -309,6 +320,19 @@ export default function CollectionItemEditForm({
     }
   }, [formFields, collectionFieldName, objectTypeName, parentEntityType]);
 
+  // Initialize form data when formFields change
+  React.useEffect(() => {
+    if (formFields.length > 0) {
+      const initialFormData: FormData = {};
+      formFields.forEach(field => {
+        initialFormData[field.name] = field;
+      });
+      setFormData(initialFormData);
+      console.log('Initialized form data for collection item:', initialFormData);
+      console.log('Form fields used for initialization:', formFields.map(f => ({ name: f.name, type: f.type, value: f.value, isNumeric: f.isNumeric, isBoolean: f.isBoolean, isDate: f.isDate })));
+    }
+  }, [formFields]);
+
   // Form customization actions
   const customizationActions: FormCustomizationActions = React.useMemo(() => ({
     setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => {
@@ -341,6 +365,8 @@ export default function CollectionItemEditForm({
   const handleFieldChange = (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => {
     const field = formFields.find(f => f.name === fieldName);
     if (!field) return;
+
+    console.log(`Field change for ${fieldName}:`, { value, type: typeof value, field });
 
     // Get field customization
     const fieldCustomization = customizationState.customization[fieldName];
@@ -388,6 +414,8 @@ export default function CollectionItemEditForm({
         customizationActions.setFieldData(fieldName, value);
       }
     }
+    
+    console.log(`Updated formData for ${fieldName}:`, formData[fieldName]);
   };
 
   // Handle form submission
@@ -404,19 +432,50 @@ export default function CollectionItemEditForm({
         __status: isAddingNew ? 'added' as const : 'modified' as const,
         __originalData: item.__originalData || { ...item },
       };
+      
+      console.log('Initial updated item:', updatedItem);
+      console.log('Item being processed:', item);
+      console.log('Form fields being processed:', formFields);
+      console.log('Form data being processed:', formData);
+      console.log('Is adding new:', isAddingNew);
+      console.log('Parent entity type:', parentEntityType);
+      console.log('Collection field name:', collectionFieldName);
+      console.log('Object type name:', objectTypeName);
+      console.log('Schema data available:', !!schemaData);
+      console.log('Form customization state:', customizationState);
+      console.log('Form customization actions:', customizationActions);
+      console.log('Parent form access:', parentFormAccess);
+      console.log('Form field types:', formFields.map(f => ({ name: f.name, type: f.type, isNumeric: f.isNumeric, isBoolean: f.isBoolean, isDate: f.isDate, isObject: f.isObject, isEnum: f.isEnum })));
+      console.log('Form field values:', formFields.map(f => ({ name: f.name, value: f.value, type: typeof f.value })));
+      console.log('Form data values:', Object.keys(formData).map(key => ({ key, value: formData[key]?.value, type: typeof formData[key]?.value })));
+      console.log('Item values:', Object.keys(item).map(key => ({ key, value: item[key], type: typeof item[key] })));
+      console.log('Item __status:', item.__status);
+      console.log('Item __originalData:', item.__originalData);
 
       // Add form field values
+      console.log('Processing form fields for submission:', formFields.map(f => ({ name: f.name, type: f.type, isNumeric: f.isNumeric, isBoolean: f.isBoolean, isDate: f.isDate })));
+      console.log('Current formData:', formData);
+      
       formFields.forEach(field => {
         const formField = formData[field.name];
+        console.log(`Processing field ${field.name}:`, { field, formField });
+        
         if (formField) {
           // For object fields, extract the ID for submission
           if (field.isObject && typeof formField.value === 'object' && formField.value !== null && 'id' in formField.value) {
             updatedItem[field.name] = (formField.value as { id: string; [key: string]: unknown });
+            console.log(`Object field ${field.name}: stored object with ID:`, formField.value);
           } else {
             updatedItem[field.name] = formField.value;
+            console.log(`Scalar field ${field.name}: stored value:`, formField.value, 'type:', typeof formField.value);
           }
+        } else {
+          console.warn(`No form field data found for ${field.name}`);
         }
       });
+      
+      console.log('Final updated item:', updatedItem);
+      console.log('Item before processing:', item);
 
       // For added items, ensure the connection field remains null
       if (isAddingNew) {
@@ -424,6 +483,7 @@ export default function CollectionItemEditForm({
         const connectionFieldName = parentEntityType.toLowerCase();
         if (connectionFieldName in updatedItem) {
           updatedItem[connectionFieldName] = null;
+          console.log(`Set connection field ${connectionFieldName} to null for new item`);
         }
       }
 
@@ -435,10 +495,13 @@ export default function CollectionItemEditForm({
         objectTypeName,
         isAddingNew ? "create" : "edit"
       );
+      
+      console.log('Collection item onSubmit callback:', { onSubmitCallback: !!onSubmitCallback, parentCustomization: !!parentCustomization });
 
       // Execute onSubmit callback if available
       if (onSubmitCallback) {
         try {
+          console.log('Executing onSubmit callback...');
           // Create default parent form access if not provided
           const defaultParentFormAccess: ParentFormAccess = {
             parentFormData: {},
@@ -464,16 +527,22 @@ export default function CollectionItemEditForm({
             console.log('Collection item submission cancelled by onSubmit callback');
             return;
           }
+          
+          console.log('onSubmit callback completed successfully');
         } catch (onSubmitError) {
           console.error('Error in collection item onSubmit callback:', onSubmitError);
           // If onSubmit throws an error, stop form submission
           return;
         }
+      } else {
+        console.log('No onSubmit callback, proceeding with default submission');
       }
 
+      console.log('Calling onSave with updated item:', updatedItem);
       onSave(updatedItem);
       onClose();
     } catch (err: unknown) {
+      console.error('Error in form submission:', err);
       const errorMessage = err instanceof Error ? err.message : "An error occurred";
       setError(errorMessage);
     } finally {
@@ -488,6 +557,8 @@ export default function CollectionItemEditForm({
 
   // Render form field
   const renderFormField = (field: FormField) => {
+    console.log(`Rendering field ${field.name}:`, { field, formData: formData[field.name] });
+    
     const fieldSize = getCollectionItemFieldSize(
       collectionFieldName,
       objectTypeName,
@@ -503,6 +574,8 @@ export default function CollectionItemEditForm({
 
     const fieldLabel = getFieldLabel(field.name);
     const formField = formData[field.name] || field;
+    
+    console.log(`Field ${field.name} formField:`, formField);
 
     // Check for custom renderer
     const fieldCustomization = getCollectionItemFieldCustomization(
@@ -520,7 +593,10 @@ export default function CollectionItemEditForm({
           {customRenderer(
             field,
             customizationActions,
-            (fieldName, value) => handleFieldChange(fieldName, value),
+            (fieldName, value) => {
+              console.log(`Custom renderer field ${fieldName} onChange:`, { value, type: typeof value });
+              handleFieldChange(fieldName, value);
+            },
             !isEnabled
           )}
         </Grid>
@@ -533,7 +609,10 @@ export default function CollectionItemEditForm({
           <ObjectFieldSelector
             label={fieldLabel}
             value={formField.value as string | null}
-            onChange={(value) => handleFieldChange(field.name, value)}
+            onChange={(value) => {
+              console.log(`Object field ${field.name} onChange:`, { value, type: typeof value });
+              handleFieldChange(field.name, value);
+            }}
             error={formField.error}
             required={field.required}
             disabled={!isEnabled}
@@ -554,7 +633,11 @@ export default function CollectionItemEditForm({
             <InputLabel>{fieldLabel}</InputLabel>
             <Select
               value={formField.value || ""}
-              onChange={(e) => handleFieldChange(field.name, e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                console.log(`Enum field ${field.name} onChange:`, { value, type: typeof value });
+                handleFieldChange(field.name, value);
+              }}
               label={fieldLabel}
             >
               {field.enumValues.map((enumValue) => (
@@ -579,7 +662,11 @@ export default function CollectionItemEditForm({
               control={
                 <Checkbox
                   checked={formField.value as boolean || false}
-                  onChange={(e) => handleFieldChange(field.name, e.target.checked)}
+                  onChange={(e) => {
+                    const value = e.target.checked;
+                    console.log(`Boolean field ${field.name} onChange:`, { value, type: typeof value });
+                    handleFieldChange(field.name, value);
+                  }}
                   disabled={!isEnabled}
                 />
               }
@@ -601,7 +688,11 @@ export default function CollectionItemEditForm({
             label={fieldLabel}
             type="date"
             value={formField.value as string || ""}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              console.log(`Date field ${field.name} onChange:`, { value, type: typeof value });
+              handleFieldChange(field.name, value || "");
+            }}
             error={!!formField.error}
             helperText={formField.error}
             required={field.required}
@@ -620,7 +711,18 @@ export default function CollectionItemEditForm({
             label={fieldLabel}
             type="number"
             value={formField.value as number || ""}
-            onChange={(e) => handleFieldChange(field.name, parseFloat(e.target.value) || 0)}
+            onChange={(e) => {
+              const value = e.target.value;
+              console.log(`Numeric field ${field.name} onChange:`, { value, type: typeof value });
+              if (value === "") {
+                handleFieldChange(field.name, "");
+              } else {
+                const numValue = parseFloat(value);
+                if (!isNaN(numValue)) {
+                  handleFieldChange(field.name, numValue);
+                }
+              }
+            }}
             error={!!formField.error}
             helperText={formField.error}
             required={field.required}
@@ -637,7 +739,11 @@ export default function CollectionItemEditForm({
           fullWidth
           label={fieldLabel}
           value={formField.value as string || ""}
-          onChange={(e) => handleFieldChange(field.name, e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            console.log(`Text field ${field.name} onChange:`, { value, type: typeof value });
+            handleFieldChange(field.name, value);
+          }}
           error={!!formField.error}
           helperText={formField.error}
           required={field.required}
@@ -732,38 +838,13 @@ function getEnumValues(schema: SchemaData, enumTypeName: string): string[] {
   return [];
 }
 
-// Helper function to unwrap named type from complex type references
-function unwrapNamedType(typeRef: unknown): string | null {
-  let current = typeRef as { kind?: string; ofType?: unknown; name?: string };
-  
-  // Unwrap NON_NULL and LIST types to get to the underlying named type
-  while (current && current.kind && (current.kind === "NON_NULL" || current.kind === "LIST")) {
-    current = current.ofType as { kind?: string; ofType?: unknown; name?: string };
-  }
-  
-  return current?.name || null;
-}
 
-// Helper function to check if a scalar name is numeric
-function isNumericScalarName(typeName: string | null): boolean {
-  return typeName === "Int" || typeName === "Float";
-}
-
-// Helper function to check if a scalar name is boolean
-function isBooleanScalarName(typeName: string | null): boolean {
-  return typeName === "Boolean";
-}
-
-// Helper function to check if a scalar name is a date/time
-function isDateTimeScalarName(typeName: string | null): boolean {
-  return typeName === "Date" || typeName === "DateTime";
-}
 
 // Helper function to get default values
 function getDefaultValue(typeName: string, isBoolean: boolean, isList: boolean, isObject: boolean): string | number | boolean | string[] | null {
   if (isObject) return null;
   if (isList) return [];
   if (isBoolean) return false;
-  if (typeName === "Int" || typeName === "Float") return 0;
+  if (isNumericScalarName(typeName)) return 0;
   return "";
 }
