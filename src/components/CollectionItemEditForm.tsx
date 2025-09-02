@@ -85,6 +85,7 @@ type FormField = {
   isCollection?: boolean;
   collectionObjectTypeName?: string;
   connectionField?: string;
+  isStateMachine?: boolean;
 };
 
 type FormData = Record<string, FormField>;
@@ -129,6 +130,13 @@ export default function CollectionItemEditForm({
           // Exclude ID field (system-generated, not user-editable)
           if (field.name === "id") {
             return false;
+          }
+          
+          // Include state machine fields for display (but they'll be read-only)
+          const isStateMachineField = field.extensions?.stateMachine === true;
+          if (isStateMachineField) {
+            console.log(`Field ${field.name}: INCLUDED - State machine field (read-only for display)`);
+            return true;
           }
           
           // Exclude connection fields to parent entity
@@ -250,6 +258,7 @@ export default function CollectionItemEditForm({
             isCollection: false,
             collectionObjectTypeName: undefined,
             connectionField: undefined,
+            isStateMachine: field.extensions?.stateMachine === true,
           };
         });
     } catch (error) {
@@ -457,6 +466,12 @@ export default function CollectionItemEditForm({
       console.log('Current formData:', formData);
       
       formFields.forEach(field => {
+        // Skip state machine fields from mutation data
+        if (field.isStateMachine) {
+          console.log(`Skipping state machine field ${field.name} from mutation data`);
+          return;
+        }
+        
         const formField = formData[field.name];
         console.log(`Processing field ${field.name}:`, { field, formField });
         
@@ -569,6 +584,7 @@ export default function CollectionItemEditForm({
     );
     const isVisible = isFieldVisible(field.name, customizationState, field.value, formData);
     const isEnabled = isFieldEnabled(field.name, customizationState, field.value, formData);
+    const isStateMachineField = field.isStateMachine === true;
 
     if (!isVisible) return null;
 
@@ -597,7 +613,7 @@ export default function CollectionItemEditForm({
               console.log(`Custom renderer field ${fieldName} onChange:`, { value, type: typeof value });
               handleFieldChange(fieldName, value);
             },
-            !isEnabled
+            !isEnabled || isStateMachineField
           )}
         </Grid>
       );
@@ -615,7 +631,7 @@ export default function CollectionItemEditForm({
             }}
             error={formField.error}
             required={field.required}
-            disabled={!isEnabled}
+            disabled={!isEnabled || isStateMachineField}
             objectTypeName={field.objectTypeName}
             descriptionField={field.descriptionField}
             descriptionFieldType={field.descriptionFieldType || "String"}
@@ -667,7 +683,7 @@ export default function CollectionItemEditForm({
                     console.log(`Boolean field ${field.name} onChange:`, { value, type: typeof value });
                     handleFieldChange(field.name, value);
                   }}
-                  disabled={!isEnabled}
+                  disabled={!isEnabled || isStateMachineField}
                 />
               }
               label={fieldLabel}
@@ -696,7 +712,7 @@ export default function CollectionItemEditForm({
             error={!!formField.error}
             helperText={formField.error}
             required={field.required}
-            disabled={!isEnabled}
+            disabled={!isEnabled || isStateMachineField}
             InputLabelProps={{ shrink: true }}
           />
         </Grid>
@@ -726,7 +742,7 @@ export default function CollectionItemEditForm({
             error={!!formField.error}
             helperText={formField.error}
             required={field.required}
-            disabled={!isEnabled}
+            disabled={!isEnabled || isStateMachineField}
           />
         </Grid>
       );

@@ -33,7 +33,9 @@ export const INTROSPECTION_QUERY = gql`
             relation {
               displayField
               embedded
+              connectionField
             }
+            stateMachine
           }
         }
         enumValues {
@@ -128,6 +130,7 @@ export type SchemaField = {
       embedded?: boolean | null;
       connectionField?: string | null;
     } | null;
+    stateMachine?: boolean | null;
   } | null;
 };
 

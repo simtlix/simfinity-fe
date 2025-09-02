@@ -105,6 +105,7 @@ type FormField = {
   isCollection?: boolean; // Whether this field is a collection of objects
   collectionObjectTypeName?: string; // The type name of objects in the collection
   connectionField?: string; // The field name used to connect to the parent entity
+  isStateMachine?: boolean; // Whether this field is managed by state machine mutations
 };
 
 type FormData = Record<string, FormField>;
@@ -240,7 +241,9 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   });
 
   // Get schema data to understand entity structure
-  const { data: schemaData, loading: schemaLoading } = useQuery(INTROSPECTION_QUERY);
+  const { data: schemaData, loading: schemaLoading, error: schemaError } = useQuery(INTROSPECTION_QUERY);
+  
+
 
   // Get entity type name for use throughout the component (memoized)
   const entityTypeName = React.useMemo(() => {
@@ -347,13 +350,24 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         return [];
       }
       
-      console.log('Entity type fields:', entityType.fields);
+
       
       const filteredFields = entityType.fields
         .filter(field => {
           try {
             const isNotId = field.name !== "id";
             if (!isNotId) return false;
+            
+            // Exclude state machine fields from create forms (but include in edit for display)
+            const isStateMachineField = field.extensions?.stateMachine === true;
+            if (isStateMachineField && action === "create") {
+              console.log(`Field ${field.name}: EXCLUDED - State machine field (create mode)`);
+              return false;
+            }
+            if (isStateMachineField && action !== "create") {
+              console.log(`Field ${field.name}: INCLUDED - State machine field (edit/view mode for display)`);
+              return true;
+            }
             
             // Check if this is a list type
             let current = field.type as { kind?: string; ofType?: unknown; name?: string };
@@ -494,6 +508,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             isCollection,
             collectionObjectTypeName,
             connectionField,
+            isStateMachine: field.extensions?.stateMachine === true || (listField === "seasons" && field.name === "state"),
             required: isObject ? isObjectRequired : isRequired,
             value: getDefaultValue(typeName || "String", isBoolean, isList, isObject),
             error: undefined,
@@ -509,7 +524,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       console.error('Error building form fields:', error);
       return [];
     }
-  }, [schemaData, listField]);
+  }, [schemaData, listField, action]);
 
   // Initialize customization state when formFields change
   React.useEffect(() => {
@@ -1079,7 +1094,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     
     // Then transform non-collection fields
     formFields.forEach(field => {
-      if (!field.isCollection) { // Skip collection fields as they're already processed
+      if (!field.isCollection && !field.isStateMachine) { // Skip collection fields and state machine fields
         if (field.isEmbedded) {
           // Handle embedded object fields (like director in the example)
           const embeddedData: Record<string, unknown> = {};
@@ -1423,6 +1438,9 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     console.log(`Rendering field ${field.name} with value:`, field.value, 'from formData:', formData[field.name]?.value);
     const fieldLabel = getFieldLabel(field.name);
     const isViewMode = action === "view";
+    const isStateMachineField = field.isStateMachine === true;
+    
+
     
     // Get field customization for custom onChange and custom renderer
     const fieldCustomization = customizationState.customization[field.name];
@@ -1436,7 +1454,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         customizationActions,
         (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => 
           handleFieldChange(fieldName, value),
-        isViewMode || !enabled
+        isViewMode || !enabled || isStateMachineField
       );
     }
     
@@ -1458,7 +1476,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             onChange={onChange}
             error={field.error}
             required={field.required}
-            disabled={isViewMode || !enabled}
+            disabled={isViewMode || !enabled || isStateMachineField}
             objectTypeName={field.objectTypeName}
             descriptionField={field.descriptionField}
             descriptionFieldType={field.descriptionFieldType}
@@ -1479,7 +1497,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
               onChange={(e) => onChange(e.target.value)}
               label={fieldLabel}
               required={field.required}
-              disabled={isViewMode || !enabled}
+              disabled={isViewMode || !enabled || isStateMachineField}
             >
               {field.enumValues.map((enumValue) => (
                 <MenuItem key={enumValue} value={enumValue}>
@@ -1504,7 +1522,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             options={[]}
             value={field.value as string[]}
             onChange={(_, newValue) => onChange(newValue)}
-            disabled={isViewMode || !enabled}
+            disabled={isViewMode || !enabled || isStateMachineField}
             slotProps={{
               chip: {
                 variant: "outlined"
@@ -1533,7 +1551,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
                 type="checkbox"
                 checked={field.value as boolean}
                 onChange={(e) => onChange(e.target.checked)}
-                disabled={isViewMode || !enabled}
+                disabled={isViewMode || !enabled || isStateMachineField}
               />
             }
             label={fieldLabel}
@@ -1569,7 +1587,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
             error={!!field.error}
             helperText={field.error}
             required={field.required}
-            disabled={isViewMode || !enabled}
+            disabled={isViewMode || !enabled || isStateMachineField}
             slotProps={{ inputLabel: { shrink: true } }}
           />
         </>
@@ -1587,7 +1605,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           error={!!field.error}
           helperText={field.error}
           required={field.required}
-          disabled={isViewMode || !enabled}
+          disabled={isViewMode || !enabled || isStateMachineField}
         />
       </>
     );
@@ -1598,6 +1616,11 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     return (
       <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
         <CircularProgress />
+        {schemaError && (
+          <Box sx={{ ml: 2 }}>
+            <Typography color="error">Schema Error: {schemaError.message}</Typography>
+          </Box>
+        )}
       </Box>
     );
   }
