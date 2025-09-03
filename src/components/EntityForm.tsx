@@ -265,6 +265,42 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     getCollectionChanges 
   } = useCollectionState();
 
+  // Create reusable callback actions
+  const createCallbackActions = React.useCallback((): EntityFormCallbackActions => ({
+    setFieldData: (fieldName: string, value: unknown) => {
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: { ...prev[fieldName], value: value as string | number | boolean | string[] | null | { id: string; [key: string]: unknown } }
+      }));
+    },
+    setFieldVisible: (fieldName: string, visible: boolean) => {
+      setCustomizationState(prev => ({
+        ...prev,
+        fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
+      }));
+    },
+    setFieldEnabled: (fieldName: string, enabled: boolean) => {
+      setCustomizationState(prev => ({
+        ...prev,
+        fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
+      }));
+    },
+    setCollectionChanges: (fieldName: string, changes: FormCustomizationCollectionFieldState) => {
+      const componentChanges: CollectionFieldState = {
+        added: changes.added as CollectionItem[],
+        modified: changes.modified as CollectionItem[],
+        deleted: changes.deleted as CollectionItem[]
+      };
+      updateCollectionState(fieldName, componentChanges);
+    },
+    setFormMessage: (message: FormMessage) => {
+      setFormMessage(message);
+    },
+    setError: (errorMessage: string) => {
+      setError(errorMessage);
+    }
+  }), [ updateCollectionState, setCustomizationState, setFormData, setFormMessage, setError]);
+
   // Helper function to get entity name from i18n
   const getEntityName = React.useCallback((pluralName: string, form: 'single' | 'plural'): string => {
     if (!schemaData) return `entity.${pluralName}.${form}`;
@@ -1178,41 +1214,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     const callbacks = getEntityFormCallbacks(entityTypeName, action);
     
     // Create callback actions
-    const callbackActions: EntityFormCallbackActions = {
-      setFieldData: (fieldName: string, value: unknown) => {
-        setFormData(prev => ({
-          ...prev,
-          [fieldName]: { ...prev[fieldName], value: value as string | number | boolean | string[] | null | { id: string; [key: string]: unknown } }
-        }));
-      },
-      setFieldVisible: (fieldName: string, visible: boolean) => {
-        setCustomizationState(prev => ({
-          ...prev,
-          fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
-        }));
-      },
-      setFieldEnabled: (fieldName: string, enabled: boolean) => {
-        setCustomizationState(prev => ({
-          ...prev,
-          fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
-        }));
-      },
-      setCollectionChanges: (fieldName: string, changes: FormCustomizationCollectionFieldState) => {
-        // Convert the form customization CollectionFieldState to the component CollectionFieldState
-        const componentChanges: CollectionFieldState = {
-          added: changes.added as CollectionItem[],
-          modified: changes.modified as CollectionItem[],
-          deleted: changes.deleted as CollectionItem[]
-        };
-        updateCollectionState(fieldName, componentChanges);
-      },
-      setFormMessage: (message: FormMessage) => {
-        setFormMessage(message);
-      },
-      setError: (errorMessage: string) => {
-        setError(errorMessage);
-      }
-    };
+    const callbackActions = createCallbackActions();
 
     setLoading(true);
     setError(null);
@@ -1355,44 +1357,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       
       // Execute onBeforeSubmit callback if available
       if (action.onBeforeSubmit) {
-        const result = await action.onBeforeSubmit(formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, stateMachineDataInput, {
-          setFieldData: (fieldName: string, value: unknown) => {
-            setFormData(prev => ({ 
-              ...prev, 
-              [fieldName]: { 
-                ...prev[fieldName], 
-                value: value as string | number | boolean | string[] | { id: string; [key: string]: unknown } | null
-              } 
-            }));
-          },
-          setFieldVisible: (fieldName: string, visible: boolean) => {
-            setCustomizationState(prev => ({
-              ...prev,
-              fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
-            }));
-          },
-          setFieldEnabled: (fieldName: string, enabled: boolean) => {
-            setCustomizationState(prev => ({
-              ...prev,
-              fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
-            }));
-          },
-
-          setCollectionChanges: (fieldName: string, changes: FormCustomizationCollectionFieldState) => {
-            const componentChanges: CollectionFieldState = {
-              added: changes.added as CollectionItem[],
-              modified: changes.modified as CollectionItem[],
-              deleted: changes.deleted as CollectionItem[]
-            };
-            updateCollectionState(fieldName, componentChanges);
-          },
-          setFormMessage: (message: FormMessage) => {
-            setFormMessage(message);
-          },
-          setError: (errorMessage: string) => {
-            setError(errorMessage);
-          }
-        });
+        const result = await action.onBeforeSubmit(formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, stateMachineDataInput, createCallbackActions());
         
         if (!result.shouldProceed) {
           if (result.error) {
@@ -1419,44 +1384,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       
       // Execute onSuccess callback if available
       if (action.onSuccess) {
-        await action.onSuccess(result.data, formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, {
-          setFieldData: (fieldName: string, value: unknown) => {
-            setFormData(prev => ({ 
-              ...prev, 
-              [fieldName]: { 
-                ...prev[fieldName], 
-                value: value as string | number | boolean | string[] | { id: string; [key: string]: unknown } | null
-              } 
-            }));
-          },
-          setFieldVisible: (fieldName: string, visible: boolean) => {
-            setCustomizationState(prev => ({
-              ...prev,
-              fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
-            }));
-          },
-          setFieldEnabled: (fieldName: string, enabled: boolean) => {
-            setCustomizationState(prev => ({
-              ...prev,
-              fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
-            }));
-          },
-
-          setCollectionChanges: (fieldName: string, changes: FormCustomizationCollectionFieldState) => {
-            const componentChanges: CollectionFieldState = {
-              added: changes.added as CollectionItem[],
-              modified: changes.modified as CollectionItem[],
-              deleted: changes.deleted as CollectionItem[]
-            };
-            updateCollectionState(fieldName, componentChanges);
-          },
-          setFormMessage: (message: FormMessage) => {
-            setFormMessage(message);
-          },
-          setError: (errorMessage: string) => {
-            setError(errorMessage);
-          }
-        });
+        await action.onSuccess(result.data, formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, createCallbackActions());
       }
       
       // Refresh the entity data to get the updated state
@@ -1467,44 +1395,7 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
       
       // Execute onError callback if available
       if (action.onError) {
-        await action.onError(error as Error, formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, {
-          setFieldData: (fieldName: string, value: unknown) => {
-            setFormData(prev => ({ 
-              ...prev, 
-              [fieldName]: { 
-                ...prev[fieldName], 
-                value: value as string | number | boolean | string[] | { id: string; [key: string]: unknown } | null
-              } 
-            }));
-          },
-          setFieldVisible: (fieldName: string, visible: boolean) => {
-            setCustomizationState(prev => ({
-              ...prev,
-              fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
-            }));
-          },
-          setFieldEnabled: (fieldName: string, enabled: boolean) => {
-            setCustomizationState(prev => ({
-              ...prev,
-              fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
-            }));
-          },
-
-          setCollectionChanges: (fieldName: string, changes: FormCustomizationCollectionFieldState) => {
-            const componentChanges: CollectionFieldState = {
-              added: changes.added as CollectionItem[],
-              modified: changes.modified as CollectionItem[],
-              deleted: changes.deleted as CollectionItem[]
-            };
-            updateCollectionState(fieldName, componentChanges);
-          },
-          setFormMessage: (message: FormMessage) => {
-            setFormMessage(message);
-          },
-          setError: (errorMessage: string) => {
-            setError(errorMessage);
-          }
-        });
+        await action.onError(error as Error, formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, createCallbackActions());
       } else {
         // Default error handling
         setError(`Failed to ${actionName} entity: ${error instanceof Error ? error.message : 'Unknown error'}`);
