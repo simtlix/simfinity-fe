@@ -442,20 +442,31 @@ export default function CollectionFieldGrid({
     setIsAddingNew(false);
   }, [setCurrentState, editingItem, isAddingNew, currentState.added]);
 
-  // Helper function to get display value for a column using valueResolvers
-  const getDisplayValue = React.useCallback((item: Record<string, unknown>, column: string): string => {
+  // Helper function to render cell content with custom renderers
+  const renderCellContent = React.useCallback((item: Record<string, unknown>, column: string): React.ReactNode => {
     if (column === 'id') return item[column]?.toString() || '';
     
     // Use the current item data (new value) instead of original data
     const dataToUse = item;
     
-    if (valueResolvers[column]) {
-      const resolvedValue = valueResolvers[column](dataToUse);
-      return resolvedValue?.toString() || '';
+    // Get the raw value
+    const value = valueResolvers[column] ? valueResolvers[column](dataToUse) : dataToUse[column];
+    
+    // Apply custom column renderers if available
+    const renderer = resolveColumnRenderer(`${collectionField.objectTypeName}.${column}`);
+    if (renderer) {
+      return renderer({ 
+        entity: collectionField.objectTypeName, 
+        field: column, 
+        row: dataToUse, 
+        value, 
+        gridParams: { row: dataToUse, value, field: column, colDef: { field: column } } as { row: Record<string, unknown>; value: unknown; field: string; colDef: { field: string } }
+      });
     }
     
-    return dataToUse[column]?.toString() || '';
-  }, [valueResolvers]);
+    // Fallback to string representation
+    return value?.toString() || '';
+  }, [valueResolvers, collectionField.objectTypeName]);
 
 
 
@@ -649,7 +660,7 @@ export default function CollectionFieldGrid({
                           <TableRow key={item.id}>
                             {displayColumns.map(column => (
                               <TableCell key={column}>
-                                {getDisplayValue(item, column)}
+                                {renderCellContent(item, column)}
                               </TableCell>
                             ))}
                             <TableCell>
@@ -699,7 +710,7 @@ export default function CollectionFieldGrid({
                           <TableRow key={item.id}>
                             {displayColumns.map(column => (
                               <TableCell key={column}>
-                                {getDisplayValue(item, column)}
+                                {renderCellContent(item, column)}
                               </TableCell>
                             ))}
                             <TableCell>
@@ -749,7 +760,7 @@ export default function CollectionFieldGrid({
                           <TableRow key={item.id}>
                             {displayColumns.map(column => (
                               <TableCell key={column}>
-                                {getDisplayValue(item, column)}
+                                {renderCellContent(item, column)}
                               </TableCell>
                             ))}
                             <TableCell>

@@ -262,7 +262,8 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   const { 
     updateCollectionState, 
     getCollectionState,
-    getCollectionChanges 
+    getCollectionChanges,
+    resetAllCollectionStates
   } = useCollectionState();
 
   // Create reusable callback actions
@@ -923,6 +924,14 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         const fieldName = fieldDef.name;
         const fieldValue = cleanItem[fieldName];
         
+        // Check if this is a state machine field and exclude it from collection item mutations
+        const isStateMachineField = fieldDef.extensions?.stateMachine === true;
+        if (isStateMachineField) {
+          console.log(`🗑️ Removing state machine field ${fieldName} from collection item`);
+          delete cleanItem[fieldName];
+          return;
+        }
+        
         if (fieldValue && typeof fieldValue === 'object' && fieldValue !== null) {
           // Check if this is an object field (not embedded)
           const fieldType = fieldDef.type;
@@ -1273,6 +1282,10 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         await invalidateEntityListCache(listField);
       }
 
+      // Reset collection state after successful submission
+      resetAllCollectionStates();
+      console.log('🔄 Reset all collection states after form submission');
+
       // Execute onSuccess callback if available
       let successResult;
       if (callbacks?.onSuccess) {
@@ -1387,8 +1400,13 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
         await action.onSuccess(result.data, formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, createCallbackActions());
       }
       
-      // Refresh the entity data to get the updated state
+      // Invalidate and refetch both the specific entity and list queries (same as regular form submission)
       await invalidateEntityCache(entityId!, listField);
+      await invalidateEntityListCache(listField);
+      
+      // Reset collection state after successful state machine action
+      resetAllCollectionStates();
+      console.log('🔄 Reset all collection states after state machine action');
       
     } catch (error) {
       console.error(`State machine action ${actionName} failed:`, error);

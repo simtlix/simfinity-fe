@@ -132,11 +132,16 @@ export default function CollectionItemEditForm({
             return false;
           }
           
-          // Include state machine fields for display (but they'll be read-only)
+          // Handle state machine fields based on mode
           const isStateMachineField = field.extensions?.stateMachine === true;
           if (isStateMachineField) {
-            console.log(`Field ${field.name}: INCLUDED - State machine field (read-only for display)`);
-            return true;
+            if (isAddingNew) {
+              console.log(`Field ${field.name}: EXCLUDED - State machine field (create mode)`);
+              return false;
+            } else {
+              console.log(`Field ${field.name}: INCLUDED - State machine field (edit mode, read-only)`);
+              return true;
+            }
           }
           
           // Exclude connection fields to parent entity
@@ -265,7 +270,7 @@ export default function CollectionItemEditForm({
       console.error('Error building form fields:', error);
       return [];
     }
-  }, [schemaData, objectTypeName, item, parentEntityType]);
+  }, [schemaData, objectTypeName, item, parentEntityType, isAddingNew]);
 
   // Initialize form customization from parent entity
   React.useEffect(() => {
@@ -645,7 +650,7 @@ export default function CollectionItemEditForm({
     if (field.isEnum && field.enumValues) {
       return (
         <Grid key={field.name} size={fieldSize}>
-          <FormControl fullWidth error={!!formField.error} required={field.required} disabled={!isEnabled}>
+          <FormControl fullWidth error={!!formField.error} required={field.required} disabled={!isEnabled || isStateMachineField}>
             <InputLabel>{fieldLabel}</InputLabel>
             <Select
               value={formField.value || ""}
@@ -697,17 +702,48 @@ export default function CollectionItemEditForm({
     }
 
     if (field.isDate) {
+      // Convert DateTime string to date string for input display
+      const getDateInputValue = (dateTimeValue: string | null | undefined): string => {
+        if (!dateTimeValue) return "";
+        try {
+          // If it's already a date string (YYYY-MM-DD), use it directly
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateTimeValue)) {
+            return dateTimeValue;
+          }
+          // If it's a DateTime string, extract the date part
+          const date = new Date(dateTimeValue);
+          if (isNaN(date.getTime())) return "";
+          return date.toISOString().split('T')[0];
+        } catch {
+          return "";
+        }
+      };
+
+      // Convert date string to DateTime string for storage
+      const convertDateToDateTime = (dateString: string): string => {
+        if (!dateString) return "";
+        try {
+          // Create a date at midnight UTC and convert to ISO string
+          const date = new Date(dateString + 'T00:00:00.000Z');
+          return date.toISOString();
+        } catch {
+          return "";
+        }
+      };
+
       return (
         <Grid key={field.name} size={fieldSize}>
           <TextField
             fullWidth
             label={fieldLabel}
             type="date"
-            value={formField.value as string || ""}
+            value={getDateInputValue(formField.value as string)}
             onChange={(e) => {
-              const value = e.target.value;
-              console.log(`Date field ${field.name} onChange:`, { value, type: typeof value });
-              handleFieldChange(field.name, value || "");
+              const dateValue = e.target.value;
+              console.log(`Date field ${field.name} onChange:`, { dateValue, type: typeof dateValue });
+              const dateTimeValue = convertDateToDateTime(dateValue);
+              console.log(`Date field ${field.name} converted to DateTime:`, { dateTimeValue });
+              handleFieldChange(field.name, dateTimeValue);
             }}
             error={!!formField.error}
             helperText={formField.error}
@@ -763,7 +799,7 @@ export default function CollectionItemEditForm({
           error={!!formField.error}
           helperText={formField.error}
           required={field.required}
-          disabled={!isEnabled}
+          disabled={!isEnabled || isStateMachineField}
         />
       </Grid>
     );

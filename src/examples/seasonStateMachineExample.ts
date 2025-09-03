@@ -149,7 +149,7 @@ export function setupSeasonStateMachine() {
             
             // Check new episodes for completion
             const incompleteNewEpisodes = episodesChanges.added.filter((episode) => 
-              !episode.airDate || new Date(episode.airDate as string) > new Date()
+              !episode.date || new Date(episode.date as string) > new Date()
             );
             
             const totalIncompleteEpisodes = incompleteExistingEpisodes.length + incompleteNewEpisodes.length;
