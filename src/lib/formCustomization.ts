@@ -416,7 +416,7 @@ export function getCollectionFieldCustomization(
 ): CollectionFieldCustomization | undefined {
   const collectionCustomization = customization[collectionFieldName];
   
-  if (collectionCustomization && 'items' in collectionCustomization) {
+  if (collectionCustomization) {
     return collectionCustomization as CollectionFieldCustomization;
   }
   

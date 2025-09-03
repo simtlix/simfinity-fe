@@ -11,7 +11,7 @@ import {
   Chip,
   OutlinedInput
 } from '@mui/material';
-import { registerFormCustomization, FormField, FormCustomizationActions } from '@/lib/formCustomization';
+import { registerFormCustomization, FormField, FormCustomizationActions, ParentFormAccess, FormMessage } from '@/lib/formCustomization';
 
 // Rich Text Editor Component for Description
 const RichTextEditor = ({ 
@@ -491,7 +491,25 @@ export function setupSerieFormCustomization() {
             </Paper>
           );
         }
-      }
+      },
+      seasons: {
+        size: { xs: 12, sm: 12, md: 12 },
+        order: 5,
+        onEdit: {
+          
+          onSubmit: async (item: Record<string, unknown>,
+            setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
+            formData: Record<string, unknown>,
+            setFieldVisible: (fieldName: string, visible: boolean) => void,
+            setFieldEnabled: (fieldName: string, enabled: boolean) => void,
+            setMessage: (message: FormMessage) => void,
+            parentFormAccess: ParentFormAccess) => {
+            
+              console.log('Seasons submitted', item, formData, parentFormAccess);
+              return true;
+          }
+        }
+        }
     }
   });
 
