@@ -13,6 +13,8 @@
   "entity.category.plural": "Categories",
   "entity.movie.single": "Movie",
   "entity.movie.plural": "Movies",
+  "entity.assignedstarandserie.single": "Cast",
+  "entity.assignedstarandserie.plural": "Casts",
 
   "serie.name": "Name",
   "serie.categories": "Categories",
@@ -47,6 +49,7 @@
   "season.year": "Year",
   "season.state": "State",
   "season.serie": "Series",
+  "season.episodes": "Episodes",
 
   "episode.number": "Number",
   "episode.name": "Name",
@@ -56,9 +59,9 @@
   "star.name": "Name",
   "star.country": "Country",
 
-  "assignedStarAndSerie.id": "ID",
-  "assignedStarAndSerie.serie": "Series",
-  "assignedStarAndSerie.star": "Star",
+  "assignedstarandserie.id": "ID",
+  "assignedstarandserie.serie": "Series",
+  "assignedstarandserie.star": "Star",
   
   "collection.loading": "Loading...",
   "collection.error": "Error loading data",
