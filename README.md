@@ -21,6 +21,7 @@ The system provides two main components:
 - **Embedded Objects**: Support for nested object structures
 - **Internationalization**: Multi-language support (English/Spanish)
 - **Form Customization**: Field-level visibility, validation, and layout control
+- **State Machine Support**: Entity state transitions with business rule validation
 - **GraphQL Integration**: Native Apollo Client support with dynamic queries
 
 ### 🎯 **Entity Management**
@@ -981,6 +982,131 @@ export function setupEpisodeFormCustomization() {
 - **Accordion Layout**: Collapsible sections for better organization
 - **Custom Sizing**: Flexible field layout within sections
 - **Recursive Support**: Handle deeply nested structures
+
+#### **State Machine Support**
+- **Entity State Management**: Handle complex state transitions for entities
+- **Dynamic Actions**: Show available actions based on current entity state
+- **Server Validation**: Query server data for business rule validation
+- **Lifecycle Callbacks**: Execute custom logic before/after state transitions
+- **Internationalization**: Support for state machine action and state labels
+- **Read-only Fields**: Automatically exclude state machine fields from mutations
+
+##### **State Machine Registration**
+
+Register a state machine for an entity type using `registerEntityStateMachine`:
+
+```typescript
+import { registerEntityStateMachine } from '@/lib/stateMachineRegistry';
+
+export function setupSeasonStateMachine() {
+  registerEntityStateMachine("season", {
+    actions: {
+      activate: {
+        mutation: 'activate_season',
+        from: 'SCHEDULED',
+        to: 'ACTIVE',
+        onBeforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+          // Validate business rules before transition
+          console.log('Before activating season:', { formData, collectionChanges, transformedData });
+          
+          // Example: Check if season has episodes from collection changes
+          const episodesChanges = collectionChanges.episodes || { added: [], modified: [], deleted: [] };
+          const episodesCount = episodesChanges.added.length + Object.keys(episodesChanges.modified).length;
+          
+          if (episodesCount === 0) {
+            actions.setFormMessage({
+              type: 'error',
+              message: 'Cannot activate season without episodes'
+            });
+            return { shouldProceed: false, error: 'Season must have episodes' };
+          }
+          
+          return { shouldProceed: true };
+        },
+        onSuccess: async (result, formData, collectionChanges, transformedData, actions) => {
+          actions.setFormMessage({
+            type: 'success',
+            message: 'Season activated successfully!'
+          });
+        },
+        onError: async (error, formData, collectionChanges, transformedData, actions) => {
+          actions.setFormMessage({
+            type: 'error',
+            message: `Failed to activate season: ${error.message}`
+          });
+        }
+      },
+      finalize: {
+        mutation: 'finalize_season',
+        from: 'ACTIVE',
+        to: 'FINISHED',
+        // ... similar callback structure
+      }
+    }
+  });
+}
+```
+
+##### **EntityForm Integration**
+
+The EntityForm automatically detects registered state machines and:
+
+1. **Shows Actions Button**: Displays an "Actions" button in edit mode for entities with state machines
+2. **Dynamic Menu**: Shows available actions based on current entity state
+3. **Field Management**: Excludes state machine fields from create forms and mutations
+4. **Read-only Display**: Shows state machine fields as read-only in edit/view modes
+5. **Form Reset**: Refreshes entity data after successful state transitions
+
+##### **State Machine Field Configuration**
+
+Mark fields as state machine managed in your GraphQL schema:
+
+```graphql
+type Season {
+  id: ID!
+  name: String!
+  state: String! @extensions(stateMachine: true)
+  # ... other fields
+}
+```
+
+##### **Internationalization Support**
+
+Add state machine labels to your i18n files:
+
+```json
+{
+  "stateMachine.season.action.activate": "Activate",
+  "stateMachine.season.action.finalize": "Finalize",
+  "stateMachine.season.state.SCHEDULED": "Scheduled",
+  "stateMachine.season.state.ACTIVE": "Active",
+  "stateMachine.season.state.FINISHED": "Finished",
+  "stateMachine.actions": "Actions"
+}
+```
+
+##### **Callback Parameters**
+
+State machine callbacks receive these parameters:
+
+- **formData**: Current form field values
+- **collectionChanges**: Changes to collection fields (added, modified, deleted)
+- **transformedData**: Processed entity data ready for mutation
+- **actions**: Callback actions for form manipulation:
+  - `setFieldData(fieldName, value)` - Update form field values
+  - `setFieldVisible(fieldName, visible)` - Control field visibility
+  - `setFieldEnabled(fieldName, enabled)` - Control field enabled state
+  - `setCollectionChanges(fieldName, changes)` - Update collection state
+  - `setFormMessage(message)` - Show success/error messages
+  - `setError(errorMessage)` - Display error messages
+
+##### **State Machine Benefits**
+
+- **Business Logic Separation**: Keep state transition logic separate from UI
+- **Server-side Validation**: Query actual data for validation rules
+- **User Experience**: Clear feedback and proper error handling
+- **Flexibility**: Support any number of states and transitions
+- **Maintainability**: Centralized state machine configuration
 
 #### **GraphQL Integration**
 - **Dynamic Queries**: Automatically generated based on schema
