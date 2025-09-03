@@ -7,8 +7,8 @@ import { DataGrid, type GridColDef, type GridPaginationModel, type GridFilterMod
 import { useSearchParams, useRouter } from "next/navigation";
 import ServerToolbar from "@/components/ServerToolbar";
 import ServerFilterPanel from "@/components/ServerFilterPanel";
-import { TagsFilterInput, BetweenFilterInput, DateFilterInput } from "@/components/FilterInputs";
-import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, buildSelectionSetForObjectType, ValueResolver, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName } from "@/lib/introspection";
+import { TagsFilterInput, BetweenFilterInput, DateFilterInput, StateMachineFilterInput } from "@/components/FilterInputs";
+import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, buildSelectionSetForObjectType, ValueResolver, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName, getTypeByName, unwrapNamedType } from "@/lib/introspection";
 import { resolveColumnRenderer } from "@/lib/columnRenderers";
 import { useI18n } from "@/lib/i18n";
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -39,7 +39,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Helper function to get entity name from i18n
+    // Helper function to get entity name from i18n
   const getEntityName = (pluralName: string, form: 'single' | 'plural'): string => {
     if (!schemaData) return `entity.${pluralName}.${form}`;
     
@@ -49,7 +49,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
     
     // Convert to lowercase for i18n key
     const baseName = entityTypeName.toLowerCase();
-
+    
     return `entity.${baseName}.${form}`;
   };
 
@@ -76,6 +76,39 @@ export default function EntityTable({ listField }: EntityTableProps) {
       } as const;
     return { ...buildSelectionSetForObjectType(schema, etn), entityTypeName: etn } as const;
   }, [schemaData, listField]);
+
+  // Helper function to get field information including extensions
+  const getFieldInfo = React.useCallback((fieldName: string) => {
+    if (!schemaData || !entityTypeName) return null;
+    
+    const entityType = getTypeByName(schemaData as SchemaData, entityTypeName);
+    if (!entityType?.fields) return null;
+    
+    const field = entityType.fields.find(f => f.name === fieldName);
+    if (!field) return null;
+    
+    const fieldType = unwrapNamedType(field.type);
+    const isStateMachine = field.extensions?.stateMachine === true;
+    const isEnum = fieldType && schemaData.__schema.types.find((t: { name?: string; kind?: string }) => t.name === fieldType)?.kind === "ENUM";
+    
+    return {
+      field,
+      fieldType,
+      isStateMachine,
+      isEnum,
+      enumValues: isEnum && fieldType ? 
+        schemaData.__schema.types.find((t: { name?: string; enumValues?: Array<{ name: string }> }) => t.name === fieldType)?.enumValues?.map((ev: { name: string }) => ev.name) || [] 
+        : []
+    };
+  }, [schemaData, entityTypeName]);
+
+  // Helper function to render state machine field values
+  const renderStateMachineValue = React.useCallback((value: unknown, entityTypeName: string) => {
+    if (value == null) return "";
+    
+    const stateKey = `stateMachine.${entityTypeName.toLowerCase()}.state.${value}`;
+    return resolveLabel([stateKey], { entity: entityTypeName }, String(value));
+  }, [resolveLabel]);
 
   const [page, setPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<number>(10);
@@ -360,6 +393,26 @@ export default function EntityTable({ listField }: EntityTableProps) {
         headerAlign: 'left',
         align: 'left',
         filterOperators: (() => {
+          // Check if this is a state machine field
+          const fieldInfo = getFieldInfo(col);
+          if (fieldInfo?.isStateMachine && fieldInfo.isEnum) {
+            // State machine fields: only equals operator with select dropdown
+            return [
+              { 
+                label: '=', 
+                value: 'equals', 
+                getApplyFilterFn: undefined as unknown as GridFilterOperator['getApplyFilterFn'], 
+                InputComponent: StateMachineFilterInput,
+                InputComponentProps: { 
+                  entityTypeName: entityNameForLabels,
+                  fieldName: col,
+                  enumValues: fieldInfo.enumValues,
+                  resolveLabel
+                } 
+              } as unknown as GridFilterOperator,
+            ];
+          }
+          
           if (isNumeric) {
             const base = getGridNumericOperators();
             const keep = new Set(['=', '!=', '>', '>=', '<', '<=', 'equals']);
@@ -408,6 +461,13 @@ export default function EntityTable({ listField }: EntityTableProps) {
           const resolver = (valueResolvers as Record<string, ValueResolver | undefined>)[col];
           const value = resolver ? resolver(row) : (row as Record<string, unknown>)[col];
 
+          // Check if this is a state machine field
+          const fieldInfo = getFieldInfo(col);
+          if (fieldInfo?.isStateMachine) {
+            const internationalizedValue = renderStateMachineValue(value, entityNameForLabels);
+            return <span>{internationalizedValue}</span>;
+          }
+
           // Custom renderer resolution by ordered keys:
           // 1) entity.field  2) field  3) entity
           const key1 = `${entityNameForLabels}.${col}`;
@@ -429,7 +489,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
     });
 
     return [actionColumn, ...dataColumns];
-  }, [resolvedColumns, resolveLabel, entityNameForLabels, valueResolvers, fieldTypeByColumn, listField, router]);
+  }, [resolvedColumns, resolveLabel, entityNameForLabels, valueResolvers, fieldTypeByColumn, listField, router, getFieldInfo, renderStateMachineValue]);
 
   const gridRows: GridRow[] = React.useMemo(() => {
     return rows.map((row, idx) => ({ __rid: String((row as Record<string, unknown>)["id"] ?? `${listField}-${page}-${idx}`), ...row }));
