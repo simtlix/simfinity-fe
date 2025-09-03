@@ -28,7 +28,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import RestoreIcon from "@mui/icons-material/Restore";
 import AddIcon from "@mui/icons-material/Add";
-import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getListEntityFieldNamesOfType, buildSelectionSetForObjectType, ValueResolver } from "@/lib/introspection";
+import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getListEntityFieldNamesOfType, buildSelectionSetForObjectType, ValueResolver, getTypeByName, unwrapNamedType } from "@/lib/introspection";
 import { resolveColumnRenderer } from "@/lib/columnRenderers";
 import { useI18n } from "@/lib/i18n";
 import CollectionItemEditForm from "./CollectionItemEditForm";
@@ -75,6 +75,39 @@ export default function CollectionFieldGrid({
 }: CollectionFieldGridProps) {
   const { data: schemaData } = useQuery(INTROSPECTION_QUERY);
   const { resolveLabel } = useI18n();
+  
+  // Helper function to get field information including extensions
+  const getFieldInfo = React.useCallback((fieldName: string) => {
+    if (!schemaData || !collectionField.objectTypeName) return null;
+    
+    const entityType = getTypeByName(schemaData as SchemaData, collectionField.objectTypeName);
+    if (!entityType?.fields) return null;
+    
+    const field = entityType.fields.find(f => f.name === fieldName);
+    if (!field) return null;
+    
+    const fieldType = unwrapNamedType(field.type);
+    const isStateMachine = field.extensions?.stateMachine === true;
+    const isEnum = fieldType && schemaData.__schema.types.find((t: { name?: string; kind?: string }) => t.name === fieldType)?.kind === "ENUM";
+    
+    return {
+      field,
+      fieldType,
+      isStateMachine,
+      isEnum,
+      enumValues: isEnum && fieldType ? 
+        schemaData.__schema.types.find((t: { name?: string; enumValues?: Array<{ name: string }> }) => t.name === fieldType)?.enumValues?.map((ev: { name: string }) => ev.name) || [] 
+        : []
+    };
+  }, [schemaData, collectionField.objectTypeName]);
+
+  // Helper function to render state machine field values
+  const renderStateMachineValue = React.useCallback((value: unknown, entityTypeName: string) => {
+    if (value == null) return "";
+    
+    const stateKey = `stateMachine.${entityTypeName.toLowerCase()}.state.${value}`;
+    return resolveLabel([stateKey], { entity: entityTypeName }, String(value));
+  }, [resolveLabel]);
   
   // Local state for collection management
   const [localCollectionState, setLocalCollectionState] = React.useState<CollectionFieldState>({
@@ -452,6 +485,13 @@ export default function CollectionFieldGrid({
     // Get the raw value
     const value = valueResolvers[column] ? valueResolvers[column](dataToUse) : dataToUse[column];
     
+    // Check if this is a state machine field
+    const fieldInfo = getFieldInfo(column);
+    if (fieldInfo?.isStateMachine) {
+      const internationalizedValue = renderStateMachineValue(value, collectionField.objectTypeName);
+      return <span>{internationalizedValue}</span>;
+    }
+    
     // Apply custom column renderers if available
     const renderer = resolveColumnRenderer(`${collectionField.objectTypeName}.${column}`);
     if (renderer) {
@@ -466,7 +506,7 @@ export default function CollectionFieldGrid({
     
     // Fallback to string representation
     return value?.toString() || '';
-  }, [valueResolvers, collectionField.objectTypeName]);
+  }, [valueResolvers, collectionField.objectTypeName, getFieldInfo, renderStateMachineValue]);
 
 
 
@@ -481,21 +521,31 @@ export default function CollectionFieldGrid({
         filterable: false, // Disable filtering for now to keep it simple
       };
 
-      // Apply custom column renderers if available
-      const renderer = resolveColumnRenderer(`${collectionField.objectTypeName}.${column}`);
-      if (renderer) {
+      // Check if this is a state machine field
+      const fieldInfo = getFieldInfo(column);
+      if (fieldInfo?.isStateMachine) {
         columnDef.renderCell = (params) => {
           const value = valueResolvers[column] ? valueResolvers[column](params.row) : params.row[column];
-          return (
-            <>{renderer({ 
-              entity: collectionField.objectTypeName, 
-              field: column, 
-              row: params.row, 
-              value, 
-              gridParams: params 
-            })}</>
-          );
+          const internationalizedValue = renderStateMachineValue(value, collectionField.objectTypeName);
+          return <span>{internationalizedValue}</span>;
         };
+      } else {
+        // Apply custom column renderers if available
+        const renderer = resolveColumnRenderer(`${collectionField.objectTypeName}.${column}`);
+        if (renderer) {
+          columnDef.renderCell = (params) => {
+            const value = valueResolvers[column] ? valueResolvers[column](params.row) : params.row[column];
+            return (
+              <>{renderer({ 
+                entity: collectionField.objectTypeName, 
+                field: column, 
+                row: params.row, 
+                value, 
+                gridParams: params 
+              })}</>
+            );
+          };
+        }
       }
 
       return columnDef;
@@ -534,7 +584,7 @@ export default function CollectionFieldGrid({
     }
 
     return baseColumns;
-  }, [collectionField.objectTypeName, collectionField.name, resolveLabel, valueResolvers, isEditMode, handleEditItem, handleDeleteItem, displayColumns]);
+  }, [collectionField.objectTypeName, collectionField.name, resolveLabel, valueResolvers, isEditMode, handleEditItem, handleDeleteItem, displayColumns, getFieldInfo, renderStateMachineValue]);
 
   // Handle pagination change
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {
