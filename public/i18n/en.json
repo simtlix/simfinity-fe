@@ -97,7 +97,14 @@
   "actions.view": "View",
   "actions.edit": "Edit",
   "actions.column": "Actions",
-  "button.create": "Create"
+  "button.create": "Create",
+
+  "stateMachine.season.action.activate": "Activate",
+  "stateMachine.season.action.finalize": "Finalize",
+  "stateMachine.season.state.SCHEDULED": "Scheduled",
+  "stateMachine.season.state.ACTIVE": "Active",
+  "stateMachine.season.state.FINISHED": "Finished",
+  "stateMachine.actions": "Actions"
 }
 
 

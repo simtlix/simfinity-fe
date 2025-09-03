@@ -389,7 +389,7 @@ export function setupSerieFormCustomization() {
       name: {
         size: { xs: 12, sm: 6, md: 6 },
         order: 1,
-        onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
+        onChange: (fieldName, value, formData) => {
           console.log('Serie name changed in edit mode:', { fieldName, value, formData });
           return { value, error: undefined };
         }
@@ -508,7 +508,7 @@ export function setupSerieFormCustomization() {
       categories: {
         size: { xs: 12, sm: 6, md: 6 },
         order: 2,
-        customRenderer: (field: FormField, customizationActions: FormCustomizationActions, handleFieldChange: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, disabled: boolean) => {
+        customRenderer: (field: FormField) => {
           const categories = field.value as string[] || [];
           return (
             <Box>
@@ -544,7 +544,7 @@ export function setupSerieFormCustomization() {
       description: {
         size: { xs: 12, sm: 12, md: 12 },
         order: 3,
-        customRenderer: (field: FormField, customizationActions: FormCustomizationActions, handleFieldChange: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, disabled: boolean) => {
+        customRenderer: (field: FormField) => {
           return (
             <Paper elevation={1} sx={{ p: 2 }}>
               <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>

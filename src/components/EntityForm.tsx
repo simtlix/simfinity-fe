@@ -3,6 +3,8 @@
 import * as React from "react";
 import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
 import { getEntityFormCallbacks, EntityFormCallbackActions, FormMessage, CollectionFieldState as FormCustomizationCollectionFieldState, ParentFormAccess } from "@/lib/formCustomization";
+import { getEntityStateMachine, getAvailableStateMachineActions, hasStateMachineSupport } from "@/lib/stateMachineRegistry";
+import { resolveStateMachineActionLabel } from "@/lib/i18n";
 import {
   Box,
   Breadcrumbs,
@@ -20,9 +22,10 @@ import {
   Autocomplete,
   Select,
   MenuItem,
-    FormControl,
+  FormControl,
   InputLabel,
   FormHelperText,
+  Menu,
 } from "@mui/material";
 
 // GraphQL queries and mutations
@@ -231,6 +234,10 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
   const [error, setError] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [formMessage, setFormMessage] = React.useState<FormMessage | null>(null);
+  
+  // State machine functionality
+  const [stateMachineMenuAnchor, setStateMachineMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const [stateMachineLoading, setStateMachineLoading] = React.useState<string | null>(null);
 
   // Form customization state
   const [customizationState, setCustomizationState] = React.useState<FormCustomizationState>({
@@ -1326,6 +1333,195 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
     }
   };
 
+  // State machine handlers
+  const handleStateMachineAction = async (actionName: string) => {
+    if (!entityTypeName || !entityId) return;
+    
+    const stateMachineConfig = getEntityStateMachine(entityTypeName);
+    if (!stateMachineConfig) return;
+    
+    const action = stateMachineConfig.actions[actionName];
+    if (!action) return;
+    
+    setStateMachineLoading(actionName);
+    setStateMachineMenuAnchor(null);
+    
+    // Get collection changes and transformed data (same as regular form submission)
+    const collectionChanges = getCollectionChanges();
+    const transformedData = transformFormDataForMutation(formData, collectionChanges);
+    const stateMachineDataInput = { id: entityId, ...transformedData };
+    
+    try {
+      
+      // Execute onBeforeSubmit callback if available
+      if (action.onBeforeSubmit) {
+        const result = await action.onBeforeSubmit(formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, stateMachineDataInput, {
+          setFieldData: (fieldName: string, value: unknown) => {
+            setFormData(prev => ({ 
+              ...prev, 
+              [fieldName]: { 
+                ...prev[fieldName], 
+                value: value as string | number | boolean | string[] | { id: string; [key: string]: unknown } | null
+              } 
+            }));
+          },
+          setFieldVisible: (fieldName: string, visible: boolean) => {
+            setCustomizationState(prev => ({
+              ...prev,
+              fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
+            }));
+          },
+          setFieldEnabled: (fieldName: string, enabled: boolean) => {
+            setCustomizationState(prev => ({
+              ...prev,
+              fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
+            }));
+          },
+
+          setCollectionChanges: (fieldName: string, changes: FormCustomizationCollectionFieldState) => {
+            const componentChanges: CollectionFieldState = {
+              added: changes.added as CollectionItem[],
+              modified: changes.modified as CollectionItem[],
+              deleted: changes.deleted as CollectionItem[]
+            };
+            updateCollectionState(fieldName, componentChanges);
+          },
+          setFormMessage: (message: FormMessage) => {
+            setFormMessage(message);
+          },
+          setError: (errorMessage: string) => {
+            setError(errorMessage);
+          }
+        });
+        
+        if (!result.shouldProceed) {
+          if (result.error) {
+            setError(result.error);
+          }
+          return;
+        }
+      }
+      
+      // Execute the state machine mutation
+      const mutation = gql`
+        mutation ${action.mutation}($input: ${entityTypeName}InputForUpdate!) {
+          ${action.mutation}(input: $input) {
+            id
+            state
+          }
+        }
+      `;
+      
+      const result = await client.mutate({
+        mutation,
+        variables: { input: stateMachineDataInput }
+      });
+      
+      // Execute onSuccess callback if available
+      if (action.onSuccess) {
+        await action.onSuccess(result.data, formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, {
+          setFieldData: (fieldName: string, value: unknown) => {
+            setFormData(prev => ({ 
+              ...prev, 
+              [fieldName]: { 
+                ...prev[fieldName], 
+                value: value as string | number | boolean | string[] | { id: string; [key: string]: unknown } | null
+              } 
+            }));
+          },
+          setFieldVisible: (fieldName: string, visible: boolean) => {
+            setCustomizationState(prev => ({
+              ...prev,
+              fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
+            }));
+          },
+          setFieldEnabled: (fieldName: string, enabled: boolean) => {
+            setCustomizationState(prev => ({
+              ...prev,
+              fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
+            }));
+          },
+
+          setCollectionChanges: (fieldName: string, changes: FormCustomizationCollectionFieldState) => {
+            const componentChanges: CollectionFieldState = {
+              added: changes.added as CollectionItem[],
+              modified: changes.modified as CollectionItem[],
+              deleted: changes.deleted as CollectionItem[]
+            };
+            updateCollectionState(fieldName, componentChanges);
+          },
+          setFormMessage: (message: FormMessage) => {
+            setFormMessage(message);
+          },
+          setError: (errorMessage: string) => {
+            setError(errorMessage);
+          }
+        });
+      }
+      
+      // Refresh the entity data to get the updated state
+      await invalidateEntityCache(entityId!, listField);
+      
+    } catch (error) {
+      console.error(`State machine action ${actionName} failed:`, error);
+      
+      // Execute onError callback if available
+      if (action.onError) {
+        await action.onError(error as Error, formData, collectionChanges as Record<string, FormCustomizationCollectionFieldState>, transformedData, {
+          setFieldData: (fieldName: string, value: unknown) => {
+            setFormData(prev => ({ 
+              ...prev, 
+              [fieldName]: { 
+                ...prev[fieldName], 
+                value: value as string | number | boolean | string[] | { id: string; [key: string]: unknown } | null
+              } 
+            }));
+          },
+          setFieldVisible: (fieldName: string, visible: boolean) => {
+            setCustomizationState(prev => ({
+              ...prev,
+              fieldVisibility: { ...prev.fieldVisibility, [fieldName]: visible }
+            }));
+          },
+          setFieldEnabled: (fieldName: string, enabled: boolean) => {
+            setCustomizationState(prev => ({
+              ...prev,
+              fieldEnabled: { ...prev.fieldEnabled, [fieldName]: enabled }
+            }));
+          },
+
+          setCollectionChanges: (fieldName: string, changes: FormCustomizationCollectionFieldState) => {
+            const componentChanges: CollectionFieldState = {
+              added: changes.added as CollectionItem[],
+              modified: changes.modified as CollectionItem[],
+              deleted: changes.deleted as CollectionItem[]
+            };
+            updateCollectionState(fieldName, componentChanges);
+          },
+          setFormMessage: (message: FormMessage) => {
+            setFormMessage(message);
+          },
+          setError: (errorMessage: string) => {
+            setError(errorMessage);
+          }
+        });
+      } else {
+        // Default error handling
+        setError(`Failed to ${actionName} entity: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } finally {
+      setStateMachineLoading(null);
+    }
+  };
+
+  const handleStateMachineMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setStateMachineMenuAnchor(event.currentTarget);
+  };
+
+  const handleStateMachineMenuClose = () => {
+    setStateMachineMenuAnchor(null);
+  };
+
   // Render embedded object section using shared FormFieldRenderer
   const renderEmbeddedSection = (field: FormField, enabled: boolean = true) => {
     if (!field.isEmbedded || !field.embeddedFields) return null;
@@ -1684,6 +1880,29 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           >
             {resolveLabel(["form.cancel"], { entity: listField }, "Cancel")}
           </Button>
+          
+          {/* State Machine Actions Button */}
+          {action === "edit" && entityTypeName && hasStateMachineSupport(entityTypeName) && entityData && (
+            (() => {
+              const currentState = entityData[entityTypeName].state;
+              const availableActions = getAvailableStateMachineActions(entityTypeName, currentState);
+              
+              if (availableActions.length > 0) {
+                return (
+                  <Button
+                    variant="outlined"
+                    onClick={handleStateMachineMenuOpen}
+                    disabled={stateMachineLoading !== null}
+                    startIcon={stateMachineLoading ? <CircularProgress size={16} /> : undefined}
+                  >
+                    {resolveLabel(["stateMachine.actions"], { entity: listField }, "Actions")}
+                  </Button>
+                );
+              }
+              return null;
+            })()
+          )}
+          
           {action !== "view" && (
             <Button
               type="submit"
@@ -1854,6 +2073,33 @@ export default function EntityForm({ listField, entityId, action }: EntityFormPr
           );
         });
       })()}
+
+      {/* State Machine Actions Menu */}
+      {entityTypeName && hasStateMachineSupport(entityTypeName) && entityData && (
+        <Menu
+          anchorEl={stateMachineMenuAnchor}
+          open={Boolean(stateMachineMenuAnchor)}
+          onClose={handleStateMachineMenuClose}
+        >
+          {(() => {
+            const currentState = entityData[entityTypeName].state;
+            const availableActions = getAvailableStateMachineActions(entityTypeName, currentState);
+            
+            return availableActions.map(({ name }) => (
+              <MenuItem
+                key={name}
+                onClick={() => handleStateMachineAction(name)}
+                disabled={stateMachineLoading === name}
+              >
+                {stateMachineLoading === name ? (
+                  <CircularProgress size={16} sx={{ mr: 1 }} />
+                ) : null}
+                {resolveStateMachineActionLabel(resolveLabel, entityTypeName, name, name)}
+              </MenuItem>
+            ));
+          })()}
+        </Menu>
+      )}
 
       {/* Snackbar for success messages */}
       <Snackbar

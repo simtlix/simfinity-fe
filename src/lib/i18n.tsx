@@ -80,5 +80,52 @@ export function registerFunctionLabels(locale: string, labels: Record<string, La
   (globalThis as unknown as { [k: string]: unknown })[key] = registry;
 }
 
+// State machine label helpers
+export type StateMachineLabelContext = { entity: string; action?: string; state?: string };
+
+/**
+ * Resolve state machine action label
+ * @param resolveLabel - The resolveLabel function from useI18n hook
+ * @param entityType - The entity type (e.g., "season")
+ * @param actionName - The action name (e.g., "activate")
+ * @param fallback - Fallback label if not found
+ * @returns The resolved label
+ */
+export function resolveStateMachineActionLabel(
+  resolveLabel: (keys: string[], ctx: LabelContext, fallback: string) => string,
+  entityType: string,
+  actionName: string,
+  fallback: string
+): string {
+  const keys = [
+    `stateMachine.${entityType}.action.${actionName}`,
+    `stateMachine.action.${actionName}`,
+    actionName
+  ];
+  return resolveLabel(keys, { entity: entityType, field: actionName }, fallback);
+}
+
+/**
+ * Resolve state machine state label
+ * @param resolveLabel - The resolveLabel function from useI18n hook
+ * @param entityType - The entity type (e.g., "season")
+ * @param stateName - The state name (e.g., "SCHEDULED")
+ * @param fallback - Fallback label if not found
+ * @returns The resolved label
+ */
+export function resolveStateMachineStateLabel(
+  resolveLabel: (keys: string[], ctx: LabelContext, fallback: string) => string,
+  entityType: string,
+  stateName: string,
+  fallback: string
+): string {
+  const keys = [
+    `stateMachine.${entityType}.state.${stateName}`,
+    `stateMachine.state.${stateName}`,
+    stateName
+  ];
+  return resolveLabel(keys, { entity: entityType, field: stateName }, fallback);
+}
+
 
 
