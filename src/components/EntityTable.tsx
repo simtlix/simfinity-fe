@@ -49,7 +49,7 @@ export default function EntityTable({ listField }: EntityTableProps) {
     
     // Convert to lowercase for i18n key
     const baseName = entityTypeName.toLowerCase();
-    
+
     return `entity.${baseName}.${form}`;
   };
 
@@ -483,7 +483,6 @@ export default function EntityTable({ listField }: EntityTableProps) {
       {!loadingData && !errorData && (
         <Paper sx={{ width: "100%", p: 0, minWidth: 0 }}>
           <DataGrid
-            autoHeight
             rows={gridRows}
             getRowId={(row: { __rid: string }) => row.__rid}
             columns={gridColumns}
