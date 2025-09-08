@@ -402,9 +402,7 @@ export function setupSerieFormCustomization() {
         customRenderer: (field: FormField, customizationActions: FormCustomizationActions, handleFieldChange: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, disabled: boolean) => {
           return (
             <Box>
-              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                Categories
-              </Typography>
+
               <CategoriesInput
                 value={field.value as string[] || []}
                 onChange={(value) => handleFieldChange(field.name, value)}
