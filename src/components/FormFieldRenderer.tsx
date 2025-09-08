@@ -281,7 +281,7 @@ export default function FormFieldRenderer({
         disabled={disabled || !isEnabled}
         fullWidth
         size="small"
-        InputLabelProps={{ shrink: true }}
+        slotProps={{ inputLabel: { shrink: true } }}
       />
     );
   }

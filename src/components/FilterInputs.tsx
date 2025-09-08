@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Autocomplete, Chip, TextField, Stack, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import type { GridFilterInputValueProps } from "@mui/x-data-grid";
-import { useI18n } from "@/lib/i18n";
 
 export function TagsFilterInput(props: GridFilterInputValueProps) {
   const valueArray = Array.isArray(props.item.value) ? (props.item.value as unknown[]) : [];
@@ -16,10 +15,29 @@ export function TagsFilterInput(props: GridFilterInputValueProps) {
       onChange={(_, newValue) => {
         props.applyValue({ ...props.item, value: newValue });
       }}
-      renderTags={(value: readonly string[], getTagProps) =>
-        value.map((option: string, index: number) => <Chip variant="outlined" label={option} {...getTagProps({ index })} key={`${option}-${index}`} />)
-      }
-      renderInput={(params) => <TextField {...params} size="small" placeholder="Values" />}
+      renderInput={(params) => (
+        <TextField 
+          {...params} 
+          size="small" 
+          placeholder="Values"
+          slotProps={{
+            input: {
+              startAdornment: (valueArray as string[]).map((option: string, index: number) => (
+                <Chip 
+                  variant="outlined" 
+                  label={option} 
+                  onDelete={() => {
+                    const newValue = valueArray.filter((_, i) => i !== index);
+                    props.applyValue({ ...props.item, value: newValue });
+                  }}
+                  key={`${option}-${index}`}
+                  size="small"
+                />
+              ))
+            }
+          }}
+        />
+      )}
     />
   );
 }
@@ -69,7 +87,7 @@ export function StateMachineFilterInput(props: GridFilterInputValueProps & {
   enumValues: string[];
   resolveLabel: (keys: string[], context?: Record<string, unknown>, fallback?: string) => string;
 }) {
-  const { entityTypeName, fieldName, enumValues, resolveLabel } = props;
+  const { entityTypeName, enumValues, resolveLabel } = props;
   const currentValue = props.item.value as string || "";
 
   return (
