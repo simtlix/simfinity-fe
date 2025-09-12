@@ -18,7 +18,7 @@ import {
   DialogActions
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
-import { registerFormCustomization, FormField, FormCustomizationActions, ParentFormAccess } from '@/lib/formCustomization';
+import { registerFormCustomization, FormField, FormCustomizationActions, ParentFormAccess } from '@/components/simfinity-fe/lib/formCustomization';
 
 // Example of custom field renderers and custom collection renderers using JSX
 export function setupCustomRendererExamples() {

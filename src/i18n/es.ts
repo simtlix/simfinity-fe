@@ -1,4 +1,4 @@
-import { registerFunctionLabels, type LabelValue } from "@/lib/i18n";
+import { registerFunctionLabels, type LabelValue } from "@/components/simfinity-fe/lib/i18n";
 
 export const labels: Record<string, LabelValue> = {
   // Ejemplos de etiquetas en español

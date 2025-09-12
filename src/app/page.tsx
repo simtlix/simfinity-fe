@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Typography } from "@mui/material";
-import LayoutShell from "@/components/LayoutShell";
+import LayoutShell from "@/components/app/LayoutShell";
 
 export default function Home() {
   return (

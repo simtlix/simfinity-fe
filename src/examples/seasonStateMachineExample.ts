@@ -1,5 +1,5 @@
-import { registerEntityStateMachine } from '@/lib/stateMachineRegistry';
-import { CollectionFieldState, EntityFormCallbackActions } from '@/lib/formCustomization';
+import { registerEntityStateMachine } from '@/components/simfinity-fe/lib/stateMachineRegistry';
+import { CollectionFieldState, EntityFormCallbackActions } from '@/components/simfinity-fe/lib/formCustomization';
 import { gql } from '@apollo/client';
 import { apolloClient } from '@/lib/apolloClient';
 

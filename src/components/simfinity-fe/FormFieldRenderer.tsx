@@ -15,9 +15,9 @@ import {
   Tooltip
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { SchemaData, getTypeByName } from "@/lib/introspection";
-import { useI18n } from "@/lib/i18n";
-import { FormCustomizationState } from "@/lib/formCustomization";
+import { SchemaData, getTypeByName } from "@/components/simfinity-fe/lib/introspection";
+import { useI18n } from "@/components/simfinity-fe/lib/i18n";
+import { FormCustomizationState } from "@/components/simfinity-fe/lib/formCustomization";
 
 export interface FormFieldRendererProps {
   field: {

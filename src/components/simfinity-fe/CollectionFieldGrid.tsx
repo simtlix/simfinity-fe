@@ -28,11 +28,11 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import RestoreIcon from "@mui/icons-material/Restore";
 import AddIcon from "@mui/icons-material/Add";
-import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getListEntityFieldNamesOfType, buildSelectionSetForObjectType, ValueResolver, getTypeByName, unwrapNamedType } from "@/lib/introspection";
-import { resolveColumnRenderer } from "@/lib/columnRenderers";
-import { useI18n } from "@/lib/i18n";
+import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getListEntityFieldNamesOfType, buildSelectionSetForObjectType, ValueResolver, getTypeByName, unwrapNamedType } from "@/components/simfinity-fe/lib/introspection";
+import { resolveColumnRenderer } from "@/components/simfinity-fe/lib/columnRenderers";
+import { useI18n } from "@/components/simfinity-fe/lib/i18n";
 import CollectionItemEditForm from "./CollectionItemEditForm";
-import { getFormCustomization, getCollectionOnDelete, FormMessage, ParentFormAccess } from "@/lib/formCustomization";
+import { getFormCustomization, getCollectionOnDelete, FormMessage, ParentFormAccess } from "@/components/simfinity-fe/lib/formCustomization";
 
 // Types for collection item management
 export type CollectionItemStatus = 'original' | 'added' | 'modified' | 'deleted';

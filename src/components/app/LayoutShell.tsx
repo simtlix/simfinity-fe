@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Box, Toolbar } from "@mui/material";
-import AppHeader from "@/components/AppHeader";
-import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/app/AppHeader";
+import Sidebar from "@/components/app/Sidebar";
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);

@@ -31,8 +31,8 @@ import {
   isBooleanScalarName,
   isDateTimeScalarName,
   unwrapNamedType,
-} from "@/lib/introspection";
-import { useI18n } from "@/lib/i18n";
+} from "@/components/simfinity-fe/lib/introspection";
+import { useI18n } from "@/components/simfinity-fe/lib/i18n";
 import ObjectFieldSelector from "./ObjectFieldSelector";
 import {
   FormCustomizationState,
@@ -47,7 +47,7 @@ import {
   getCollectionItemOnSubmit,
   FormMessage,
   ParentFormAccess,
-} from "@/lib/formCustomization";
+} from "@/components/simfinity-fe/lib/formCustomization";
 import { CollectionItem } from "./CollectionFieldGrid";
 
 type CollectionItemEditFormProps = {

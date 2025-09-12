@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
-import { getEntityFormCallbacks, EntityFormCallbackActions, FormMessage, CollectionFieldState as FormCustomizationCollectionFieldState, ParentFormAccess } from "@/lib/formCustomization";
-import { getEntityStateMachine, getAvailableStateMachineActions, hasStateMachineSupport } from "@/lib/stateMachineRegistry";
-import { resolveStateMachineActionLabel } from "@/lib/i18n";
+import { getEntityFormCallbacks, EntityFormCallbackActions, FormMessage, CollectionFieldState as FormCustomizationCollectionFieldState, ParentFormAccess } from "@/components/simfinity-fe/lib/formCustomization";
+import { getEntityStateMachine, getAvailableStateMachineActions, hasStateMachineSupport } from "@/components/simfinity-fe/lib/stateMachineRegistry";
+import { resolveStateMachineActionLabel } from "@/components/simfinity-fe/lib/i18n";
 import {
   Box,
   Breadcrumbs,
@@ -57,11 +57,11 @@ const UPDATE_ENTITY_MUTATION = gql`
 `;
 
 import { useRouter } from "next/navigation";
-import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getTypeByName, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName, isScalarOrEnum, unwrapNamedType, getListEntityFieldNamesOfType } from "@/lib/introspection";
+import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, getTypeByName, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName, isScalarOrEnum, unwrapNamedType, getListEntityFieldNamesOfType } from "@/components/simfinity-fe/lib/introspection";
 import ObjectFieldSelector from "./ObjectFieldSelector";
 import CollectionFieldGrid, { CollectionFieldState, CollectionItem } from "./CollectionFieldGrid";
-import { useCollectionState } from "@/hooks/useCollectionState";
-import { useI18n } from "@/lib/i18n";
+import { useCollectionState } from "@/components/simfinity-fe/hooks/useCollectionState";
+import { useI18n } from "@/components/simfinity-fe/lib/i18n";
 import FormFieldRenderer from "./FormFieldRenderer";
 import { Accordion, AccordionDetails, AccordionSummary } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -77,7 +77,7 @@ import {
   getEmbeddedSectionCustomization,
   getEmbeddedFieldSize,
   getCollectionFieldCustomization
-} from "@/lib/formCustomization";
+} from "@/components/simfinity-fe/lib/formCustomization";
 
 type EntityFormProps = {
   listField: string; // e.g., "series"

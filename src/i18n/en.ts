@@ -1,6 +1,6 @@
 import * as React from "react";
-import { registerFunctionLabels, type LabelValue } from "@/lib/i18n";
-import { registerColumnRenderer } from "@/lib/columnRenderers";
+import { registerFunctionLabels, type LabelValue } from "@/components/simfinity-fe/lib/i18n";
+import { registerColumnRenderer } from "@/components/simfinity-fe/lib/columnRenderers";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 export const labels: Record<string, LabelValue> = {

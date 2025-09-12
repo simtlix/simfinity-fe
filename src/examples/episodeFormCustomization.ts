@@ -1,4 +1,4 @@
-import { registerFormCustomization } from '@/lib/formCustomization';
+import { registerFormCustomization } from '@/components/simfinity-fe/lib/formCustomization';
 
 // Episode form customization
 // This should be called early in your application, typically in a layout or main component

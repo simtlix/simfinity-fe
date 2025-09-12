@@ -1,6 +1,6 @@
 import * as React from "react";
-import EntityTable from "@/components/EntityTable";
-import LayoutShell from "@/components/LayoutShell";
+import EntityTable from "@/components/simfinity-fe/EntityTable";
+import LayoutShell from "@/components/app/LayoutShell";
 
 export default async function EntityPage({
   params,

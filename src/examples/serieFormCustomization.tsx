@@ -11,7 +11,7 @@ import {
   Chip,
   OutlinedInput
 } from '@mui/material';
-import { registerFormCustomization, FormField, FormCustomizationActions, ParentFormAccess, FormMessage } from '@/lib/formCustomization';
+import { registerFormCustomization, FormField, FormCustomizationActions, ParentFormAccess, FormMessage } from '@/components/simfinity-fe/lib/formCustomization';
 
 // Rich Text Editor Component for Description
 const RichTextEditor = ({ 

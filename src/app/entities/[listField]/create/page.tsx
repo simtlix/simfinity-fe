@@ -1,6 +1,6 @@
 import * as React from "react";
-import EntityForm from "@/components/EntityForm";
-import LayoutShell from "@/components/LayoutShell";
+import EntityForm from "@/components/simfinity-fe/EntityForm";
+import LayoutShell from "@/components/app/LayoutShell";
 
 export default async function CreateEntityPage({
   params,

@@ -1,4 +1,4 @@
-import { registerFormCustomization } from '@/lib/formCustomization';
+import { registerFormCustomization } from '@/components/simfinity-fe/lib/formCustomization';
 
 // Example demonstrating entity-level callback functions
 // This shows how to use the new beforeSubmit, afterSuccess, and onError callbacks

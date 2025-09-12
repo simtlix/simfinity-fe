@@ -5,12 +5,12 @@ import { gql, useApolloClient, useQuery } from "@apollo/client";
 import { Box, CircularProgress, Paper, Typography, Button, Stack, IconButton, Tooltip } from "@mui/material";
 import { DataGrid, type GridColDef, type GridPaginationModel, type GridFilterModel, type GridFilterOperator, getGridNumericOperators, getGridBooleanOperators, GridFilterInputValue } from "@mui/x-data-grid";
 import { useSearchParams, useRouter } from "next/navigation";
-import ServerToolbar from "@/components/ServerToolbar";
-import ServerFilterPanel from "@/components/ServerFilterPanel";
-import { TagsFilterInput, BetweenFilterInput, DateFilterInput, StateMachineFilterInput } from "@/components/FilterInputs";
-import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, buildSelectionSetForObjectType, ValueResolver, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName, getTypeByName, unwrapNamedType } from "@/lib/introspection";
-import { resolveColumnRenderer } from "@/lib/columnRenderers";
-import { useI18n } from "@/lib/i18n";
+import ServerToolbar from "@/components/simfinity-fe/ServerToolbar";
+import ServerFilterPanel from "@/components/simfinity-fe/ServerFilterPanel";
+import { TagsFilterInput, BetweenFilterInput, DateFilterInput, StateMachineFilterInput } from "@/components/simfinity-fe/FilterInputs";
+import { INTROSPECTION_QUERY, SchemaData, getElementTypeNameOfListField, buildSelectionSetForObjectType, ValueResolver, isNumericScalarName, isBooleanScalarName, isDateTimeScalarName, getTypeByName, unwrapNamedType } from "@/components/simfinity-fe/lib/introspection";
+import { resolveColumnRenderer } from "@/components/simfinity-fe/lib/columnRenderers";
+import { useI18n } from "@/components/simfinity-fe/lib/i18n";
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 

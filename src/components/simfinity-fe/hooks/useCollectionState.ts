@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { CollectionFieldState } from '@/components/CollectionFieldGrid';
+import { CollectionFieldState } from '@/components/simfinity-fe/CollectionFieldGrid';
 
 export interface FormCollectionState {
   [fieldName: string]: CollectionFieldState;

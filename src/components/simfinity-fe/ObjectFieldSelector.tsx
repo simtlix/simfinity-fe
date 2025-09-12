@@ -16,7 +16,7 @@ import {
   FormControl,
   FormHelperText,
 } from "@mui/material";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/components/simfinity-fe/lib/i18n";
 
 type ObjectFieldSelectorProps = {
   label: string;
