@@ -4,7 +4,7 @@ import * as React from "react";
 import { ApolloProvider } from "@apollo/client";
 import { apolloClient } from "@/lib/apolloClient";
 import { CssBaseline, ThemeProvider } from "@mui/material";
-import { I18nProvider } from "@/components/simfinity-fe/lib/i18n";
+import { I18nProvider } from "simfinity-fe-components";
 
 // Import theme and setup configurations
 import { theme, setupConfigurations } from "@/examples/setupConfiguration";

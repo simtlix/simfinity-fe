@@ -1,13 +1,15 @@
+"use client"
+
 import * as React from "react";
-import EntityForm from "@/components/simfinity-fe/EntityForm";
+import {EntityForm} from "simfinity-fe-components";
 import LayoutShell from "@/components/app/LayoutShell";
 
-export default async function ViewEntityPage({
+export default function ViewEntityPage({
   params,
 }: {
-  params: Promise<{ listField: string; id: string }>;
+  params: { listField: string; id: string };
 }) {
-  const { listField, id } = await params;
+  const { listField, id } = params;
   return (
     <LayoutShell>
       <EntityForm listField={listField} entityId={id} action="view" />

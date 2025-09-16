@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { useQuery } from "@apollo/client";
-import { INTROSPECTION_QUERY, getListEntityFieldNames, getElementTypeNameOfListField, SchemaData } from "@/components/simfinity-fe/lib/introspection";
-import { useI18n } from "@/components/simfinity-fe/lib/i18n";
+import { INTROSPECTION_QUERY, getListEntityFieldNames, getElementTypeNameOfListField, SchemaData } from "simfinity-fe-components";
+import { useI18n } from "simfinity-fe-components";
 import { Box, CircularProgress, Divider, Drawer, List, ListItemButton, ListItemText, Toolbar, Typography } from "@mui/material";
 import { useRouter, usePathname } from "next/navigation";
 

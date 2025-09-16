@@ -1,13 +1,15 @@
+"use client"
+
 import * as React from "react";
-import EntityTable from "@/components/simfinity-fe/EntityTable";
+import {EntityTable} from "simfinity-fe-components";
 import LayoutShell from "@/components/app/LayoutShell";
 
-export default async function EntityPage({
+export default function EntityPage({
   params,
 }: {
-  params: Promise<{ listField: string }>;
+  params: { listField: string };
 }) {
-  const { listField } = await params;
+  const { listField } =  params;
   return (
     <LayoutShell>
       <EntityTable listField={listField} />
