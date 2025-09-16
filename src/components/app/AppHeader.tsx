@@ -7,7 +7,7 @@ import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useI18n } from "simfinity-fe-components";
+import { useI18n } from "@simtlix/simfinity-fe-components";
 import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 
 type AppHeaderProps = {

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { registerColumnRenderer } from "@/components/simfinity-fe/lib/columnRenderers";
+import { registerColumnRenderer } from "@simtlix/simfinity-fe-components";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 // import PersonIcon from "@mui/icons-material/Person";
 

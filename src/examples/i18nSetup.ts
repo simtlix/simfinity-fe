@@ -1,4 +1,4 @@
-import { registerFunctionLabels, type LabelValue } from "@/components/simfinity-fe/lib/i18n";
+import { registerFunctionLabels, type LabelValue } from "@simtlix/simfinity-fe-components";
 
 // English labels
 const enLabels: Record<string, LabelValue> = {
