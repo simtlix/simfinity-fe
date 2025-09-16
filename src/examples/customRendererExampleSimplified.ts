@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { TextField, Box, Typography } from '@mui/material';
-import { registerFormCustomization, FormField, FormCustomizationActions, ParentFormAccess } from '@/components/simfinity-fe/lib/formCustomization';
+import { registerFormCustomization, FormField, FormCustomizationActions, ParentFormAccess } from '@simtlix/simfinity-fe-components';
 
 // Simplified example of custom field renderers without React hooks
 export function setupCustomRendererExamples() {
