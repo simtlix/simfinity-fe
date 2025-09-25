@@ -107,6 +107,16 @@
   "stateMachine.season.state.SCHEDULED": "Programada",
   "stateMachine.season.state.ACTIVE": "Activa",
   "stateMachine.season.state.FINISHED": "Finalizada",
-  "stateMachine.actions": "Acciones"
+  "stateMachine.actions": "Acciones",
+
+  "collection.actions.column": "Acciones",
+  "collection.actions.edit": "Editar",
+  "collection.actions.delete": "Eliminar",
+  "collection.actions.revert": "Revertir Cambios",
+  "collection.actions.restore": "Restaurar",
+  "collection.actions.remove": "Quitar",
+  "collection.button.create": "Agregar",
+
+  "collection.queryError": "Error: No se pudo generar la consulta"
 }
 

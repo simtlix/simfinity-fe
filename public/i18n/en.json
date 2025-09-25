@@ -107,7 +107,18 @@
   "stateMachine.season.state.SCHEDULED": "Scheduled",
   "stateMachine.season.state.ACTIVE": "Active",
   "stateMachine.season.state.FINISHED": "Finished",
-  "stateMachine.actions": "Actions"
+  "stateMachine.actions": "Actions",
+
+  "collection.actions.column": "Actions",
+  "collection.actions.edit": "Edit",
+  "collection.actions.delete": "Delete",
+  "collection.actions.revert": "Revert Changes",
+  "collection.actions.restore": "Restore",
+  "collection.actions.remove": "Remove",
+  "collection.button.create": "Add",
+  "collection.queryError": "Error: Could not generate collection query"
+
+  
 }
 
 
