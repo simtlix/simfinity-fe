@@ -9,6 +9,7 @@ import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useI18n } from "@simtlix/simfinity-fe-components";
 import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
+import ThemeToggle from "./ThemeToggle";
 
 type AppHeaderProps = {
   onMenuClick?: () => void;
@@ -32,7 +33,12 @@ export default function AppHeader({ onMenuClick }: AppHeaderProps) {
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
           Simfinity Admin
         </Typography>
-        <Box sx={{ minWidth: 120 }}>
+        
+        {/* Theme Toggle */}
+        <ThemeToggle />
+        
+        {/* Language Selector */}
+        <Box sx={{ minWidth: 120, ml: 2 }}>
           <FormControl variant="standard" size="small" sx={{ minWidth: 100 }}>
             <InputLabel sx={{ color: "inherit" }}>Lang</InputLabel>
             <Select
