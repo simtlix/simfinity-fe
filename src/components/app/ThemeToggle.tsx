@@ -28,12 +28,17 @@ const themeModeOptions = [
 ];
 
 const customThemeOptions = [
-  { value: 'default' as CustomTheme, label: 'Default', color: '#1976d2' },
-  { value: 'blue' as CustomTheme, label: 'Blue', color: '#2196f3' },
-  { value: 'green' as CustomTheme, label: 'Green', color: '#4caf50' },
-  { value: 'purple' as CustomTheme, label: 'Purple', color: '#9c27b0' },
-  { value: 'orange' as CustomTheme, label: 'Orange', color: '#ff9800' },
-];
+    { value: 'default'  as CustomTheme, label: 'Default',   color: '#1976d2' },
+    { value: 'blue'     as CustomTheme, label: 'Blue',      color: '#2196f3' },
+    { value: 'green'    as CustomTheme, label: 'Green',     color: '#4caf50' },
+    { value: 'purple'   as CustomTheme, label: 'Purple',    color: '#9c27b0' },
+    { value: 'orange'   as CustomTheme, label: 'Orange',    color: '#ff9800' },
+  
+    // 👇 Nuevos “soft” con el look mint pero otras paletas
+    { value: 'mint'     as CustomTheme, label: 'Mint',      color: '#108775' },
+    { value: 'softBlue' as CustomTheme, label: 'Soft Blue', color: '#1E88E5' },
+    { value: 'softGray' as CustomTheme, label: 'Soft Gray', color: '#5F6B7A' },
+  ];
 
 export default function ThemeToggle() {
   const { mode, customTheme, setMode, setCustomTheme } = useTheme();
@@ -71,9 +76,10 @@ export default function ThemeToggle() {
       {/* Theme Mode Toggle */}
       <Tooltip title="Theme Mode">
         <IconButton
-          color="inherit"
+          color="default"               // ⬅️ antes: "inherit"
           onClick={handleModeMenuOpen}
           size="small"
+          sx={{ color: 'text.primary' }} // ⬅️ asegura contraste con AppBar claro
         >
           {currentModeOption?.icon && <currentModeOption.icon />}
         </IconButton>
@@ -83,14 +89,9 @@ export default function ThemeToggle() {
         anchorEl={modeAnchorEl}
         open={Boolean(modeAnchorEl)}
         onClose={handleMenuClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { color: 'text.primary' } } }} // ⬅️ legible
       >
         <MenuItem disabled>
           <Typography variant="subtitle2" color="text.secondary">
@@ -107,9 +108,7 @@ export default function ThemeToggle() {
               <option.icon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary={option.label} />
-            {mode === option.value && (
-              <CheckIcon fontSize="small" color="primary" />
-            )}
+            {mode === option.value && <CheckIcon fontSize="small" color="primary" />}
           </MenuItem>
         ))}
       </Menu>
@@ -117,9 +116,10 @@ export default function ThemeToggle() {
       {/* Color Theme Toggle */}
       <Tooltip title="Color Theme">
         <IconButton
-          color="inherit"
+          color="default"               // ⬅️ antes: "inherit"
           onClick={handleColorMenuOpen}
           size="small"
+          sx={{ color: 'text.primary' }} // ⬅️ asegura contraste
         >
           <ColorLensIcon />
         </IconButton>
@@ -129,14 +129,9 @@ export default function ThemeToggle() {
         anchorEl={colorAnchorEl}
         open={Boolean(colorAnchorEl)}
         onClose={handleMenuClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { color: 'text.primary' } } }} // ⬅️ legible
       >
         <MenuItem disabled>
           <Typography variant="subtitle2" color="text.secondary">
@@ -144,27 +139,26 @@ export default function ThemeToggle() {
           </Typography>
         </MenuItem>
         {customThemeOptions.map((option) => (
-          <MenuItem
+        <MenuItem
             key={option.value}
             onClick={() => handleColorChange(option.value)}
             selected={customTheme === option.value}
-          >
+        >
             <Box
-              sx={{
+            sx={{
                 width: 20,
                 height: 20,
                 borderRadius: '50%',
                 backgroundColor: option.color,
-                mr: 1,
+                mr: 1.25,
                 border: '1px solid',
                 borderColor: 'divider',
-              }}
+                boxShadow: 1,
+            }}
             />
             <ListItemText primary={option.label} />
-            {customTheme === option.value && (
-              <CheckIcon fontSize="small" color="primary" />
-            )}
-          </MenuItem>
+            {customTheme === option.value && <CheckIcon fontSize="small" color="primary" />}
+        </MenuItem>
         ))}
       </Menu>
 
@@ -174,13 +168,12 @@ export default function ThemeToggle() {
         label={`${currentModeOption?.label} • ${currentColorOption?.label}`}
         variant="outlined"
         sx={{
-          color: 'inherit',
-          borderColor: 'currentColor',
-          '& .MuiChip-label': {
-            fontSize: '0.75rem',
-          },
+          color: 'text.primary',       // ⬅️ texto legible
+          borderColor: 'divider',
+          bgcolor: 'action.hover',     // ⬅️ fondo suave para contraste
+          '& .MuiChip-label': { fontSize: '0.75rem' },
         }}
       />
     </Box>
   );
-}
+};

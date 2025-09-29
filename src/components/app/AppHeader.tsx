@@ -19,8 +19,8 @@ export default function AppHeader({ onMenuClick }: AppHeaderProps) {
   const { locale, setLocale } = useI18n();
   const handleLocale = (e: SelectChangeEvent<string>) => setLocale(e.target.value);
   return (
-    <AppBar position="fixed" color="primary" enableColorOnDark>
-      <Toolbar>
+    <AppBar position="fixed"  enableColorOnDark>
+      <Toolbar sx={{ color: 'text.primary' }}>
         <IconButton
           color="inherit"
           aria-label="open drawer"
@@ -39,13 +39,29 @@ export default function AppHeader({ onMenuClick }: AppHeaderProps) {
         
         {/* Language Selector */}
         <Box sx={{ minWidth: 120, ml: 2 }}>
-          <FormControl variant="standard" size="small" sx={{ minWidth: 100 }}>
-            <InputLabel sx={{ color: "inherit" }}>Lang</InputLabel>
+          <FormControl variant="standard" size="small" sx={{
+            minWidth: 100,
+            color: 'text.primary',
+            '& .MuiInputBase-input': { color: 'text.primary' },
+            '& .MuiSvgIcon-root': { color: 'text.secondary' },
+            '& .MuiInput-underline:before': { borderBottomColor: 'divider' },
+            '& .MuiInput-underline:hover:not(.Mui-disabled):before': { borderBottomColor: 'divider' },
+            '& .MuiInput-underline:after': { borderBottomColor: 'primary.main' },
+          }}>
+            <InputLabel
+              sx={{
+                color: 'text.secondary',
+                '&.Mui-focused': { color: 'text.secondary' }
+              }}
+            >
+              Lang
+            </InputLabel>
             <Select
               value={locale}
               onChange={handleLocale}
               label="Lang"
-              sx={{ color: "inherit", borderColor: "inherit" }}>
+              sx={{ color: 'text.primary' }}
+            >
               <MenuItem value="en">EN</MenuItem>
               <MenuItem value="es">ES</MenuItem>
             </Select>

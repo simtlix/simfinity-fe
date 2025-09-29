@@ -5,6 +5,7 @@ import {EntityForm} from "@simtlix/simfinity-fe-components";
 import LayoutShell from "@/components/app/LayoutShell";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { Paper } from "@mui/material";
 
 export default function EditEntityPage({
   params,
@@ -20,7 +21,9 @@ export default function EditEntityPage({
   
   return (
     <LayoutShell>
-      <EntityForm listField={listField} entityId={id} action="edit" onNavigate={navigate} />
+      <Paper>
+        <EntityForm listField={listField} entityId={id} action="edit" onNavigate={navigate} />
+      </Paper>
     </LayoutShell>
   );
 }

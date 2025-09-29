@@ -3,6 +3,7 @@
 import * as React from "react";
 import {EntityTable} from "@simtlix/simfinity-fe-components";
 import LayoutShell from "@/components/app/LayoutShell";
+import { Paper } from "@mui/material";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
@@ -29,7 +30,9 @@ export default function EntityPage({
   const { listField } = React.use(params);
   return (
     <LayoutShell>
-      <EntityTable listField={listField} onNavigate={navigate} getSearchParams={getSearchParams} onSearchParamsChange={onSearchParamsChange} />
+      <Paper>
+        <EntityTable listField={listField} onNavigate={navigate} getSearchParams={getSearchParams} onSearchParamsChange={onSearchParamsChange} />
+      </Paper>
     </LayoutShell>
   );
 }
