@@ -570,6 +570,149 @@ export function setupSeasonCollectionCustomization() {
 }
 ```
 
+### 🔄 **State Machine System**
+
+State machines allow you to manage entity state transitions with custom validation and business logic.
+
+#### **State Machine Registration**
+```typescript
+import { registerEntityStateMachine } from '@simtlix/simfinity-fe-components';
+
+export function setupSeasonStateMachine() {
+  registerEntityStateMachine("season", {
+    actions: {
+      activate: {
+        mutation: 'activate_season',
+        from: 'SCHEDULED',
+        to: 'ACTIVE',
+        onBeforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+          console.log('Before activating season:', { formData, collectionChanges, transformedData });
+          
+          // Validate business rules before transition
+          const episodesChanges = collectionChanges.episodes || { added: [], modified: [], deleted: [] };
+          const newEpisodesCount = episodesChanges.added.length;
+          
+          if (newEpisodesCount === 0) {
+            actions.setFormMessage({
+              type: 'error',
+              message: 'Cannot activate season without episodes'
+            });
+            return { shouldProceed: false, error: 'Season must have at least one episode' };
+          }
+          
+          return { shouldProceed: true };
+        },
+        onSuccess: async (result, formData, collectionChanges, transformedData, actions) => {
+          console.log('Season activated successfully:', result);
+          
+          actions.setFormMessage({
+            type: 'success',
+            message: 'Season activated successfully!'
+          });
+        },
+        onError: async (error, formData, collectionChanges, transformedData, actions) => {
+          console.error('Failed to activate season:', error);
+          
+          actions.setFormMessage({
+            type: 'error',
+            message: `Failed to activate season: ${error.message}`
+          });
+        }
+      },
+      finalize: {
+        mutation: 'finalize_season',
+        from: 'ACTIVE',
+        to: 'FINISHED',
+        onBeforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+          // Query server for validation
+          const GET_EPISODES = gql`
+            query GetEpisodes($seasonId: QLValue!) {
+              episodes(season: { terms: { path: "id", operator: EQ, value: $seasonId } }) {
+                id
+                date
+              }
+            }
+          `;
+          
+          const { data } = await apolloClient.query({
+            query: GET_EPISODES,
+            variables: { seasonId: transformedData.id },
+            fetchPolicy: 'network-only'
+          });
+          
+          const existingEpisodes = data?.episodes || [];
+          const incompleteEpisodes = existingEpisodes.filter(ep => 
+            !ep.date || new Date(ep.date) > new Date()
+          );
+          
+          if (incompleteEpisodes.length > 0) {
+            actions.setFormMessage({
+              type: 'error',
+              message: 'Cannot finalize season with incomplete episodes'
+            });
+            return { shouldProceed: false, error: 'All episodes must be completed' };
+          }
+          
+          return { shouldProceed: true };
+        },
+        onSuccess: async (result, formData, collectionChanges, transformedData, actions) => {
+          actions.setFormMessage({
+            type: 'success',
+            message: 'Season finalized successfully!'
+          });
+        },
+        onError: async (error, formData, collectionChanges, transformedData, actions) => {
+          actions.setFormMessage({
+            type: 'error',
+            message: `Failed to finalize season: ${error.message}`
+          });
+        }
+      }
+    }
+  });
+}
+```
+
+#### **State Machine Callbacks**
+
+**onBeforeSubmit Parameters:**
+- `formData` - Current form field values
+- `collectionChanges` - Changes to collection fields (added, modified, deleted)
+- `transformedData` - Processed entity data ready for mutation
+- `actions` - Actions to manipulate form state
+
+**onBeforeSubmit Return Value:**
+- `{ shouldProceed: true }` - Allow state transition
+- `{ shouldProceed: false, error: string }` - Cancel state transition
+
+**onSuccess/onError Parameters:**
+- `result` - GraphQL mutation result
+- `formData` - Current form field values
+- `collectionChanges` - Collection changes
+- `transformedData` - Processed entity data
+- `actions` - Actions to manipulate form state
+
+#### **State Machine Integration**
+
+The EntityForm automatically detects registered state machines and:
+1. **Shows Actions Button** - Displays "Actions" button in edit mode
+2. **Dynamic Menu** - Shows available actions based on current entity state
+3. **Field Management** - Excludes state machine fields from create forms
+4. **Read-only Display** - Shows state machine fields as read-only
+5. **Form Refresh** - Reloads entity data after successful transitions
+
+#### **State Machine i18n Labels**
+```json
+{
+  "stateMachine.season.action.activate": "Activate",
+  "stateMachine.season.action.finalize": "Finalize",
+  "stateMachine.season.state.SCHEDULED": "Scheduled",
+  "stateMachine.season.state.ACTIVE": "Active",
+  "stateMachine.season.state.FINISHED": "Finished",
+  "stateMachine.actions": "Actions"
+}
+```
+
 ### 📊 **Column Customization System**
 
 Custom column renderers for specialized data display in EntityTable:
