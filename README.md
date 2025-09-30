@@ -227,906 +227,456 @@ import EntityForm from '@/components/EntityForm';
 
 ### 🎨 **Form Customization System**
 
-The system provides extensive customization capabilities for form behavior and appearance.
+The system provides extensive customization capabilities for form behavior and appearance through the `@simtlix/simfinity-fe-components` package.
 
-### 📊 **Column Customization System**
+#### **Setup Configuration**
+All customizations are registered in `src/examples/setupConfiguration.ts`:
 
-The column customization system allows you to create specialized renderers for different data types in EntityTable columns.
-
-### 🌍 **Internationalization (i18n) System**
-
-The internationalization system provides multi-language support with dynamic label resolution, entity-specific translations, and function-based internationalization.
-
-#### **Core i18n Function**
 ```typescript
-const { resolveLabel } = useI18n();
+import { setupEpisodeFormCustomization } from "./episodeFormCustomization";
+import { setupSerieFormCustomization } from "./serieFormCustomization";
+import { setupI18n } from "./i18nSetup";
+import { setupColumnRenderers } from "./columnRenderersSetup";
+import { setupSeasonStateMachine } from "./seasonStateMachineExample";
 
-// Basic usage
-resolveLabel(
-  keys: string[],                    // Array of fallback keys
-  context?: Record<string, unknown>, // Context variables for interpolation
-  fallback?: string                  // Default fallback text
-): string
-```
-
-#### **Label Resolution Strategy**
-The system uses a multi-level fallback strategy for robust label resolution:
-
-1. **Entity-Specific Keys**: `entity.{entityType}.{fieldName}`
-2. **Generic Field Keys**: `{fieldName}`
-3. **Fallback Text**: Direct string fallback
-
-#### **Entity and Field Labeling**
-```typescript
-// Entity labels
-resolveLabel(["entity.serie.single"], { entity: "series" }, "Serie")           // "Serie"
-resolveLabel(["entity.serie.plural"], { entity: "series" }, "Series")          // "Series"
-resolveLabel(["entity.episode.single"], { entity: "episodes" }, "Episode")     // "Episode"
-
-// Field labels
-resolveLabel(["serie.name"], { entity: "series", field: "name" }, "Name")      // "Nombre" (ES) / "Name" (EN)
-resolveLabel(["serie.description"], { entity: "series", field: "description" }, "Description")
-resolveLabel(["episode.date"], { entity: "episodes", field: "date" }, "Date")
-
-// Form labels
-resolveLabel(["form.create"], { entity: "series" }, "Create")                  // "Crear" (ES) / "Create" (EN)
-resolveLabel(["form.edit"], { entity: "series" }, "Edit")                      // "Editar" (ES) / "Edit" (EN)
-resolveLabel(["form.view"], { entity: "series" }, "View")                      // "Ver" (ES) / "View" (EN)
-```
-
-
-
-##### **2. Public i18n Files (public/i18n/)**
-These are JSON files served statically and can be loaded dynamically for runtime language switching.
-
-```json
-// public/i18n/en.json
-{
-  "entity.serie.single": "Serie",
-  "entity.serie.plural": "Series",
-  "entity.season.single": "Season",
-  "entity.season.plural": "Seasons",
-  "entity.episode.single": "Episode",
-  "entity.episode.plural": "Episodes",
-  "entity.director.single": "Director",
-  "entity.director.plural": "Directors",
-  "entity.star.single": "Star",
-  "entity.star.plural": "Stars",
-  "entity.category.single": "Category",
-  "entity.category.plural": "Categories",
-  "entity.movie.single": "Movie",
-  "entity.movie.plural": "Movies",
-
-  "serie.name": "Name",
-  "serie.categories": "Categories",
-  "serie.director": "Director",
-  "serie.seasons": "Seasons",
-  "serie.stars": "Stars",
-
-  "director.name": "Name",
-  "director.country": "Country",
-
-  "season.number": "Number",
-  "season.year": "Year",
-  "season.state": "State",
-  "season.serie": "Series",
-
-  "episode.number": "Number",
-  "episode.name": "Name",
-  "episode.date": "Air Date",
-  "episode.season": "Season",
-
-  "star.name": "Name",
-  "star.country": "Country",
-
-  "assignedStarAndSerie.id": "ID",
-  "assignedStarAndSerie.serie": "Series",
-  "assignedStarAndSerie.star": "Star",
+export const setupConfigurations = () => {
+  // Setup i18n labels
+  setupI18n();
   
-  "collection.loading": "Loading...",
-  "collection.error": "Error loading data",
-  "collection.noData": "No data available",
+  // Setup custom column renderers
+  setupColumnRenderers();
   
-  "grid.filter.columns": "Columns",
-  "grid.filter.operator": "Operator",
-  "grid.filter.value": "Value",
-  "grid.filter.contains": "contains",
-  "grid.filter.equals": "equals",
-  "grid.filter.startsWith": "starts with",
-  "grid.filter.endsWith": "ends with",
-  "grid.filter.is": "is",
-  "grid.filter.not": "not",
-  "grid.filter.isAnyOf": "is any of",
-  "grid.filter.greaterThan": "greater than",
-  "grid.filter.greaterThanOrEqual": "greater than or equal to",
-  "grid.filter.lessThan": "less than",
-  "grid.filter.lessThanOrEqual": "less than or equal to",
-
-  "form.create": "Create",
-  "form.edit": "Edit",
-  "form.view": "View",
-  "form.cancel": "Cancel",
-  "form.update": "Update",
-  "form.submit": "Submit",
-  "form.required": "This field is required",
-  "form.invalidNumber": "Must be a valid number",
-  "form.invalidDate": "Must be a valid date",
-  "form.successCreated": "Entity created successfully!",
-  "form.successUpdated": "Entity updated successfully!",
-  "form.errorOccurred": "An error occurred",
-  "form.searchAnother": "Search for another...",
-  "form.searchObject": "Search {entity}...",
-  "form.addField": "Add {field}",
-  "form.selectField": "Select {field}",
-
-  "actions.view": "View",
-  "actions.edit": "Edit",
-  "actions.column": "Actions",
-  "button.create": "Create"
-}
-
-// public/i18n/es.json
-{
-  "entity.serie.single": "Serie",
-  "entity.serie.plural": "Series",
-  "entity.season.single": "Temporada",
-  "entity.season.plural": "Temporadas",
-  "entity.episode.single": "Episodio",
-  "entity.episode.plural": "Episodios",
-  "entity.director.single": "Director",
-  "entity.director.plural": "Directores",
-  "entity.star.single": "Actor",
-  "entity.star.plural": "Actores",
-  "entity.category.single": "Categoría",
-  "entity.category.plural": "Categorías",
-  "entity.movie.single": "Película",
-  "entity.movie.plural": "Películas",
-
-  "serie.name": "Título",
-  "serie.categories": "Categorías",
-  "serie.director": "Director",
-  "serie.seasons": "Temporadas",
-  "serie.stars": "Actores",
-
-  "director.name": "Nombre",
-  "director.country": "País",
-
-  "season.number": "N°",
-  "season.year": "Año",
-  "season.state": "Estado",
-  "season.serie": "Serie",
-
-  "episode.number": "N°",
-  "episode.name": "Nombre",
-  "episode.date": "Fecha",
-  "episode.season": "Temporada",
-
-  "star.name": "Nombre",
-  "star.country": "País",
-
-  "assignedStarAndSerie.id": "ID",
-  "assignedStarAndSerie.serie": "Serie",
-  "assignedStarAndSerie.star": "Estrella",
+  // Setup form customizations
+  setupEpisodeFormCustomization();
+  setupSerieFormCustomization();
   
-  "collection.loading": "Cargando...",
-  "collection.error": "Error al cargar datos",
-  "collection.noData": "No hay datos disponibles",
-  
-  "grid.filter.columns": "Columnas",
-  "grid.filter.operator": "Operador",
-  "grid.filter.value": "Valor",
-  "grid.filter.contains": "contiene",
-  "grid.filter.equals": "igual a",
-  "grid.filter.startsWith": "empieza con",
-  "grid.filter.endsWith": "termina con",
-  "grid.filter.is": "es",
-  "grid.filter.not": "no es",
-  "grid.filter.isAnyOf": "cualquiera de",
-  "grid.filter.greaterThan": "mayor que",
-  "grid.filter.greaterThanOrEqual": "mayor o igual que",
-  "grid.filter.lessThan": "menor que",
-  "grid.filter.lessThanOrEqual": "menor o igual que",
-
-  "form.create": "Crear",
-  "form.edit": "Editar",
-  "form.view": "Ver",
-  "form.cancel": "Cancelar",
-  "form.update": "Actualizar",
-  "form.submit": "Enviar",
-  "form.required": "Este campo es obligatorio",
-  "form.invalidNumber": "Debe ser un número válido",
-  "form.invalidDate": "Debe ser una fecha válida",
-  "form.successCreated": "¡Entidad creada exitosamente!",
-  "form.successUpdated": "¡Entidad actualizada exitosamente!",
-  "form.errorOccurred": "Ocurrió un error",
-  "form.searchAnother": "Buscar otro...",
-  "form.searchObject": "Buscar {entity}...",
-  "form.addField": "Agregar {field}",
-  "form.selectField": "Seleccionar {field}",
-
-  "actions.view": "Ver",
-  "actions.edit": "Editar",
-  "actions.column": "Acciones",
-  "button.create": "Crear"
-}
-```
-
-#### **Public i18n File Benefits**
-
-##### **1. Runtime Language Switching**
-- **Dynamic loading** of language files without rebuilding
-- **User preference** persistence across sessions
-- **Automatic locale detection** from browser settings
-
-##### **2. Static File Serving**
-- **JSON files** served from public folder
-- **Automatic loading** when locale changes
-- **Error handling** with graceful fallbacks
-
-#### **How Public i18n Files Work in This Project**
-
-The project automatically loads JSON translation files from the `public/i18n/` folder based on the user's locale. Here's how it works:
-
-##### **1. Automatic Loading**
-The `I18nProvider` automatically fetches the appropriate language file when the locale changes:
-
-```typescript
-// From src/lib/i18n.tsx
-React.useEffect(() => {
-  // Load JSON labels from public folder
-  fetch(`/i18n/${locale}.json`)
-    .then(async (res) => (res.ok ? res.json() : {}))
-    .then((json) => {
-      if (!cancelled && json && typeof json === "object") 
-        setStringLabels(json as Record<string, string>);
-    })
-    .catch(() => {
-      if (!cancelled) setStringLabels({});
-    });
-}, [locale]);
-```
-
-##### **2. Current File Structure**
-```
-public/
-└── i18n/
-    ├── en.json          # English translations
-    └── es.json          # Spanish translations
-```
-
-##### **3. Translation Key Format**
-The project uses dot-notation keys for translations:
-
-```json
-{
-  "entity.serie.single": "Serie",
-  "entity.serie.plural": "Series",
-  "serie.name": "Name",
-  "serie.director": "Director",
-  "form.create": "Create",
-  "form.required": "This field is required"
-}
-```
-
-##### **4. Locale Detection**
-The system automatically detects the user's preferred language:
-- **Browser language** preference
-- **Environment variable** `NEXT_PUBLIC_LOCALE`
-- **Fallback** to English ("en")
-
-#### **Function-Based Labels with registerFunctionLabels**
-
-The project supports both static JSON translations and dynamic function-based labels through the `registerFunctionLabels` system:
-
-##### **1. Function-Based Label Registration**
-```typescript
-// src/i18n/en.ts
-import { registerFunctionLabels, type LabelValue } from "@/lib/i18n";
-
-export const labels: Record<string, LabelValue> = {
-  // Dynamic labels with context
-  "serie.name": "Title", // Override default "Name"
-  "season.year": (ctx) => `Year (${ctx.entity})`, // Dynamic with context
-  "episode.date": (ctx) => `Air Date for ${ctx.entity}`,
-};
-
-// Register on load
-registerFunctionLabels("en", labels);
-```
-
-##### **2. LabelValue Types**
-```typescript
-type LabelValue = string | ((ctx: LabelContext) => string);
-
-type LabelContext = { 
-  entity: string; 
-  field?: string 
+  // Setup state machines
+  setupSeasonStateMachine();
 };
 ```
 
-##### **3. Context-Aware Labels**
-```typescript
-// Function-based labels receive context
-"season.year": (ctx) => `Year (${ctx.entity})`,
-// When used: ctx.entity = "season" → "Year (season)"
-
-// Static labels work as before
-"serie.name": "Title"
-```
-
-#### **Required i18n Keys for EntityForm and EntityTable**
-
-Based on the actual usage in the codebase, here are the required translation keys:
-
-##### **1. Entity Labels (Required)**
-```json
-{
-  "entity.serie.single": "Serie",
-  "entity.serie.plural": "Series",
-  "entity.season.single": "Season", 
-  "entity.season.plural": "Seasons",
-  "entity.episode.single": "Episode",
-  "entity.episode.plural": "Episodes",
-  "entity.director.single": "Director",
-  "entity.director.plural": "Directors",
-  "entity.star.single": "Star",
-  "entity.star.plural": "Stars",
-  "entity.category.single": "Category",
-  "entity.category.plural": "Categories"
-}
-```
-
-##### **2. Field Labels (Required)**
-```json
-{
-  "serie.name": "Name",
-  "serie.categories": "Categories",
-  "serie.director": "Director",
-  "serie.seasons": "Seasons",
-  "serie.stars": "Stars",
-  
-  "director.name": "Name",
-  "director.country": "Country",
-  
-  "season.number": "Number",
-  "season.year": "Year",
-  "season.state": "State",
-  "season.serie": "Series",
-  
-  "episode.number": "Number",
-  "episode.name": "Name",
-  "episode.date": "Air Date",
-  "episode.season": "Season",
-  
-  "star.name": "Name",
-  "star.country": "Country"
-}
-```
-
-##### **3. Form Labels (Required)**
-```json
-{
-  "form.create": "Create",
-  "form.edit": "Edit", 
-  "form.view": "View",
-  "form.cancel": "Cancel",
-  "form.update": "Update",
-  "form.submit": "Submit",
-  "form.required": "This field is required",
-  "form.invalidNumber": "Must be a valid number",
-  "form.invalidDate": "Must be a valid date",
-  "form.successCreated": "Entity created successfully!",
-  "form.successUpdated": "Entity updated successfully!",
-  "form.errorOccurred": "An error occurred",
-  "form.searchAnother": "Search for another...",
-  "form.searchObject": "Search {entity}...",
-  "form.addField": "Add {field}",
-  "form.selectField": "Select {field}"
-}
-```
-
-##### **4. Collection Labels (Required)**
-```json
-{
-  "collection.loading": "Loading...",
-  "collection.error": "Error loading data",
-  "collection.noData": "No data available"
-}
-```
-
-##### **5. Grid/Table Labels (Required)**
-```json
-{
-  "grid.filter.columns": "Columns",
-  "grid.filter.operator": "Operator",
-  "grid.filter.value": "Value",
-  "grid.filter.contains": "contains",
-  "grid.filter.equals": "equals",
-  "grid.filter.startsWith": "starts with",
-  "grid.filter.endsWith": "ends with",
-  "grid.filter.is": "is",
-  "grid.filter.not": "not",
-  "grid.filter.isAnyOf": "is any of",
-  "grid.filter.greaterThan": "greater than",
-  "grid.filter.greaterThanOrEqual": "greater than or equal to",
-  "grid.filter.lessThan": "less than",
-  "grid.filter.lessThanOrEqual": "less than or equal to"
-}
-```
-
-##### **6. Action Labels (Required)**
-```json
-{
-  "actions.view": "View",
-  "actions.edit": "Edit",
-  "actions.column": "Actions",
-  "button.create": "Create"
-}
-```
-
-#### **Label Resolution Priority**
-
-The `resolveLabel` function tries multiple sources in order:
-
-```typescript
-const resolveLabel = (keys: string[], ctx: LabelContext, fallback: string): string => {
-  for (const key of keys) {
-    // 1. First try function-based labels (highest priority)
-    const fv = funcLabels[key];
-    if (typeof fv === "function") return fv(ctx);
-    if (typeof fv === "string") return fv;
-    
-    // 2. Then try static JSON labels
-    const sv = stringLabels[key];
-    if (typeof sv === "string") return sv;
-  }
-  // 3. Finally use fallback
-  return fallback;
-};
-```
-
-**Priority Order:**
-1. **Function-based labels** (from `registerFunctionLabels`)
-2. **Static JSON labels** (from `public/i18n/{locale}.json`)
-3. **Fallback string** (hardcoded in component)
-
-#### **Complete i18n System Example**
-
-Here's how all parts work together:
-
-##### **1. Source i18n File (src/i18n/en.ts)**
-```typescript
-import { registerFunctionLabels, type LabelValue } from "@/lib/i18n";
-
-export const labels: Record<string, LabelValue> = {
-  // Override default labels with custom ones
-  "serie.name": "Title", // Instead of "Name"
-  "episode.date": (ctx) => `Air Date for ${ctx.entity}`, // Dynamic
-};
-
-registerFunctionLabels("en", labels);
-```
-
-##### **2. Public i18n File (public/i18n/en.json)**
-```json
-{
-  "entity.serie.single": "Serie",
-  "entity.serie.plural": "Series",
-  "serie.name": "Name", // Will be overridden by function-based label
-  "serie.director": "Director",
-  "form.create": "Create",
-  "form.required": "This field is required"
-}
-```
-
-##### **3. Component Usage**
-```typescript
-import { useI18n } from '@/lib/i18n';
-
-export default function EntityForm({ listField, action }) {
-  const { resolveLabel } = useI18n();
-  
-  // Dynamic entity name resolution
-  const entityName = resolveLabel([
-    `entity.${listField}.${action === 'create' ? 'single' : 'plural'}`
-  ], { entity: listField }, listField);
-  
-  // Dynamic field labels
-  const getFieldLabel = (fieldName: string): string => {
-    return resolveLabel([
-      `${listField}.${fieldName}`,  // serie.name, episode.date
-      fieldName                      // name, date (fallback)
-    ], { entity: listField, field: fieldName }, fieldName);
-  };
-  
-  // Form action labels
-  const actionLabel = resolveLabel([
-    `form.${action}`                // form.create, form.edit, form.view
-  ], { entity: listField }, action);
-  
-  return (
-    <div>
-      <h1>{actionLabel} {entityName}</h1>
-      {/* Form fields with dynamic labels */}
-    </div>
-  );
-}
-```
-
-#### **Advanced i18n Features**
-- **Pluralization**: Support for different plural forms
-- **Gender Agreement**: Context-aware gender matching
-- **Number Formatting**: Locale-specific number and date formats
-- **Currency Support**: Localized currency display
-- **RTL Support**: Right-to-left language support
-
-#### **Column Renderer Types**
-```typescript
-type ColumnRenderer = (params: {
-  entity: string;           // Entity type name (e.g., "episode")
-  field: string;            // Field name (e.g., "date")
-  row: Record<string, unknown>; // Row data
-  value: unknown;           // Field value
-  gridParams: any;          // MUI DataGrid parameters
-}) => React.ReactElement;
-
-// Registration function
-function registerColumnRenderer(key: string, renderer: ColumnRenderer): void;
-```
-
-#### **Column Customization Examples**
-
-##### **Date Column Renderer**
-```typescript
-import { registerColumnRenderer } from '@/lib/columnRenderers';
-
-// Register a custom date renderer
-registerColumnRenderer("episode.date", ({ value }) => {
-  if (!value) return <span>-</span>;
-  
-  const date = new Date(String(value));
-  const formattedDate = date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-  
-  return (
-    <span style={{ 
-      color: date < new Date() ? '#4caf50' : '#ff9800',
-      fontWeight: '500'
-    }}>
-      {formattedDate}
-    </span>
-  );
-});
-```
-
-##### **Status Column Renderer**
-```typescript
-registerColumnRenderer("episode.status", ({ value }) => {
-  const status = String(value).toLowerCase();
-  
-  const statusConfig = {
-    'published': { color: '#4caf50', label: 'Published' },
-    'draft': { color: '#ff9800', label: 'Draft' },
-    'archived': { color: '#9e9e9e', label: 'Archived' }
-  };
-  
-  const config = statusConfig[status] || { color: '#f44336', label: 'Unknown' };
-  
-  return (
-    <Chip
-      label={config.label}
-      size="small"
-      sx={{ 
-        backgroundColor: config.color,
-        color: 'white',
-        fontWeight: '500'
-      }}
-    />
-  );
-});
-```
-
-##### **Complex Object Column Renderer**
-```typescript
-registerColumnRenderer("episode.director", ({ value }) => {
-  if (!value || typeof value !== 'object') return <span>-</span>;
-  
-  const director = value as { name: string; country: string };
-  
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-      <Typography variant="body2" fontWeight="500">
-        {director.name}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
-        {director.country}
-      </Typography>
-    </Box>
-  );
-});
-```
-
-#### **Field-Level Customization**
-```typescript
-type FieldCustomization = {
-  size?: FieldSize; // Material-UI grid sizing
-  enabled?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
-  visible?: boolean | ((fieldName: string, value: unknown, formData: Record<string, unknown>) => boolean);
-  order?: number;  // Display order
-  onChange?: (
-    fieldName: string,
-    value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown },
-    formData: Record<string, unknown>,
-    setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
-    setFieldVisible: (fieldName: string, visible: boolean) => void,
-    setFieldEnabled: (fieldName: string, enabled: boolean) => void
-  ) => { value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }; error?: string };
-};
-```
-
-#### **Customization Examples**
+#### **Form Customization Examples**
 
 ##### **Basic Field Customization**
 ```typescript
-// Field visibility based on business logic
-const customization = {
-  "episode.season": {
-    visible: (fieldName, value, formData) => {
-      // Only show season field if series has seasons
-      return formData.series?.seasons?.length > 0;
+import { registerFormCustomization } from '@simtlix/simfinity-fe-components';
+
+export function setupEpisodeFormCustomization() {
+  registerFormCustomization("episode", "create", {
+    fieldsCustomization: {
+      name: {
+        size: { xs: 12, sm: 6, md: 6 }, // Half width
+        order: 1,
+        onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled, parentFormAccess) => {
+          // Custom logic: enable other fields when name has value
+          if (value && String(value).trim() !== '') {
+            setFieldEnabled('number', true);
+            setFieldEnabled('season', true);
+            setFieldData('number', 1);
+          } else {
+            setFieldEnabled('number', false);
+            setFieldEnabled('season', false);
+            setFieldData('number', "");
+            setFieldData('season', "");
+          }
+          
+          // Note: parentFormAccess is undefined for main entity fields
+          // It's only available in collection item context
+          return { value, error: undefined };
+        }
+      },
+      number: {
+        size: { xs: 12, sm: 6, md: 6 },
+        order: 2,
+        // Dynamic enabled state based on form data
+        enabled: (fieldName, value, formData) => {
+          const nameValue = formData.name?.value;
+          return !!(nameValue && String(nameValue).trim() !== '');
+        }
+      }
     }
-  },
-  
-  // Field enable/disable logic
-  "episode.number": {
-    enabled: (fieldName, value, formData) => {
-      // Disable episode number if season is locked
-      return !formData.season?.locked;
+  });
+}
+```
+
+##### **Custom Renderer for Fields**
+```typescript
+export function setupSerieFormCustomization() {
+  registerFormCustomization("serie", "create", {
+    fieldsCustomization: {
+      description: {
+        size: { xs: 12 },
+        order: 3,
+        customRenderer: (field, customizationActions, handleFieldChange, disabled) => {
+          return (
+            <RichTextEditor
+              value={field.value as string || ''}
+              onChange={(value) => handleFieldChange(field.name, value)}
+              disabled={disabled}
+              error={field.error}
+            />
+          );
+        }
+      }
     }
-  },
+  });
+}
+```
+
+##### **Custom Embedded Renderer**
+```typescript
+export function setupSerieFormCustomization() {
+  registerFormCustomization("serie", "create", {
+    fieldsCustomization: {
+      // Embedded section customization
+      director: {
+        size: { xs: 12, sm: 6, md: 6 }, // Section size
+        order: 4,
+        customEmbeddedRenderer: (
+          field,
+          customizationActions,
+          handleEmbeddedFieldChange,
+          disabled,
+          formData
+        ) => {
+          const nameField = field.embeddedFields?.find(f => f.name.endsWith('.name'));
+          const countryField = field.embeddedFields?.find(f => f.name.endsWith('.country'));
   
-  // Custom field sizing
-  "episode.name": {
-    size: { xs: 12, sm: 8, md: 6 } // Responsive grid sizing
-  },
+  return (
+            <Paper elevation={2} sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>🎬 Director Information</Typography>
+              <TextField
+                label="Director Name"
+                value={(formData[nameField?.name || ''] as { value?: string })?.value || ''}
+                onChange={(e) => handleEmbeddedFieldChange(field.name, 'name', e.target.value)}
+                disabled={disabled}
+                fullWidth
+              />
+              <CountrySelector
+                value={(formData[countryField?.name || ''] as { value?: string })?.value || ''}
+                onChange={(value) => handleEmbeddedFieldChange(field.name, 'country', value)}
+                disabled={disabled}
+              />
+            </Paper>
+          );
+        }
+      }
+    }
+  });
+}
+```
+
+##### **Custom Collection Renderer**
+```typescript
+export function setupCastCustomization() {
+  registerFormCustomization("serie", "edit", {
+    fieldsCustomization: {
+      cast: {
+        size: { xs: 12 },
+        order: 5,
+        customCollectionRenderer: (
+          collectionFieldName,
+          parentFormAccess,
+          collectionState,
+          onCollectionStateChange,
+          parentEntityId,
+          isEditMode
+        ) => {
+          const allItems = [
+            ...(collectionState.added || []),
+            ...(collectionState.modified || []),
+            ...(collectionState.original || [])
+          ].filter(item => item.__status !== 'deleted');
+          
+          const handleAddActor = () => {
+            const newActor = {
+              id: `temp-${Date.now()}`,
+              name: 'New Actor',
+              role: 'Character',
+              __status: 'added'
+            };
+            
+            onCollectionStateChange({
+              ...collectionState,
+              added: [...(collectionState.added || []), newActor]
+            });
+          };
   
-  // Field ordering
-  "episode.date": {
-    order: 3 // Display as third field
-  }
+  return (
+            <Box>
+              <Typography variant="h6">Cast</Typography>
+              <List>
+                {allItems.map((actor) => (
+                  <ListItem key={actor.id}>
+                    <ListItemText primary={actor.name} secondary={actor.role} />
+                    <IconButton onClick={() => handleRemoveActor(actor)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </ListItem>
+                ))}
+              </List>
+              <Button onClick={handleAddActor}>Add Cast Member</Button>
+    </Box>
+  );
+        }
+      }
+    }
+  });
+}
+```
+
+##### **Entity-Level Callbacks (beforeSubmit, onSuccess, onError)**
+```typescript
+export function setupEpisodeCallbacks() {
+  registerFormCustomization("episode", "create", {
+    fieldsCustomization: {},
+    beforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
+      // Validate episode number
+      const episodeNumber = formData.number?.value;
+      if (episodeNumber === 1) {
+        actions.setFormMessage({
+          type: 'warning',
+          message: 'Episode 1 is typically the pilot. Please verify this is correct.'
+        });
+      }
+      
+      // Auto-generate description if empty
+      if (!formData.description?.value) {
+        const name = formData.name?.value;
+        if (name) {
+          actions.setFieldData('description', `Episode ${episodeNumber}: ${name}`);
+        }
+      }
+      
+      // Validate collection changes
+      if (collectionChanges.guestStars) {
+        const { added, modified } = collectionChanges.guestStars;
+        if (added.length + modified.length > 5) {
+          actions.setFormMessage({
+            type: 'warning',
+            message: 'You have many guest stars. Consider if this is a special episode.'
+          });
+        }
+      }
+      
+      // Return true to continue, false to cancel submission
+      return true;
+    },
+    onSuccess: async (result) => {
+      console.log('Episode created successfully:', result);
+      return {
+        message: 'Episode created successfully! Would you like to add another?',
+        navigateTo: undefined, // Stay on current page
+        action: () => console.log('Custom success action')
+      };
+    },
+    onError: async (error, formData, actions) => {
+      console.error('Error creating episode:', error);
+      
+      if (error.message.includes('duplicate')) {
+        actions.setFormMessage({
+          type: 'error',
+          message: 'An episode with this number already exists in this season.'
+        });
+        actions.setFieldData('number', '');
+      } else {
+        actions.setFormMessage({
+          type: 'error',
+          message: `Failed to create episode: ${error.message}`
+        });
+      }
+    }
+  });
+}
+```
+
+##### **Collection Field Customization**
+```typescript
+export function setupSeasonCollectionCustomization() {
+  registerFormCustomization("serie", "edit", {
+    fieldsCustomization: {
+      seasons: {
+        size: { xs: 12 },
+        order: 2,
+        
+        // Delete callback - executed when delete button is pressed
+        onDelete: async (item, setMessage) => {
+          if (item.episodeCount > 0) {
+            setMessage({
+              type: 'error',
+              message: `Cannot delete season "${item.name}" - it has episodes`
+            });
+            return false; // Cancel deletion
+          }
+          return true; // Allow deletion
+        },
+        
+        // Edit mode customization for collection items
+        onEdit: {
+          fieldsCustomization: {
+            name: {
+              size: { xs: 12, sm: 6 },
+              order: 1,
+              onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled, parentFormAccess) => {
+                // Can access parent form data
+                if (parentFormAccess) {
+                  const seriesTitle = parentFormAccess.parentFormData.title?.value;
+                  console.log('Editing season for series:', seriesTitle);
+                }
+                return { value, error: undefined };
+              }
+            }
+          },
+          onSubmit: async (item, setFieldData, formData, setFieldVisible, setFieldEnabled, setMessage, parentFormAccess) => {
+            // Validate before saving
+            if (!item.name?.trim()) {
+              setMessage({
+            type: 'error',
+                message: 'Season name is required'
+              });
+              return false;
+            }
+            
+            // Auto-generate slug
+            if (!item.slug) {
+              const slug = String(item.name).toLowerCase().replace(/\s+/g, '-');
+              setFieldData('slug', slug);
+            }
+            
+            return true;
+          }
+        },
+        
+        // Create mode customization for collection items
+        onCreate: {
+          fieldsCustomization: {
+            number: {
+              size: { xs: 12, sm: 6 },
+              order: 1
+            }
+          },
+          onSubmit: async (item, setFieldData, formData, setFieldVisible, setFieldEnabled, setMessage, parentFormAccess) => {
+            // Auto-increment season number
+            if (!item.number) {
+              const nextNumber = getNextSeasonNumber();
+              setFieldData('number', nextNumber);
+            }
+            return true;
+          }
+        }
+      }
+    }
+  });
+}
+```
+
+### 📊 **Column Customization System**
+
+Custom column renderers for specialized data display in EntityTable:
+
+```typescript
+import { registerColumnRenderer } from "@simtlix/simfinity-fe-components";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+
+export const setupColumnRenderers = () => {
+  // Custom date renderer with icon
+  registerColumnRenderer("episode.date", ({ value }) => {
+    if (value == null) return "";
+    const d = new Date(value as string | number);
+    const text = isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <CalendarMonthIcon fontSize="small" />
+        {text}
+      </span>
+    );
+  });
+
+  // Custom renderer with context
+  registerColumnRenderer("season.year", ({ value, rowData }) => {
+    if (value == null) return "";
+    return (
+      <span style={{ fontWeight: "bold", color: "#1976d2" }}>
+        Year {value}
+      </span>
+    );
+  });
 };
 ```
 
-##### **Complete Episode Form Customization**
-```typescript
-import { registerFormCustomization } from '@/lib/formCustomization';
+### 🌍 **Internationalization (i18n) System**
 
-export function setupEpisodeFormCustomization() {
-  // Register customization for create mode
-  registerFormCustomization("episode", "create", {
-    name: {
-      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices
-      order: 1, // First in the row
-      onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
-        // If name has a value, enable number and season fields and set number to 1
-        if (value && String(value).trim() !== '') {
-          setFieldEnabled('number', true);
-          setFieldEnabled('season', true);
-          setFieldData('number', 1);
-        } else {
-          // If name is empty, disable number and season fields and clear their values
-          setFieldEnabled('number', false);
-          setFieldEnabled('season', false);
-          setFieldData('number', "");
-          setFieldData('season', "");
-        }
-        
-        return { value, error: undefined };
-      }
-    },
-    
-    number: {
-      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices
-      order: 2, // Second in the row (same row as name)
-      // Dynamic enabled: only enabled when name has a value
-      enabled: (fieldName, value, formData) => {
-        const formDataTyped = formData as Record<string, { value?: unknown }>;
-        const nameValue = formDataTyped.name?.value;
-        return !!(nameValue && String(nameValue).trim() !== '');
-      }
-    },
-    
-    date: {
-      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices (second row)
-      order: 3, // Third in order (second row)
-    },
-    
-    season: {
-      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices (second row)
-      order: 4, // Fourth in order (second row, at the end)
-      // Dynamic enabled: only enabled when name has a value
-      enabled: (fieldName, value, formData) => {
-        const formDataTyped = formData as Record<string, { value?: unknown }>;
-        const nameValue = formDataTyped.name?.value;
-        return !!(nameValue && String(nameValue).trim() !== '');
-      }
-    }
-  });
+The project supports two types of internationalization:
 
-  // Register customization for edit mode (different behavior)
-  registerFormCustomization("episode", "edit", {
-    name: { size: { xs: 12, sm: 6, md: 6 }, order: 1 },
-    number: { size: { xs: 12, sm: 6, md: 6 }, order: 2, enabled: true },
-    date: { size: { xs: 12, sm: 6, md: 6 }, order: 3 },
-    season: { size: { xs: 12, sm: 6, md: 6 }, order: 4, enabled: true }
-  });
-}
-
-// Call this function in your app initialization
-// setupEpisodeFormCustomization();
-```
-
-### 🔧 **Advanced Features**
-
-#### **Collection Management**
-- **Add Items**: Create new collection items during entity creation
-- **Edit Items**: Modify existing collection items with change tracking
-- **Delete Items**: Mark items for deletion with restore capability
-- **Bulk Operations**: Manage multiple items efficiently
-
-#### **Embedded Object Support**
-- **Nested Validation**: Individual field validation within objects
-- **Accordion Layout**: Collapsible sections for better organization
-- **Custom Sizing**: Flexible field layout within sections
-- **Recursive Support**: Handle deeply nested structures
-
-#### **State Machine Support**
-- **Entity State Management**: Handle complex state transitions for entities
-- **Dynamic Actions**: Show available actions based on current entity state
-- **Server Validation**: Query server data for business rule validation
-- **Lifecycle Callbacks**: Execute custom logic before/after state transitions
-- **Internationalization**: Support for state machine action and state labels
-- **Read-only Fields**: Automatically exclude state machine fields from mutations
-
-##### **State Machine Registration**
-
-Register a state machine for an entity type using `registerEntityStateMachine`:
-
-```typescript
-import { registerEntityStateMachine } from '@/lib/stateMachineRegistry';
-
-export function setupSeasonStateMachine() {
-  registerEntityStateMachine("season", {
-    actions: {
-      activate: {
-        mutation: 'activate_season',
-        from: 'SCHEDULED',
-        to: 'ACTIVE',
-        onBeforeSubmit: async (formData, collectionChanges, transformedData, actions) => {
-          // Validate business rules before transition
-          console.log('Before activating season:', { formData, collectionChanges, transformedData });
-          
-          // Example: Check if season has episodes from collection changes
-          const episodesChanges = collectionChanges.episodes || { added: [], modified: [], deleted: [] };
-          const episodesCount = episodesChanges.added.length + Object.keys(episodesChanges.modified).length;
-          
-          if (episodesCount === 0) {
-            actions.setFormMessage({
-              type: 'error',
-              message: 'Cannot activate season without episodes'
-            });
-            return { shouldProceed: false, error: 'Season must have episodes' };
-          }
-          
-          return { shouldProceed: true };
-        },
-        onSuccess: async (result, formData, collectionChanges, transformedData, actions) => {
-          actions.setFormMessage({
-            type: 'success',
-            message: 'Season activated successfully!'
-          });
-        },
-        onError: async (error, formData, collectionChanges, transformedData, actions) => {
-          actions.setFormMessage({
-            type: 'error',
-            message: `Failed to activate season: ${error.message}`
-          });
-        }
-      },
-      finalize: {
-        mutation: 'finalize_season',
-        from: 'ACTIVE',
-        to: 'FINISHED',
-        // ... similar callback structure
-      }
-    }
-  });
-}
-```
-
-##### **EntityForm Integration**
-
-The EntityForm automatically detects registered state machines and:
-
-1. **Shows Actions Button**: Displays an "Actions" button in edit mode for entities with state machines
-2. **Dynamic Menu**: Shows available actions based on current entity state
-3. **Field Management**: Excludes state machine fields from create forms and mutations
-4. **Read-only Display**: Shows state machine fields as read-only in edit/view modes
-5. **Form Reset**: Refreshes entity data after successful state transitions
-
-##### **State Machine Field Configuration**
-
-Mark fields as state machine managed in your GraphQL schema:
-
-```graphql
-type Season {
-  id: ID!
-  name: String!
-  state: String! @extensions(stateMachine: true)
-  # ... other fields
-}
-```
-
-##### **Internationalization Support**
-
-Add state machine labels to your i18n files:
+#### **1. Static JSON Files (public/i18n/)**
+**Location**: `public/i18n/en.json`, `public/i18n/es.json`
+**Usage**: Static labels for entities, fields, and common UI elements
 
 ```json
 {
-  "stateMachine.season.action.activate": "Activate",
-  "stateMachine.season.action.finalize": "Finalize",
-  "stateMachine.season.state.SCHEDULED": "Scheduled",
-  "stateMachine.season.state.ACTIVE": "Active",
-  "stateMachine.season.state.FINISHED": "Finished",
-  "stateMachine.actions": "Actions"
+  "entity.serie.single": "Serie",
+  "entity.serie.plural": "Series",
+  "serie.name": "Name",
+  "serie.description": "Description",
+  "form.create": "Create",
+  "form.edit": "Edit",
+  "form.view": "View",
+  "grid.filter.contains": "contains",
+  "grid.filter.equals": "equals"
 }
 ```
 
-##### **Callback Parameters**
+#### **2. Function-based Labels (src/i18n/)**
+**Location**: `src/i18n/en.ts`, `src/i18n/es.ts`
+**Usage**: Dynamic labels with context and custom column renderers
 
-State machine callbacks receive these parameters:
+```typescript
+import { registerFunctionLabels, registerColumnRenderer } from "@simtlix/simfinity-fe-components";
 
-- **formData**: Current form field values
-- **collectionChanges**: Changes to collection fields (added, modified, deleted)
-- **transformedData**: Processed entity data ready for mutation
-- **actions**: Callback actions for form manipulation:
-  - `setFieldData(fieldName, value)` - Update form field values
-  - `setFieldVisible(fieldName, visible)` - Control field visibility
-  - `setFieldEnabled(fieldName, enabled)` - Control field enabled state
-  - `setCollectionChanges(fieldName, changes)` - Update collection state
-  - `setFormMessage(message)` - Show success/error messages
-  - `setError(errorMessage)` - Display error messages
+export const labels: Record<string, LabelValue> = {
+  // Dynamic labels with context
+  "season.year": (ctx) => `Year (${ctx.entity})`,
+  "serie.name": "Title", // Override JSON labels
+};
 
-##### **State Machine Benefits**
+// Register function-based labels
+registerFunctionLabels("en", labels);
 
-- **Business Logic Separation**: Keep state transition logic separate from UI
-- **Server-side Validation**: Query actual data for validation rules
-- **User Experience**: Clear feedback and proper error handling
-- **Flexibility**: Support any number of states and transitions
-- **Maintainability**: Centralized state machine configuration
+// Register custom column renderers
+registerColumnRenderer("episode.date", ({ value }) => {
+  if (value == null) return "";
+  const d = new Date(value as string | number);
+  const text = isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
+  return React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } },
+    React.createElement(CalendarMonthIcon, { fontSize: "small" }),
+    text
+  );
+});
+```
 
-#### **GraphQL Integration**
-- **Dynamic Queries**: Automatically generated based on schema
-- **Mutation Support**: Create, update, and delete operations
-- **Cache Management**: Apollo Client integration with invalidation
-- **Schema Introspection**: Real-time field discovery
+#### **Label Resolution Strategy**
+```typescript
+// Multi-level fallback system
+const getFieldLabel = (fieldName: string): string => {
+  const entityKey = listField.slice(0, -1); // Remove 's' from end
+  const fieldKey = `${entityKey}.${fieldName}`;
+  
+  return resolveLabel([
+    fieldKey,           // entity.field (e.g., "serie.name")
+    fieldName,          // field name as fallback
+  ], { entity: listField, field: fieldName }, fieldName);
+};
+```
 
-#### **Internationalization (i18n)**
-- **Multi-Language**: English and Spanish support
-- **Dynamic Labels**: Field labels resolved from i18n system
-- **Context-Aware**: Entity and field-specific translations
-- **Fallback Support**: Graceful degradation for missing keys
-- **Function-Based**: Dynamic label resolution with parameters
-- **Entity-Specific**: Automatic entity type detection and labeling
+#### **Label Patterns**
+- **Entity Labels**: `entity.{entityType}.{form}` (e.g., "serie.single", "serie.plural")
+- **Field Labels**: `{entityType}.{fieldName}` (e.g., "serie.name", "serie.description")
+- **Form Labels**: `form.{action}` (e.g., "form.create", "form.edit", "form.view")
+- **Grid Labels**: `grid.filter.{type}` (e.g., "grid.filter.contains", "grid.filter.equals")
+- **State Machine Labels**: `stateMachine.{entity}.{type}.{value}` (e.g., "stateMachine.season.state.ACTIVE")
 
-#### **Column Customization**
-- **Custom Renderers**: Specialized display for different data types
-- **Dynamic Content**: React components for complex column data
-- **Responsive Design**: Mobile-friendly column layouts
-- **Integration**: Seamless integration with EntityTable
+
+
 
 ## Simfinity.js Compatibility
 
@@ -1175,28 +725,27 @@ seasons: {
 ```
 
 **Usage in CollectionFieldGrid:**
-- **Data Filtering**: Automatically filters collection data by parent entity ID
-- **Mutation Handling**: Removes connection field from collection items during mutations
-- **Query Generation**: Generates proper GraphQL queries with connection filters
+- **Parent Reference**: Automatically sets the connection field value
+- **Filtering**: Only shows items related to the parent entity
+- **Data Integrity**: Ensures proper parent-child relationships
 
 #### **3. `embedded: true` - Embedded Objects**
 ```typescript
 // In Simfinity.js type definition
 director: {
-  type: new GraphQLNonNull(directorType),
+  type: directorType,
   extensions: {
     relation: {
-      embedded: true,  // Director data stored within serie document
-      displayField: 'name'
+      embedded: true  // Treats as embedded object, not reference
     }
   }
 }
 ```
 
 **Usage in EntityForm:**
-- **Form Sections**: Renders embedded objects as collapsible accordion sections
-- **Field Validation**: Validates individual embedded fields recursively
-- **Data Structure**: Sends embedded data as direct properties in mutations
+- **Inline Editing**: Director fields appear directly in the serie form
+- **No Separate Entity**: Director data is stored within the serie record
+- **Simplified UI**: No need for object selection or separate forms
 
 ### 📺 **TV Series Management Example**
 
@@ -1211,10 +760,9 @@ const serieType = new GraphQLObjectType({
     id: { type: GraphQLID },
     name: { type: new GraphQLNonNull(GraphQLString) },
     categories: { type: new GraphQLList(GraphQLString) },
-    
-    // Embedded object - stored within serie document
+    description: { type: GraphQLString },
     director: {
-      type: new GraphQLNonNull(directorType),
+      type: directorType,
       extensions: {
         relation: {
           embedded: true,
@@ -1222,13 +770,11 @@ const serieType = new GraphQLObjectType({
         }
       }
     },
-    
-    // Collection - references separate season documents
     seasons: {
       type: new GraphQLList(seasonType),
       extensions: {
         relation: {
-          connectionField: 'serie'  // Links seasons to this serie
+          connectionField: 'serie'
         }
       }
     }
@@ -1242,14 +788,14 @@ type Serie {
   id: ID!
   name: String!
   categories: [String]
-  director: Director!  # Embedded object
-  seasons: [Season]    # Collection reference
+  description: String
+  director: Director  # Embedded object
+  seasons: [Season]   # Collection with connectionField
 }
 
 type Director {
-  id: ID!
   name: String!
-  country: String
+  country: String!
 }
 
 type Season {
@@ -1267,16 +813,7 @@ mutation AddSerie($input: serieInput!) {
   addserie(input: $input) {
     id
     name
-    director { name country }
-    seasons { number year }
-  }
-}
-
-# Update serie
-mutation UpdateSerie($input: serieInputForUpdate!) {
-  updateserie(input: $input) {
-    id
-    name
+    description
     director { name country }
     seasons { number year }
   }
@@ -1290,16 +827,7 @@ query Series {
   series {
     id
     name
-    director { name country }
-    seasons { number year }
-  }
-}
-
-# Get single serie
-query Serie($id: ID!) {
-  serie(id: $id) {
-    id
-    name
+    description
     director { name country }
     seasons { number year }
   }
@@ -1323,151 +851,115 @@ query Serie($id: ID!) {
 5. **Sorting**: Supports sorting by object display fields
 
 #### **CollectionFieldGrid Behavior**
-1. **Connection Filtering**: Uses `connectionField` to filter collection data
-2. **Data Management**: Handles added, modified, and deleted collection items
-3. **Mutation Integration**: Prepares collection data for Simfinity.js mutations
-4. **Field Cleaning**: Removes metadata fields before sending to backend
+1. **Connection Field**: Automatically sets parent entity reference
+2. **Local State Management**: Tracks added, modified, and deleted items
+3. **Schema-Driven**: Uses metadata to understand collection structure
+4. **Mutation Integration**: Generates proper collection mutations for Simfinity.js
 
-### 🎯 **Key Benefits of Simfinity.js Integration**
+### 📝 **Usage Example**
 
-- **Zero Configuration**: Forms and tables automatically adapt to schema changes
-- **Type Safety**: Full TypeScript support with generated types
-- **Consistent API**: All mutations follow Simfinity.js naming conventions
-- **Automatic Validation**: Field validation based on GraphQL schema types
-- **Real-time Updates**: Apollo Client cache management for fresh data
-- **Scalable**: Handles complex nested structures and collections automatically
+```typescript
+// In your GraphQL server (Simfinity.js)
+const serieType = new GraphQLObjectType({
+  name: 'serie',
+  fields: () => ({
+    director: {
+      type: directorType,
+      extensions: { relation: { embedded: true, displayField: 'name' } }
+    },
+    seasons: {
+      type: new GraphQLList(seasonType),
+      extensions: { relation: { connectionField: 'serie' } }
+    }
+  })
+});
 
-#### **Usage Example**
-```tsx
-// Create a new series with episodes
-<EntityForm 
-  listField="series" 
-  action="create"
-/>
+// Frontend automatically handles:
+// - Embedded director editing in the same form
+// - Season collection management with parent reference
+// - Proper mutations for create/update/delete
+```
 
-// The form will automatically:
-// 1. Generate fields for Serie properties
-// 2. Create embedded section for Director
-// 3. Provide collection management for Seasons
-// 4. Support nested Episode collections within Seasons
-
-### 🚀 **Setting Up Customizations**
-
-To use the customization system in your application, you need to register your customizations early in the app lifecycle.
+### 🔧 **Customization Integration**
 
 #### **Form Customization Setup**
 ```typescript
-// In your app initialization (e.g., layout.tsx or main component)
-import { setupEpisodeFormCustomization } from '@/examples/episodeFormCustomization';
+// src/examples/setupConfiguration.ts
+import { setupEpisodeFormCustomization } from "./episodeFormCustomization";
+import { setupSerieFormCustomization } from "./serieFormCustomization";
+import { setupI18n } from "./i18nSetup";
+import { setupColumnRenderers } from "./columnRenderersSetup";
+import { setupSeasonStateMachine } from "./seasonStateMachineExample";
 
-// Call setup functions
+export const setupConfigurations = () => {
+  setupI18n();
+  setupColumnRenderers();
 setupEpisodeFormCustomization();
+  setupSerieFormCustomization();
+  setupSeasonStateMachine();
+};
 ```
 
 #### **Column Customization Setup**
 ```typescript
-// In your app initialization
-import { registerColumnRenderer } from '@/lib/columnRenderers';
+// src/examples/columnRenderersSetup.tsx
+import { registerColumnRenderer } from "@simtlix/simfinity-fe-components";
 
-// Register custom column renderers
+export const setupColumnRenderers = () => {
 registerColumnRenderer("episode.date", ({ value }) => {
-  // Your custom date renderer
-});
-
-registerColumnRenderer("episode.status", ({ value }) => {
-  // Your custom status renderer
-});
-```
-
-#### **Integration Points**
-- **Layout Component**: Set up form customizations
-- **Main App**: Register column renderers
-- **Entity Components**: Use customization state
-- **Custom Hooks**: Access customization data
-
-### 🎬 **Movie Database**
-
-#### **Complex Relationships**
-```typescript
-interface Movie {
-  id: string;
-  title: string;
-  releaseDate: string;
-  director: Director;        // Embedded
-  cast: Actor[];             // Collection
-  genres: string[];          // List of scalars
-  ratings: Rating[];         // Collection
-}
-
-interface Actor {
-  id: string;
-  name: string;
-  role: string;
-  movie: Movie;              // Reference back
-}
-
-interface Rating {
-  id: string;
-  score: number;
-  review: string;
-  user: User;                // Reference
-}
+    // Custom date rendering with icon
+    return <DateWithIcon value={value} />;
+  });
+};
 ```
 
 ## Architecture
 
-### 🏗️ **System Design**
-
-The Simfinity Frontend follows a component-based architecture with clear separation of concerns:
-
+### 📁 **Project Structure**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    EntityTable                              │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │   Column Gen    │  │   Sorting       │  │ Pagination  │ │
-│  │   (Schema)      │  │   (GraphQL)     │  │ (Server)    │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│                    EntityForm                               │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │ Field Discovery │  │ Form Generation │  │ Validation  │ │
-│  │ (Introspection) │  │ (Dynamic)       │  │ (Rules)     │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │ Collections     │  │ Embedded Obj    │  │ Submission  │ │
-│  │ (CRUD)          │  │ (Accordion)     │  │ (GraphQL)   │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+src/
+├── app/                    # Next.js App Router pages
+│   ├── entities/          # Dynamic entity pages
+│   ├── layout.tsx         # Root layout
+│   └── providers.tsx      # App providers
+├── components/            # Reusable UI components
+│   └── app/              # App-specific components
+├── examples/             # Usage examples and patterns
+│   ├── columnRenderersSetup.tsx
+│   ├── episodeFormCustomization.ts
+│   ├── i18nSetup.ts
+│   ├── serieFormCustomization.tsx
+│   ├── setupConfiguration.ts
+│   └── seasonStateMachineExample.ts
+├── i18n/                 # Function-based i18n
+│   ├── en.ts
+│   └── es.ts
+├── lib/                  # Utilities and configurations
+│   ├── apolloClient.ts
+│   └── themeContext.tsx
+└── public/
+    └── i18n/            # Static JSON i18n
+        ├── en.json
+        └── es.json
 ```
 
-### 🔧 **Technical Stack**
-
-- **Framework**: Next.js 15.4.6 with App Router
-- **Language**: TypeScript 5 (strict mode)
-- **UI Library**: Material-UI v7.3.1 (MUI)
-- **Data Layer**: Apollo Client 3.13.9 + GraphQL 16.11.0
-- **Styling**: Tailwind CSS 4 + Emotion
-- **State Management**: React hooks + custom hooks
-- **Internationalization**: i18n support (en/es)
-
-### 📊 **Data Flow**
-
+### 🔄 **Data Flow**
 1. **Schema Introspection** → Field Discovery → Form Generation
 2. **User Input** → Field Change → Customization Processing → State Update
 3. **Collection Changes** → Local State → Parent Form Integration
 4. **Form Submission** → Data Validation → GraphQL Mutation → Success/Error Handling
 
-### 🎯 **Key Principles**
+### 🛠 **Tech Stack**
+- **Framework**: Next.js 15.4.6 with App Router
+- **Language**: TypeScript 5 (strict mode)
+- **UI Library**: Material-UI v7.3.1
+- **Data Layer**: Apollo Client 3.13.9 + GraphQL 16.11.0
+- **Styling**: Tailwind CSS 4 + Emotion
+- **State Management**: React hooks + custom hooks
+- **Internationalization**: i18n support (en/es)
+- **Simfinity Components**: @simtlix/simfinity-fe-components v1.0.3
 
-- **SOLID Design**: Single responsibility, open/closed, dependency inversion
-- **Schema-Driven**: All behavior derived from GraphQL schema
-- **Composable**: Modular components with clear interfaces
-- **Extensible**: Customization system for business logic
-- **Accessible**: WCAG compliance and keyboard navigation
-
-## 📚 Documentation
+## Documentation
 
 ### Core Documentation
 - **[EntityForm Guide](ENTITY_FORM_README.md)** - Complete guide to the EntityForm component architecture, field types, and usage patterns
@@ -1477,30 +969,23 @@ The Simfinity Frontend follows a component-based architecture with clear separat
 - **[Entity-Level Callbacks](ENTITY_LEVEL_CALLBACKS_README.md)** - In-depth guide to beforeSubmit, onSuccess, and onError callbacks for custom business logic
 
 ### Examples & Patterns
-The repository includes extensive examples in the `/src/examples/` directory:
-- `entityLevelCallbacksExample.ts` - Entity-level callback implementations
-- `episodeFormCustomization.ts` - Field-level customization examples  
-- `collectionFieldCustomizationExample.ts` - Collection field management
-- `collectionItemEditExample.ts` - Collection item editing patterns
-- `collectionManagementExample.tsx` - Advanced collection workflows
+- **src/examples/** - Working examples of form customizations, column renderers, i18n setup, and state machines
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about the technologies used in this project:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **[Next.js Documentation](https://nextjs.org/docs)** - Learn about Next.js features and API
+- **[Material-UI Documentation](https://mui.com/)** - Material-UI components and theming
+- **[Apollo Client](https://www.apollographql.com/docs/react/)** - GraphQL client for React
+- **[Simfinity.js](https://github.com/simtlix/simfinity-js)** - GraphQL schema and API generator
 
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-For more information about the Apache License 2.0, visit [https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0).
+This project is licensed under the Apache License 2.0 - see the LICENSE file for details.

@@ -1,9 +1,9 @@
-# Simfinity Frontend - Comprehensive Cursor Rules & Context
+# Simfinity Frontend - Cursor Rules & Context
 
 ## Project Overview
 This is a Next.js 15.4.6 frontend application for Simfinity, featuring a dynamic, schema-driven form management system built with GraphQL, Apollo Client, and Material-UI v7.3.1. The system automatically generates forms from GraphQL schema introspection and supports complex entity management including embedded objects, collections, and extensive customization capabilities.
 
-## Tech Stack
+## Tech Stack & Dependencies
 - **Framework**: Next.js 15.4.6 with App Router
 - **Language**: TypeScript 5 (strict mode)
 - **UI Library**: Material-UI v7.3.1 (MUI)
@@ -11,289 +11,124 @@ This is a Next.js 15.4.6 frontend application for Simfinity, featuring a dynamic
 - **Styling**: Tailwind CSS 4 + Emotion
 - **State Management**: React hooks + custom hooks
 - **Internationalization**: i18n support (en/es)
+- **Simfinity Dependencies**: `@simtlix/simfinity-fe-components` v1.0.3
 
-## Core Architecture
-
-### EntityForm System
-The application centers around a sophisticated EntityForm component that:
-- Automatically generates forms from GraphQL schema introspection
-- Supports create/edit/view modes for any entity type
-- Handles complex nested objects, collections, and relationships
-- Provides extensive customization capabilities
-
-### Component Hierarchy
+## Project Structure
 ```
-EntityForm (Main Container)
-├── FormFieldRenderer (Generic Field Renderer)
-├── ObjectFieldSelector (Object Reference Selector)
-├── CollectionFieldGrid (Collection Management)
-│   └── CollectionItemEditForm (Individual Item Editor)
-└── Embedded Object Sections (Accordion-based)
-```
-
-### Key Components
-
-#### EntityForm.tsx
-**Purpose**: Main form container that orchestrates the entire form system
-
-**Key Responsibilities**:
-- Schema introspection and field discovery
-- Dynamic GraphQL query generation
-- Form state management
-- Collection field integration
-- Form customization coordination
-
-**Core Features**:
-- **Action Modes**: `create`, `edit`, `view` with different behaviors
-- **Dynamic Queries**: Generates GraphQL queries based on discovered fields
-- **Collection Integration**: Manages collection fields separately from main form
-- **Embedded Objects**: Handles nested object structures with accordion sections
-
-#### FormFieldRenderer.tsx
-**Purpose**: Generic component for rendering any form field type
-
-**Supported Field Types**:
-- **Scalar Fields**: Text, Number, Boolean, Date, Enum
-- **Object Fields**: Foreign key relationships with search/select
-- **List Fields**: Tag-based input for scalar lists
-- **Embedded Fields**: Nested object structures
-
-**Customization Integration**:
-- Field visibility control
-- Field enable/disable logic
-- Field sizing and layout
-- Custom onChange handlers
-
-#### ObjectFieldSelector.tsx
-**Purpose**: Handles object reference selection (foreign keys)
-
-**Features**:
-- Search functionality for object lists
-- Display field rendering (e.g., name, title)
-- Object data preservation (stores full objects, not just IDs)
-- Integration with form customization system
-
-#### CollectionFieldGrid.tsx
-**Purpose**: Manages collections of related entities (e.g., seasons in a series)
-
-**State Management**:
-- **Added Items**: New items being created
-- **Modified Items**: Existing items with changes
-- **Deleted Items**: Items marked for removal
-- **Original Data**: Preserves initial state for comparison
-
-**Key Features**:
-- **Add Button**: Opens CollectionItemEditForm for new items
-- **Edit Functionality**: Modifies existing items
-- **Delete/Restore**: Manages item lifecycle
-- **Connection Field Hiding**: Automatically hides parent entity reference columns
-- **Status Tracking**: Uses `__status` and `__originalData` for change management
-
-#### CollectionItemEditForm.tsx
-**Purpose**: Dialog form for editing individual collection items
-
-**Modes**:
-- **Edit Mode**: Modifies existing items
-- **Add Mode**: Creates new items (ensures connection field remains null)
-
-**Features**:
-- Schema-driven field generation
-- Form customization inheritance from parent entity
-- Object field support with full data preservation
-- Validation and error handling
-
-## SOLID Principles & Code Practices
-
-### 1. Single Responsibility Principle (SRP)
-- Each component has one clear purpose
-- EntityForm orchestrates, FormFieldRenderer renders, ObjectFieldSelector selects
-- Separate concerns: form logic, field rendering, data management
-
-### 2. Open/Closed Principle (OCP)
-- System is open for extension (new field types, customizations)
-- Closed for modification (core architecture remains stable)
-- Use composition and configuration over inheritance
-
-### 3. Liskov Substitution Principle (LSP)
-- All field types can be substituted through FormFieldRenderer
-- Custom field types must implement the same interface
-- Maintain consistent behavior across field implementations
-
-### 4. Interface Segregation Principle (ISP)
-- FormField interface only includes necessary properties
-- Customization interfaces are specific to their use cases
-- Avoid fat interfaces that force unnecessary implementations
-
-### 5. Dependency Inversion Principle (DIP)
-- High-level modules (EntityForm) don't depend on low-level modules (specific field types)
-- Depend on abstractions (FormField interface) not concretions
-- Use dependency injection for customization and configuration
-
-### Additional Code Practices
-
-#### Clean Code Principles
-- **Meaningful Names**: Use descriptive field names that match GraphQL schema
-- **Small Functions**: Keep functions focused and under 20 lines
-- **Single Level of Abstraction**: Don't mix high and low-level concepts
-- **Error Handling**: Use proper error boundaries and graceful degradation
-
-#### React Best Practices
-- **Functional Components**: Prefer functional components with hooks
-- **Proper Dependencies**: Use correct dependency arrays in useEffect/useMemo
-- **State Management**: Lift state up when needed, use local state when appropriate
-- **Performance**: Implement React.memo, useMemo, and useCallback appropriately
-
-#### TypeScript Best Practices
-- **Strict Mode**: Enable all strict TypeScript options
-- **Interface Design**: Design interfaces for extensibility
-- **Generic Types**: Use generics for reusable components
-- **Type Guards**: Implement proper type checking and narrowing
-
-## Form Customization System
-
-### Core Concepts
-The customization system provides fine-grained control over form behavior:
-
-```typescript
-type FormCustomizationState = {
-  customization: FormCustomization;        // Field-level customization
-  fieldVisibility: Record<string, boolean>; // Field visibility rules
-  fieldEnabled: Record<string, boolean>;    // Field enable/disable rules
-  fieldOrder: string[];                    // Field ordering
-};
+src/
+├── app/                    # Next.js App Router pages
+│   ├── entities/          # Dynamic entity pages
+│   │   └── [listField]/   # Entity list pages
+│   │       ├── create/    # Create entity pages
+│   │       ├── [id]/      # Entity detail pages
+│   │       │   ├── edit/  # Edit entity pages
+│   │       │   └── view/  # View entity pages
+│   │       └── page.tsx   # Entity list page
+│   ├── layout.tsx         # Root layout
+│   ├── page.tsx          # Home page
+│   └── providers.tsx     # App providers
+├── components/            # Reusable UI components
+│   └── app/              # App-specific components
+│       ├── AppHeader.tsx # Main header with theme toggle
+│       ├── LayoutShell.tsx # Layout wrapper
+│       ├── Sidebar.tsx   # Navigation sidebar
+│       └── ThemeToggle.tsx # Theme switching component
+├── examples/             # Usage examples and patterns
+│   ├── columnRenderersSetup.tsx    # Custom column renderers
+│   ├── customRendererExample.tsx   # Custom renderer examples
+│   ├── entityLevelCallbacksExample.ts # Entity callbacks
+│   ├── episodeFormCustomization.ts # Episode form customization
+│   ├── i18nSetup.ts              # i18n configuration
+│   ├── seasonStateMachineExample.ts # State machine example
+│   ├── serieFormCustomization.tsx # Serie form customization
+│   ├── setupConfiguration.ts     # Main setup configuration
+│   └── themeUsageExample.tsx     # Theme usage examples
+├── i18n/                 # Internationalization
+│   ├── en.ts            # English labels (function-based)
+│   └── es.ts            # Spanish labels (function-based)
+├── lib/                  # Utilities and configurations
+│   ├── apolloClient.ts  # Apollo Client configuration
+│   └── themeContext.tsx # Theme management system
+└── public/
+    └── i18n/            # Static i18n files
+        ├── en.json      # English labels (JSON-based)
+        └── es.json      # Spanish labels (JSON-based)
 ```
 
-### Customization Levels
+## Simfinity Dependencies
 
-#### 1. Field-Level Customization
-```typescript
-type FieldCustomization = {
-  visible?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
-  enabled?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
-  size?: GridSize; // Material-UI grid sizing
-  order?: number;  // Display order
-  onChange?: (fieldName: string, value: unknown, formData: FormData, actions: FormCustomizationActions) => FieldChangeResult;
-};
-```
+### @simtlix/simfinity-fe-components v1.0.3
+This package provides the core form system components and utilities:
 
-#### 2. Embedded Object Customization
-```typescript
-type EmbeddedSectionCustomization = {
-  visible?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
-  enabled?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
-  size?: GridSize;
-  order?: number;
-};
-```
+**Core Components:**
+- `EntityForm` - Main form container
+- `FormFieldRenderer` - Generic field renderer
+- `ObjectFieldSelector` - Object reference selector
+- `CollectionFieldGrid` - Collection management
+- `CollectionItemEditForm` - Individual item editor
+- `EntityTable` - Data grid component
+- `FilterInputs` - Filter components
+- `ServerToolbar` - Server-side toolbar
+- `ServerFilterPanel` - Server-side filter panel
 
-#### 3. Collection Item Customization
-```typescript
-type CollectionItemCustomization = {
-  visible?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
-  enabled?: boolean | ((fieldName: string, value: unknown, formData: FormData) => boolean);
-  size?: GridSize;
-  order?: number;
-  onChange?: (fieldName: string, value: unknown, formData: FormData, actions: FormCustomizationActions) => FieldChangeResult;
-};
-```
+**Hooks:**
+- `useCollectionState` - Collection state management
+- `useI18n` - Internationalization hook
 
-### Customization Actions
-```typescript
-type FormCustomizationActions = {
-  setFieldData: (fieldName: string, value: unknown) => void;
-  setFieldVisible: (fieldName: string, visible: boolean) => void;
-  setFieldEnabled: (fieldName: string, enabled: boolean) => void;
-  setFieldOrder: (fieldOrder: string[]) => void;
-};
-```
-
-## Data Flow & State Management
-
-### 1. Form Data Structure
-```typescript
-type FormField = {
-  name: string;
-  type: string;
-  required: boolean;
-  value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown };
-  error?: string;
-  isNumeric: boolean;
-  isBoolean: boolean;
-  isDate: boolean;
-  isList: boolean;
-  isEnum: boolean;
-  enumValues?: string[];
-  isObject: boolean;
-  objectTypeName?: string;
-  descriptionField?: string;
-  descriptionFieldType?: string;
-  listQueryName?: string;
-  singleQueryName?: string;
-  isEmbedded?: boolean;
-  embeddedFields?: FormField[];
-  isCollection?: boolean;
-  collectionObjectTypeName?: string;
-  connectionField?: string;
-};
-```
-
-### 2. Collection State Management
-```typescript
-type CollectionFieldState = {
-  added: CollectionItem[];
-  modified: CollectionItem[];
-  deleted: CollectionItem[];
-};
-
-type CollectionItem = {
-  id?: string;
-  [key: string]: unknown;
-  __status?: 'added' | 'modified' | 'deleted';
-  __originalData?: Record<string, unknown>;
-};
-```
-
-### 3. Data Flow Patterns
-1. **Schema Introspection** → Field Discovery → Form Generation
-2. **User Input** → Field Change → Customization Processing → State Update
-3. **Collection Changes** → Local State → Parent Form Integration
-4. **Form Submission** → Data Validation → GraphQL Mutation → Success/Error Handling
-
-## Field Type Detection & Rendering
-
-### Scalar Field Detection
-```typescript
-// Automatic type detection from GraphQL schema
-const isNumeric = isNumericScalarName(typeName);      // Int, Float
-const isBoolean = isBooleanScalarName(typeName);      // Boolean
-const isDate = isDateTimeScalarName(typeName);        // Date, DateTime
-const isEnum = current?.kind === "ENUM";              // Enum types
-```
-
-### Object Field Detection
-```typescript
-// Object fields with foreign key relationships
-const isObject = current?.kind === "OBJECT" && !isList;
-const descriptionField = field.extensions?.relation?.displayField || "name";
-const connectionField = field.extensions?.relation?.connectionField;
-```
-
-### Collection Field Detection
-```typescript
-// List of objects that form collections
-const isCollection = isList && current?.kind === "OBJECT";
-const collectionObjectTypeName = typeName;
-const connectionField = field.extensions?.relation?.connectionField;
-```
-
-### Embedded Object Detection
-```typescript
-// Nested objects within the main entity
-const isEmbedded = field.extensions?.relation?.embedded === true;
-const embeddedFields = processEmbeddedObjectFields(schema, objectTypeName, field.name);
-```
+**Utilities:**
+- `registerFormCustomization` - Form customization registration
+- `registerColumnRenderer` - Column renderer registration
+- `registerFunctionLabels` - Function-based label registration
+- `registerStateMachine` - State machine registration
 
 ## Internationalization (i18n)
+
+### Dual i18n System
+The project supports both JSON-based and function-based internationalization:
+
+#### 1. JSON-based i18n (public/i18n/)
+**Location**: `public/i18n/en.json`, `public/i18n/es.json`
+**Usage**: Static labels for entities, fields, and common UI elements
+
+```json
+{
+  "entity.serie.single": "Serie",
+  "entity.serie.plural": "Series",
+  "serie.name": "Name",
+  "serie.description": "Description",
+  "form.create": "Create",
+  "form.edit": "Edit",
+  "form.view": "View"
+}
+```
+
+#### 2. Function-based i18n (src/i18n/)
+**Location**: `src/i18n/en.ts`, `src/i18n/es.ts`
+**Usage**: Dynamic labels with context and custom column renderers
+
+```typescript
+import { registerFunctionLabels, registerColumnRenderer } from "@simtlix/simfinity-fe-components";
+
+export const labels: Record<string, LabelValue> = {
+  // Dynamic labels with context
+  "season.year": (ctx) => `Year (${ctx.entity})`,
+  "serie.name": "Title", // Override JSON labels
+};
+
+// Register function-based labels
+registerFunctionLabels("en", labels);
+
+// Register custom column renderers
+registerColumnRenderer("episode.date", ({ value }) => {
+  if (value == null) return "";
+  const d = new Date(value as string | number);
+  const text = isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
+  return React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } },
+    React.createElement(CalendarMonthIcon, { fontSize: "small" }),
+    text
+  );
+});
+```
 
 ### Label Resolution Strategy
 ```typescript
@@ -313,101 +148,224 @@ const getFieldLabel = (fieldName: string): string => {
 - **Entity Labels**: `entity.{entityType}.{form}` (e.g., "serie.single", "serie.plural")
 - **Field Labels**: `{entityType}.{fieldName}` (e.g., "serie.name", "serie.description")
 - **Form Labels**: `form.{action}` (e.g., "form.create", "form.edit", "form.view")
+- **Grid Labels**: `grid.filter.{type}` (e.g., "grid.filter.contains", "grid.filter.equals")
+- **State Machine Labels**: `stateMachine.{entity}.{type}.{value}` (e.g., "stateMachine.season.state.ACTIVE")
 
-## GraphQL Integration
+## Form Customization System
 
-### Dynamic Query Generation
+### 1. Form Customization Registration
+**Location**: `src/examples/serieFormCustomization.tsx`, `src/examples/episodeFormCustomization.ts`
+
 ```typescript
-// Automatically generates queries based on discovered fields
-const generateQueries = React.useMemo(() => {
-  const fieldSelections = formFields
-    .filter(field => !field.isCollection) // Exclude collection fields
-    .map(field => {
-      if (field.isObject && !field.isEmbedded) {
-        return `${field.name} { id ${field.descriptionField} }`;
+import { registerFormCustomization, FormField, FormCustomizationActions } from '@simtlix/simfinity-fe-components';
+
+registerFormCustomization("serie", {
+  fields: {
+    name: {
+      visible: true,
+      enabled: true,
+      size: 12, // Full width
+      order: 1,
+      onChange: (fieldName, value, formData, actions) => {
+        // Custom logic
+        return { success: true };
       }
-      return field.name;
-    });
-  
-  // Generate Get, Create, Update queries dynamically
-}, [formFields, listField]);
+    },
+    description: {
+      visible: true,
+      enabled: true,
+      size: 12,
+      order: 2,
+      // Custom component
+      component: (props) => <RichTextEditor {...props} />
+    }
+  },
+  embeddedSections: {
+    director: {
+      visible: true,
+      enabled: true,
+      size: 6,
+      order: 3
+    }
+  },
+  collectionItems: {
+    seasons: {
+      fields: {
+        number: {
+          visible: true,
+          enabled: true,
+          size: 6
+        }
+      }
+    }
+  }
+});
 ```
 
-### Collection Field Handling
-- Collection fields are excluded from main entity queries
-- Collection data is managed separately through dedicated components
-- Changes are tracked locally and integrated during form submission
+### 2. Custom Column Renderers
+**Location**: `src/examples/columnRenderersSetup.tsx`
 
-## Validation & Error Handling
-
-### Validation System
 ```typescript
-const validateForm = (): boolean => {
-  let isValid = true;
-  
-  formFields.forEach(field => {
-    // Required field validation
-    if (field.required && (field.value === "" || field.value === null)) {
-      setFieldError(field.name, "This field is required");
-      isValid = false;
-    }
-    
-    // Type-specific validation
-    if (field.isNumeric && typeof field.value === "string" && isNaN(Number(field.value))) {
-      setFieldError(field.name, "Must be a valid number");
-      isValid = false;
-    }
+import { registerColumnRenderer } from "@simtlix/simfinity-fe-components";
+
+export const setupColumnRenderers = () => {
+  // Custom date renderer with icon
+  registerColumnRenderer("episode.date", ({ value }) => {
+    if (value == null) return "";
+    const d = new Date(value as string | number);
+    const text = isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <CalendarMonthIcon fontSize="small" />
+        {text}
+      </span>
+    );
   });
-  
-  return isValid;
+
+  // Custom renderer with context
+  registerColumnRenderer("season.year", ({ value, rowData }) => {
+    if (value == null) return "";
+    return (
+      <span style={{ fontWeight: "bold", color: "#1976d2" }}>
+        Year {value}
+      </span>
+    );
+  });
 };
 ```
 
-### Error Display
-- Field-level error messages below each field
-- Form-level error alerts for submission failures
-- Success messages with auto-hide functionality
-
-## Performance Optimizations
-
-### 1. Memoization
+### 3. Layout Customization
+**Embedded Object Sections**: Use dot notation for nested fields
 ```typescript
-// Heavy computations are memoized
-const formFields = React.useMemo(() => {
-  // Field discovery and processing
-}, [schemaData, listField]);
-
-const generateQueries = React.useMemo(() => {
-  // Query generation
-}, [formFields, listField]);
+embeddedSections: {
+  director: {
+    visible: true,
+    enabled: true,
+    size: 6, // Half width
+    order: 3
+  }
+}
 ```
 
-### 2. Conditional Rendering
-- Fields are only rendered when visible and enabled
-- Embedded sections are collapsed by default
-- Collection grids load data on-demand
+**Field Sizing**: Use Material-UI Grid system
+```typescript
+fields: {
+  name: { size: 12 },      // Full width
+  description: { size: 12 }, // Full width
+  year: { size: 6 },       // Half width
+  rating: { size: 6 }      // Half width
+}
+```
 
-### 3. State Updates
-- Batched state updates for form data
-- Local state management for collections
-- Efficient re-rendering through proper dependency arrays
+### 4. Custom Components
+**Rich Text Editor Example**:
+```typescript
+const RichTextEditor = ({ value, onChange, disabled, error }) => {
+  const [isFocused, setIsFocused] = React.useState(false);
+  
+  return (
+    <Paper elevation={isFocused ? 2 : 1}>
+      <Box sx={{ p: 2 }}>
+        <TextField
+          multiline
+          rows={4}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          error={!!error}
+          helperText={error}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        />
+      </Box>
+    </Paper>
+  );
+};
+```
 
-## Extension Points
+### 5. State Machine Integration
+**Location**: `src/examples/seasonStateMachineExample.ts`
 
-### 1. Custom Field Types
-- Add new field types by extending `FormField` interface
-- Implement custom renderers in `FormFieldRenderer`
-- Register new field processors in field discovery logic
+```typescript
+import { registerStateMachine } from "@simtlix/simfinity-fe-components";
 
-### 2. Custom Validation Rules
-- Extend validation system with field-specific rules
-- Implement custom error messages
-- Add async validation support
+registerStateMachine("season", {
+  states: {
+    SCHEDULED: { label: "Scheduled", color: "warning" },
+    ACTIVE: { label: "Active", color: "success" },
+    FINISHED: { label: "Finished", color: "info" }
+  },
+  transitions: {
+    SCHEDULED: ["ACTIVE"],
+    ACTIVE: ["FINISHED"],
+    FINISHED: []
+  },
+  actions: {
+    activate: { from: "SCHEDULED", to: "ACTIVE", label: "Activate" },
+    finalize: { from: "ACTIVE", to: "FINISHED", label: "Finalize" }
+  }
+});
+```
 
-### 3. Custom Form Actions
-- Extend form submission logic
-- Add pre/post submission hooks
-- Implement custom success/error handling
+## Entity-Level Callbacks
+**Location**: `src/examples/entityLevelCallbacksExample.ts`
+
+```typescript
+import { registerEntityCallbacks } from "@simtlix/simfinity-fe-components";
+
+registerEntityCallbacks("serie", {
+  onCreate: async (data) => {
+    // Custom logic after creation
+    console.log("Serie created:", data);
+    return { success: true };
+  },
+  onUpdate: async (data) => {
+    // Custom logic after update
+    console.log("Serie updated:", data);
+    return { success: true };
+  },
+  onDelete: async (id) => {
+    // Custom logic before deletion
+    console.log("Serie deleted:", id);
+    return { success: true };
+  }
+});
+```
+
+## Setup Configuration
+**Location**: `src/examples/setupConfiguration.ts`
+
+```typescript
+import { setupEpisodeFormCustomization } from "./episodeFormCustomization";
+import { setupSerieFormCustomization } from "./serieFormCustomization";
+import { setupI18n } from "./i18nSetup";
+import { setupColumnRenderers } from "./columnRenderersSetup";
+import { setupSeasonStateMachine } from "./seasonStateMachineExample";
+
+export const setupConfigurations = () => {
+  // Setup i18n labels
+  setupI18n();
+  
+  // Setup custom column renderers
+  setupColumnRenderers();
+  
+  // Setup form customizations
+  setupEpisodeFormCustomization();
+  setupSerieFormCustomization();
+  
+  // Setup state machines
+  setupSeasonStateMachine();
+};
+```
+
+## Theme System
+**Location**: `src/lib/themeContext.tsx`
+
+The application supports dynamic theming with multiple color schemes and modes:
+- **Theme Modes**: Light, Dark, Auto (system preference)
+- **Color Schemes**: Default, Blue, Green, Purple, Orange, Mint, Soft Blue, Soft Gray
+- **Persistence**: User preferences saved to localStorage
+- **Integration**: Seamless integration with all Simfinity components
 
 ## Development Guidelines
 
@@ -436,45 +394,6 @@ const generateQueries = React.useMemo(() => {
 - Maintain separation of concerns between UI and business logic
 - Support internationalization for all user-facing text
 
-## File Structure
-```
-src/
-├── app/           # Next.js App Router pages
-├── components/    # Reusable UI components
-├── hooks/         # Custom React hooks
-├── lib/           # Utilities and configurations
-├── i18n/          # Internationalization
-└── examples/      # Usage examples and patterns
-```
-
-## Common Patterns
-
-### Dynamic Field Rendering
-```typescript
-// Field type detection
-const isNumeric = ['Int', 'Float'].includes(fieldType);
-const isBoolean = fieldType === 'Boolean';
-const isDate = fieldType === 'DateTime';
-const isObject = !isScalarType(fieldType);
-const isCollection = fieldType.startsWith('[') && fieldType.endsWith(']');
-```
-
-### Collection Management
-```typescript
-// Collection state management
-const [addedItems, setAddedItems] = useState<any[]>([]);
-const [modifiedItems, setModifiedItems] = useState<Record<string, any>>({});
-const [deletedItems, setDeletedItems] = useState<string[]>([]);
-```
-
-### Form Customization
-```typescript
-// Field customization
-const fieldConfig = formCustomization?.fields?.[fieldName];
-const isVisible = fieldConfig?.visible ?? true;
-const isEnabled = fieldConfig?.enabled ?? true;
-```
-
 ## Important Notes
 - Always consider GraphQL schema changes when modifying forms
 - Test form behavior across different entity types
@@ -493,3 +412,6 @@ const isEnabled = fieldConfig?.enabled ?? true;
 - Consider performance implications of changes
 - Ensure solutions maintain the system's extensibility
 - Think about maintainability and code quality
+- Always use the Simfinity components from `@simtlix/simfinity-fe-components`
+- Follow the established i18n patterns (both JSON and function-based)
+- Leverage the form customization system for complex UI requirements
