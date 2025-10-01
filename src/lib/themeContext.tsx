@@ -6,12 +6,12 @@ import React, {
   useContext,
   useState,
   useEffect,
-  ReactNode
+  ReactNode,
 } from "react";
 import { createTheme, Theme, ThemeOptions, alpha } from "@mui/material/styles";
 import "@mui/x-data-grid/themeAugmentation";
 
-// ==================== Tipos ====================
+// ==================== Types ====================
 export type ThemeMode = "light" | "dark" | "auto";
 export type CustomTheme =
   | "default"
@@ -34,12 +34,13 @@ export interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// ==================== Temas Mint/Soft ====================
+// ==================== Soft theme factory (mint / softBlue / softGray) ====================
 function createSoftTheme(
   variant: "mint" | "softBlue" | "softGray",
   resolvedMode: "light" | "dark"
 ) {
   const isDark = resolvedMode === "dark";
+
   const schemes = {
     mint: {
       brand: "#108775",
@@ -74,6 +75,7 @@ function createSoftTheme(
   } as const;
 
   const s = schemes[variant];
+
   const t = {
     canvas: isDark ? s.canvasDark : s.canvasLight,
     surface: isDark ? "#141A1B" : "#FFFFFF",
@@ -83,9 +85,9 @@ function createSoftTheme(
     select: isDark ? s.selectDark : s.selectLight,
     brand: s.brand,
     brand2: s.brand2,
-    gray1: isDark ? "#E7ECEF" : "#0F1A1C",
-    gray2: isDark ? "#D3DADD" : "#1A2B27",
-    gray3: isDark ? "#9BA7AD" : "#5A6B66",
+    gray1: isDark ? "#E7ECEF" : "#0F1A1C", // text.primary
+    gray2: isDark ? "#D3DADD" : "#1A2B27", // body text
+    gray3: isDark ? "#9BA7AD" : "#5A6B66", // text.secondary
   };
 
   const base: ThemeOptions = {
@@ -111,6 +113,37 @@ function createSoftTheme(
       button: { fontWeight: 700, textTransform: "none" },
     },
     components: {
+      // ===== Inputs alignment (Select = TextField small height) =====
+      MuiFormControl: {
+        defaultProps: { size: "small" },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: 14,
+            "&.MuiInputBase-sizeSmall": { minHeight: 40 },
+            "& .MuiSelect-select": { paddingTop: 8, paddingBottom: 8 },
+          },
+          inputSizeSmall: { paddingTop: 8, paddingBottom: 8 },
+        },
+      },
+      MuiSelect: {
+        defaultProps: { size: "small", variant: "outlined" },
+        styleOverrides: {
+          select: {
+            paddingTop: "8px !important",
+            paddingBottom: "8px !important",
+          },
+          outlined: { paddingRight: "40px !important" },
+          iconOutlined: { right: 10 },
+          nativeInput: { paddingTop: 8, paddingBottom: 8 },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: { root: { minHeight: 36 } },
+      },
+
+      // ===== Global canvas + halo =====
       MuiCssBaseline: {
         styleOverrides: {
           body: {
@@ -128,17 +161,23 @@ function createSoftTheme(
           },
         },
       },
+
+      // ===== AppBar (translucent, legible) =====
       MuiAppBar: {
         styleOverrides: {
           root: {
             backdropFilter: "saturate(120%) blur(6px)",
-            backgroundColor: alpha(t.surface, 0.8),
+            backgroundColor: alpha(t.surface, 0.82),
             borderBottom: `1px solid ${t.line}`,
             transition: "background-color .3s ease, color .3s ease",
             color: t.gray1,
+            "& .MuiIconButton-root, & .MuiTypography-root, & .MuiButton-root, & .MuiSvgIcon-root":
+              { color: "inherit" },
           },
         },
       },
+
+      // ===== Drawer =====
       MuiDrawer: {
         styleOverrides: {
           paper: {
@@ -149,6 +188,8 @@ function createSoftTheme(
           },
         },
       },
+
+      // ===== Paper card =====
       MuiPaper: {
         defaultProps: { elevation: 2 },
         styleOverrides: {
@@ -159,8 +200,105 @@ function createSoftTheme(
               ? "0 18px 40px rgba(0,0,0,.35)"
               : "0 18px 40px rgba(0,0,0,.08)",
           },
+          outlined: {
+            border: `1px solid ${t.line}`,
+            backgroundColor: t.surface,
+            boxShadow: isDark
+              ? "0 18px 40px rgba(0,0,0,.35)"
+              : "0 18px 40px rgba(0,0,0,.08)",
+          },
         },
       },
+
+      // ===== Buttons (outlined more visible) =====
+      MuiButton: {
+        defaultProps: { variant: "contained" },
+        styleOverrides: {
+          root: {
+            borderRadius: 14,
+            boxShadow: isDark
+              ? "0 12px 24px rgba(0,0,0,.36)"
+              : `0 12px 24px ${alpha(t.brand, 0.18)}`,
+            ":hover": {
+              boxShadow: isDark
+                ? "0 12px 28px rgba(0,0,0,.42)"
+                : `0 12px 28px ${alpha(t.brand, 0.24)}`,
+            },
+          },
+          outlined: {
+            borderColor: alpha(t.brand, 0.35),
+            color: t.brand,
+            backgroundColor: t.surface,
+            ":hover": {
+              borderColor: alpha(t.brand, 0.5),
+              backgroundColor: alpha(t.brand, 0.06),
+            },
+          },
+        },
+      },
+
+      // ===== Inputs / labels =====
+      MuiTextField: {
+        defaultProps: { size: "small", fullWidth: true },
+        styleOverrides: {
+          root: {
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 14,
+              backgroundColor: t.surface,
+            },
+          },
+        },
+      },
+      MuiFormLabel: {
+        styleOverrides: {
+          root: { color: t.gray3, "&.Mui-focused": { color: t.gray3 } },
+        },
+      },
+      MuiInputBase: {
+        styleOverrides: { input: { color: t.gray1 } },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 8, // menos redondeado
+          },
+        },
+      },
+      MuiPopover: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 8,
+          },
+        },
+      },
+
+      // ===== Chips =====
+      MuiChip: {
+        variants: [
+          {
+            props: { color: "success", variant: "filled" },
+            style: {
+              backgroundColor: isDark
+                ? alpha(t.brand, 0.28)
+                : alpha(t.brand, 0.14),
+              color: t.brand,
+              fontWeight: 700,
+              borderRadius: 999,
+            },
+          },
+          {
+            props: { color: "default", variant: "filled" },
+            style: {
+              backgroundColor: isDark ? "rgba(255,255,255,.08)" : "#EEF2F1",
+              color: isDark ? "#C7D4D0" : "#3A4B46",
+              fontWeight: 700,
+              borderRadius: 999,
+            },
+          },
+        ],
+      },
+
+      // ===== Table (to match the DataGrid look) =====
       MuiTableContainer: {
         styleOverrides: {
           root: {
@@ -171,10 +309,51 @@ function createSoftTheme(
               ? "0 18px 40px rgba(0,0,0,.35)"
               : "0 18px 40px rgba(0,0,0,.08)",
             overflow: "hidden",
+            marginTop: "24px",
             marginBottom: "24px",
           },
         },
       },
+      MuiTable: {
+        styleOverrides: {
+          root: {
+            backgroundColor: t.surface,
+            "& .MuiTableCell-root": { paddingBlock: 12 },
+          },
+        },
+      },
+      MuiTableHead: {
+        styleOverrides: {
+          root: {
+            backgroundColor: t.header,
+            "& .MuiTableCell-head": {
+              color: t.gray1,
+              fontWeight: 700,
+              letterSpacing: ".2px",
+              borderBottom: `1px solid ${t.line}`,
+            },
+          },
+        },
+      },
+      MuiTableRow: {
+        styleOverrides: {
+          root: {
+            "&:hover .MuiTableCell-root": { backgroundColor: t.hover },
+            "&.Mui-selected .MuiTableCell-root, &.Mui-selected:hover .MuiTableCell-root":
+              { backgroundColor: `${t.select} !important` },
+            transition: "background-color .15s ease",
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: { borderBottom: `1px solid ${t.line}`, color: t.gray2 },
+          sizeSmall: { paddingTop: 10, paddingBottom: 10 },
+          head: { backgroundColor: t.header, fontWeight: 700, color: t.gray1 },
+        },
+      },
+
+      // ===== DataGrid =====
       MuiDataGrid: {
         styleOverrides: {
           root: {
@@ -195,6 +374,25 @@ function createSoftTheme(
             fontWeight: 700,
             letterSpacing: ".2px",
           },
+          columnHeader: {
+            "& .MuiDataGrid-columnSeparator": { display: "none" },
+            "&.MuiDataGrid-columnHeader--sorted": { color: t.brand },
+          },
+          row: {
+            "&:hover": { backgroundColor: t.hover },
+            "&.Mui-selected, &.Mui-selected:hover": {
+              backgroundColor: `${t.select} !important`,
+            },
+          },
+          cell: {
+            borderBottom: `1px solid ${t.line}`,
+            color: t.gray2,
+            paddingBlock: 12,
+          },
+          footerContainer: {
+            borderTop: `1px solid ${t.line}`,
+            backgroundColor: t.header,
+          },
         },
       },
     },
@@ -203,7 +401,7 @@ function createSoftTheme(
   return createTheme(base);
 }
 
-// ==================== Temas clásicos ====================
+// ==================== Classic themes (unchanged) ====================
 const themeDefinitions: Record<
   Exclude<CustomTheme, "mint" | "softBlue" | "softGray">,
   ThemeOptions
@@ -281,6 +479,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     });
   }, [actualMode, customTheme]);
 
+  useEffect(() => {
+    if (mode === "auto") {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      const onChange = () => setModeState((prev) => prev); // force re-render
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    }
+  }, [mode]);
+
   const setMode = (newMode: ThemeMode) => {
     setModeState(newMode);
     localStorage.setItem("theme-mode", newMode);
@@ -315,4 +522,4 @@ export function useTheme() {
     throw new Error("useTheme must be used within a ThemeProvider");
   }
   return context;
-};
+}

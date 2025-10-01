@@ -37,30 +37,52 @@ export default function AppHeader({ onMenuClick }: AppHeaderProps) {
         {/* Theme Toggle */}
         <ThemeToggle />
         
-        {/* Language Selector */}
+       {/* Language Selector */}
         <Box sx={{ minWidth: 120, ml: 2 }}>
-          <FormControl variant="standard" size="small" sx={{
-            minWidth: 100,
-            color: 'text.primary',
-            '& .MuiInputBase-input': { color: 'text.primary' },
-            '& .MuiSvgIcon-root': { color: 'text.secondary' },
-            '& .MuiInput-underline:before': { borderBottomColor: 'divider' },
-            '& .MuiInput-underline:hover:not(.Mui-disabled):before': { borderBottomColor: 'divider' },
-            '& .MuiInput-underline:after': { borderBottomColor: 'primary.main' },
-          }}>
+          <FormControl
+            variant="outlined"
+            size="small"
+            sx={{ minWidth: 108 }}
+          >
             <InputLabel
+              id="lang-label"
               sx={{
                 color: 'text.secondary',
-                '&.Mui-focused': { color: 'text.secondary' }
+                '&.Mui-focused': { color: 'text.secondary' },
               }}
             >
               Lang
             </InputLabel>
+
             <Select
+              labelId="lang-label"
+              label="Lang"
               value={locale}
               onChange={handleLocale}
-              label="Lang"
-              sx={{ color: 'text.primary' }}
+              sx={{
+                // “píldora” + contraste en AppBar
+                borderRadius: '999px',
+                bgcolor: 'background.paper',
+                color: 'text.primary',
+                // borde suave en reposo/hover/focus
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                  boxShadow: (theme) =>
+                    `0 0 0 3px ${theme.palette.action.focusOpacity ? 
+                      `rgba(33, 150, 243, ${theme.palette.action.focusOpacity})` : 
+                      'rgba(0,0,0,0.06)'}`,
+                },
+                // densidad alineada con TextField small
+                '& .MuiSelect-select': { pt: '8px', pb: '8px' },
+                pr: 1.5,
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: { borderRadius: 0.5 },
+                },
+              }}
             >
               <MenuItem value="en">EN</MenuItem>
               <MenuItem value="es">ES</MenuItem>
