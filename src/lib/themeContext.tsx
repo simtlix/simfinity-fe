@@ -34,6 +34,111 @@ export interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// ==================== Shared component overrides ====================
+const getSharedStepperOverrides = (primaryColor: string) => ({
+  MuiStepper: {
+    styleOverrides: {
+      root: {
+        marginTop: '20px',
+        width: 'max-content',
+      },
+    },
+  },
+  MuiStep: {
+    styleOverrides: {
+      root: {
+        fontWeight: 500,
+        '&.MuiStep-horizontal': {
+          padding: '9px 0 15px 20px',
+          marginLeft: 0,
+          '& .MuiStepLabel-root': {
+            textWrap: 'nowrap',
+          },
+        },
+        '& .Mui-disabled': {
+          opacity: 0.8,
+        },
+      },
+    },
+  },
+  MuiStepButton: {
+    styleOverrides: {
+      root: {
+        '&.Mui-active': {
+          backgroundColor: alpha(primaryColor, 0.08),
+          borderRadius: '12px',
+        },
+        '.MuiStepper-vertical &': {
+          '& span': {
+            padding: '0 5px',
+          },
+          '& .MuiStepLabel-label': {
+            width: '152px',
+          },
+        },
+      },
+    },
+  },
+  MuiStepLabel: {
+    styleOverrides: {
+      root: {
+        cursor: 'pointer',
+      },
+      label: {
+        fontFamily: 'var(--font-proxima-nova)',
+        fontSize: '14px',
+        lineHeight: '16px',
+        fontWeight: 700,
+        color: '#ababab',
+        '&.Mui-active': {
+          color: primaryColor,
+        },
+        '&.Mui-completed': {
+          color: primaryColor,
+          opacity: 0.6,
+        },
+      },
+    },
+  },
+  MuiStepIcon: {
+    styleOverrides: {
+      root: {
+        fill: '#9a9da9',
+        '.Mui-active &': {
+          fill: primaryColor,
+        },
+      },
+      text: {
+        fontFamily: 'var(--font-dm-mono)',
+        fontSize: '14px',
+      },
+    },
+  },
+  MuiStepConnector: {
+    styleOverrides: {
+      root: {
+        minHeight: '16px',
+      },
+      line: {
+        minHeight: '16px',
+      },
+      lineHorizontal: {
+        display: 'block',
+        borderColor: '#bdbdbd',
+        borderLeftStyle: 'solid' as const,
+        borderLeftWidth: '1px',
+        margin: '0 12px',
+        minHeight: '16px',
+        borderTopWidth: '0px !important',
+      },
+      lineVertical: {
+        visibility: 'hidden' as const,
+        minHeight: 0,
+      },
+    },
+  },
+});
+
 // ==================== Soft theme factory (mint / softBlue / softGray) ====================
 function createSoftTheme(
   variant: "mint" | "softBlue" | "softGray",
@@ -395,6 +500,8 @@ function createSoftTheme(
           },
         },
       },
+      // Merge shared Stepper overrides
+      ...getSharedStepperOverrides(t.brand),
     },
   };
 
@@ -473,9 +580,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       );
     }
     const baseTheme = themeDefinitions[customTheme];
+    const primaryColor = 
+      typeof baseTheme.palette?.primary === 'object' && 
+      'main' in baseTheme.palette.primary 
+        ? baseTheme.palette.primary.main 
+        : "#1976d2";
     return createTheme({
       ...baseTheme,
       palette: { ...baseTheme.palette, mode: actualMode },
+      components: {
+        ...baseTheme.components,
+        ...getSharedStepperOverrides(primaryColor),
+      },
     });
   }, [actualMode, customTheme]);
 

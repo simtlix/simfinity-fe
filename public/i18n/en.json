@@ -23,6 +23,11 @@
   "serie.seasons": "Seasons",
   "serie.stars": "Stars",
 
+  "serie.step.basicInfo": "Basic Information",
+  "serie.step.description": "Description",
+  "serie.step.director": "Director",
+  "serie.step.seasons": "Seasons",
+
   "director.name": "Name",
   "director.country": "Country",
   

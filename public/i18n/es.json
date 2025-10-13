@@ -23,6 +23,11 @@
   "serie.seasons": "Temporadas",
   "serie.stars": "Actores",
 
+  "serie.step.basicInfo": "Información Básica",
+  "serie.step.description": "Descripción",
+  "serie.step.director": "Director",
+  "serie.step.seasons": "Temporadas",
+
   "director.name": "Nombre",
   "director.country": "País",
   

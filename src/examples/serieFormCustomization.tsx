@@ -265,10 +265,33 @@ const CategoriesInput = ({
 export function setupSerieFormCustomization() {
   // Register customization for create mode
   registerFormCustomization("serie", "create", {
+    // Enable stepper mode
+    mode: "stepper",
+    // Define steps
+    steps: [
+      {
+        stepId: "basic-info",
+        stepLabel: 'serie.step.basicInfo',
+      },
+      {
+        stepId: "description",
+        stepLabel: 'serie.step.description',
+      },
+      {
+        stepId: "director",
+        stepLabel: 'serie.step.director',
+      },
+      {
+        stepId: "seasons",
+        stepLabel: 'serie.step.seasons',
+      } 
+    ],
+    
     fieldsCustomization: {
-      // Name field - 50% width on first line
+      // Name field - assigned to Step 1
       name: {
-        size: { xs: 12, sm: 6, md: 6 },
+        stepId: "basic-info",
+        size: { xs: 12, sm: 12, md: 12 },
         order: 1,
         onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
           console.log('Serie name changed:', { fieldName, value, formData });
@@ -284,14 +307,14 @@ export function setupSerieFormCustomization() {
         }
       },
       
-      // Categories field - 50% width on first line
+      // Categories field - assigned to Step 1
       categories: {
-        size: { xs: 12, sm: 6, md: 6 },
+        stepId: "basic-info",
+        size: { xs: 12, sm: 12, md: 12 },
         order: 2,
         customRenderer: (field: FormField, customizationActions: FormCustomizationActions, handleFieldChange: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, disabled: boolean) => {
           return (
             <Box>
-          
               <CategoriesInput
                 value={field.value as string[] || []}
                 onChange={(value) => handleFieldChange(field.name, value)}
@@ -303,8 +326,9 @@ export function setupSerieFormCustomization() {
         }
       },
       
-      // Description field - full width with rich text editor
+      // Description field - assigned to Step 2
       description: {
+        stepId: "description",
         size: { xs: 12, sm: 12, md: 12 },
         order: 3,
         enabled: false, // Initially disabled until name is provided
@@ -320,9 +344,10 @@ export function setupSerieFormCustomization() {
         }
       },
       
-      // Embedded object customization for director
+      // Embedded object customization for director - assigned to Step 3
       director: {
-        size: { xs: 12, sm: 6, md: 6 },
+        stepId: "director",
+        size: { xs: 12, sm: 12, md: 12 },
         order: 4,
         customEmbeddedRenderer: (
           field: FormField,
@@ -378,16 +403,58 @@ export function setupSerieFormCustomization() {
             </Paper>
           );
         }
+      },
+      
+      // Seasons collection - assigned to Step 4
+      seasons: {
+        stepId: "seasons",
+        size: { xs: 12, sm: 12, md: 12 },
+        order: 5,
       }
+    },
+    beforeSubmit: async (formData, collectionChanges, transformedData) => {
+      console.log('Before submitting:', { formData, collectionChanges, transformedData });
+      return true;
+    },
+    onSuccess: async (result) => {
+      console.log('Success:', result);
+      return;
+    },
+    onError: async (error) => {
+      console.log('Error:', error);
+      return;
     }
   });
 
   // Register customization for edit mode
   registerFormCustomization("serie", "edit", {
+    // Enable stepper mode
+    mode: "stepper",
+    // Define steps for edit mode (includes seasons)
+    steps: [
+      {
+        stepId: "basic-info",
+        stepLabel: 'Basic Information',
+      },
+      {
+        stepId: "description",
+        stepLabel: 'Description',
+      },
+      {
+        stepId: "director",
+        stepLabel: 'Director',
+      },
+      {
+        stepId: "seasons",
+        stepLabel: 'Seasons',
+      }
+    ],
+    
     fieldsCustomization: {
-      // Name field - 50% width on first line
+      // Name field - assigned to Step 1
       name: {
-        size: { xs: 12, sm: 6, md: 6 },
+        stepId: "basic-info",
+        size: { xs: 12, sm: 12, md: 12 },
         order: 1,
         onChange: (fieldName, value, formData) => {
           console.log('Serie name changed in edit mode:', { fieldName, value, formData });
@@ -395,14 +462,14 @@ export function setupSerieFormCustomization() {
         }
       },
       
-      // Categories field - 50% width on first line
+      // Categories field - assigned to Step 1
       categories: {
-        size: { xs: 12, sm: 6, md: 6 },
+        stepId: "basic-info",
+        size: { xs: 12, sm: 12, md: 12 },
         order: 2,
         customRenderer: (field: FormField, customizationActions: FormCustomizationActions, handleFieldChange: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void, disabled: boolean) => {
           return (
             <Box>
-
               <CategoriesInput
                 value={field.value as string[] || []}
                 onChange={(value) => handleFieldChange(field.name, value)}
@@ -414,8 +481,9 @@ export function setupSerieFormCustomization() {
         }
       },
       
-      // Description field - full width with rich text editor
+      // Description field - assigned to Step 2
       description: {
+        stepId: "description",
         size: { xs: 12, sm: 12, md: 12 },
         order: 3,
         enabled: true, // Always enabled in edit mode
@@ -431,9 +499,10 @@ export function setupSerieFormCustomization() {
         }
       },
       
-      // Embedded object customization for director
+      // Embedded object customization for director - assigned to Step 3
       director: {
-        size: { xs: 12, sm: 6, md: 6 },
+        stepId: "director",
+        size: { xs: 12, sm: 12, md: 12 },
         order: 4,
         customEmbeddedRenderer: (
           field: FormField,
@@ -490,11 +559,12 @@ export function setupSerieFormCustomization() {
           );
         }
       },
+      // Seasons collection - assigned to Step 4
       seasons: {
+        stepId: "seasons",
         size: { xs: 12, sm: 12, md: 12 },
         order: 5,
         onEdit: {
-          
           onSubmit: async (item: Record<string, unknown>,
             setFieldData: (fieldName: string, value: string | number | boolean | string[] | null | { id: string; [key: string]: unknown }) => void,
             formData: Record<string, unknown>,
@@ -507,7 +577,7 @@ export function setupSerieFormCustomization() {
               return true;
           }
         }
-        }
+      }
     }
   });
 
