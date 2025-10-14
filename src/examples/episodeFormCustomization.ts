@@ -4,13 +4,25 @@ import { registerFormCustomization } from '@simtlix/simfinity-fe-components';
 // This should be called early in your application, typically in a layout or main component
 
 export function setupEpisodeFormCustomization() {
-  // Register customization for create mode
+  // Register customization for create mode with stepper
   registerFormCustomization("episode", "create", {
+    mode: "stepper",
+    steps: [
+      {
+        stepId: "basic-info",
+        stepLabel: "Basic Information"
+      },
+      {
+        stepId: "season-info",
+        stepLabel: "Season"
+      }
+    ],
     fieldsCustomization: {
-    // Field-level customizations
+    // Step 1: Basic Information (name, number, date)
     name: {
-      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices
-      order: 1, // First in the row
+      stepId: "basic-info",
+      size: { xs: 12, sm: 12, md: 12 },
+      order: 1,
       onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
         console.log('Episode name changed:', { fieldName, value, formData });
         
@@ -32,8 +44,9 @@ export function setupEpisodeFormCustomization() {
     },
     
     number: {
-      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices
-      order: 2, // Second in the row (same row as name)
+      stepId: "basic-info",
+      size: { xs: 12, sm: 6, md: 6 },
+      order: 2,
       // Dynamic enabled: only enabled when name has a value
       enabled: (fieldName, value, formData) => {
         const formDataTyped = formData as Record<string, { value?: unknown }>;
@@ -47,17 +60,20 @@ export function setupEpisodeFormCustomization() {
     },
     
     date: {
-      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices (second row)
-      order: 3, // Third in order (second row)
+      stepId: "basic-info",
+      size: { xs: 12, sm: 6, md: 6 },
+      order: 3,
       onChange: (fieldName, value, formData) => {
         console.log('Episode date changed:', { fieldName, value, formData });
         return { value, error: undefined };
       }
     },
     
+    // Step 2: Season Information
     season: {
-      size: { xs: 12, sm: 6, md: 6 }, // Half width on small+ devices (second row)
-      order: 4, // Fourth in order (second row, at the end)
+      stepId: "season-info",
+      size: { xs: 12, sm: 12, md: 12 },
+      order: 1,
       // Dynamic enabled: only enabled when name has a value
       enabled: (fieldName, value, formData) => {
         const formDataTyped = formData as Record<string, { value?: unknown }>;
@@ -74,8 +90,20 @@ export function setupEpisodeFormCustomization() {
 
   // Register customization for edit mode (different behavior)
   registerFormCustomization("episode", "edit", {
+    mode: "stepper",
+    steps: [
+      {
+        stepId: "basic-info",
+        stepLabel: "Basic Information"
+      },
+      {
+        stepId: "season-info",
+        stepLabel: "Season"
+      }
+    ],
     fieldsCustomization: {
     name: {
+      stepId: "basic-info",
       size: { xs: 12, sm: 6, md: 6 },
       order: 1,
       onChange: (fieldName, value, formData, setFieldData, setFieldVisible, setFieldEnabled) => {
@@ -92,17 +120,20 @@ export function setupEpisodeFormCustomization() {
     },
     
     number: {
+      stepId: "basic-info",
       size: { xs: 12, sm: 6, md: 6 },
       order: 2,
       enabled: true // Always enabled in edit mode
     },
     
     date: {
+      stepId: "basic-info",
       size: { xs: 12, sm: 6, md: 6 },
       order: 3
     },
     
     season: {
+      stepId: "season-info",
       size: { xs: 12, sm: 6, md: 6 },
       order: 4,
       enabled: true // Always enabled in edit mode
