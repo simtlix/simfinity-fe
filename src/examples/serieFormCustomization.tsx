@@ -272,6 +272,14 @@ export function setupSerieFormCustomization() {
       {
         stepId: "basic-info",
         stepLabel: 'serie.step.basicInfo',
+        onNext: async (formData, collectionChanges, transformedData/*, actions*/) => {
+          console.log('On next:', { formData, collectionChanges, transformedData });
+          return true;
+        },
+        onBack(formData, collectionChanges, transformedData /*, actions*/) {
+            console.log('On back:', { formData, collectionChanges, transformedData });
+            return true;
+        },
       },
       {
         stepId: "description",
