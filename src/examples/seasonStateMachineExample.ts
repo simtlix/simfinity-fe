@@ -1,7 +1,7 @@
 import { registerEntityStateMachine } from '@simtlix/simfinity-fe-components';
 import { CollectionFieldState, EntityFormCallbackActions } from '@simtlix/simfinity-fe-components';
-import { gql } from '@apollo/client';
-import { apolloClient } from '@/lib/apolloClient';
+import { gql } from 'graphql-tag';
+import { urqlClient } from '@/lib/urqlClient';
 
 /**
  * Example of how to register state machine for season entity
@@ -18,11 +18,7 @@ export function setupSeasonStateMachine() {
           console.log('Before activating season:', { formData, collectionChanges, transformedData });
           
           try {
-            // Use Apollo client from actions
-            
-            if (!apolloClient) {
-              throw new Error('Apollo client not available');
-            }
+            // Use URQL client
             
             // Query server to get actual episodes count using Simfinity pattern
             const GET_EPISODES_COUNT = gql`
@@ -36,18 +32,26 @@ export function setupSeasonStateMachine() {
               }
             `;
             
-            const result = await apolloClient.query({
-              query: GET_EPISODES_COUNT,
-              variables: { 
-                seasonId: transformedData.id,   
-                page: 1,
-                size: 1, // We only need count
-                count: true
-              },
-              fetchPolicy: 'network-only' // Always fetch fresh data
-            });
+            const result = await urqlClient
+              .query(
+                GET_EPISODES_COUNT,
+                { 
+                  seasonId: transformedData.id,   
+                  page: 1,
+                  size: 1, // We only need count
+                  count: true
+                },
+                {
+                  requestPolicy: 'network-only' // Always fetch fresh data
+                }
+              )
+              .toPromise();
             
-            // Apollo doesn't expose extensions directly on result, but simfinity returns count in extensions
+            if (result.error) {
+              throw new Error(result.error.message);
+            }
+            
+            // URQL exposes extensions directly on result
             const existingEpisodesCount = result.data?.episodes?.length || 0;
             const episodesChanges = collectionChanges.episodes || { added: [], modified: [], deleted: [] };
             const newEpisodesCount = episodesChanges.added.length;
@@ -109,11 +113,7 @@ export function setupSeasonStateMachine() {
           console.log('Before finalizing season:', { formData, collectionChanges, transformedData });
           
           try {
-            // Get Apollo client and schema data from global context
-            
-            if (!apolloClient) {
-              throw new Error('Apollo client not available');
-            }
+            // Use URQL client
             
             // Query server to get actual episodes with their air dates using Simfinity pattern
             const GET_EPISODES = gql`
@@ -128,16 +128,26 @@ export function setupSeasonStateMachine() {
               }
             `;
             
-            const { data } = await apolloClient.query({
-              query: GET_EPISODES,
-              variables: { 
-                seasonId: transformedData.id,
-                page: 1,
-                size: 1000, // Get all episodes (adjust if needed)
-                count: true
-              },
-              fetchPolicy: 'network-only' // Always fetch fresh data
-            });
+            const result = await urqlClient
+              .query(
+                GET_EPISODES,
+                { 
+                  seasonId: transformedData.id,
+                  page: 1,
+                  size: 1000, // Get all episodes (adjust if needed)
+                  count: true
+                },
+                {
+                  requestPolicy: 'network-only' // Always fetch fresh data
+                }
+              )
+              .toPromise();
+            
+            if (result.error) {
+              throw new Error(result.error.message);
+            }
+            
+            const data = result.data;
             
             const existingEpisodes = data?.episodes || [];
             const episodesChanges = collectionChanges.episodes || { added: [], modified: [], deleted: [] };

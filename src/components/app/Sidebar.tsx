@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@apollo/client";
+import { useQuery } from "urql";
 import { INTROSPECTION_QUERY, getListEntityFieldNames, getElementTypeNameOfListField, SchemaData } from "@simtlix/simfinity-fe-components";
 import { useI18n } from "@simtlix/simfinity-fe-components";
 import { Box, CircularProgress, Divider, Drawer, List, ListItemButton, ListItemText, Toolbar, Typography } from "@mui/material";
@@ -18,7 +18,8 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const { resolveLabel } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
-  const { data, loading, error } = useQuery(INTROSPECTION_QUERY);
+  const [result] = useQuery({ query: INTROSPECTION_QUERY });
+  const { data, fetching: loading, error } = result;
 
   // Helper function to get entity name from i18n
   const getEntityName = (pluralName: string, form: 'single' | 'plural'): string => {

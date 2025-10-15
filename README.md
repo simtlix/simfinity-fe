@@ -1,6 +1,6 @@
 # Simfinity Frontend
 
-A Next.js 15.4.6 frontend application for Simfinity, featuring a dynamic, schema-driven form management system built with GraphQL, Apollo Client, and Material-UI v7.3.1.
+A Next.js 15.4.6 frontend application for Simfinity, featuring a dynamic, schema-driven form management system built with GraphQL, urql, and Material-UI v7.3.1.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -22,7 +22,7 @@ The system provides two main components:
 - **Internationalization**: Multi-language support (English/Spanish)
 - **Form Customization**: Field-level visibility, validation, and layout control
 - **State Machine Support**: Entity state transitions with business rule validation
-- **GraphQL Integration**: Native Apollo Client support with dynamic queries
+- **GraphQL Integration**: Native urql support with dynamic queries
 
 ### 🎯 **Entity Management**
 - **Create Mode**: Build new entities with collections from scratch
@@ -36,7 +36,7 @@ The system provides two main components:
 - **Responsive Layout**: Mobile-first approach with grid system
 - **Custom Field Renderers**: Specialized input components for different data types
 - **Accordion Sections**: Organized embedded object display
-- **Real-time Updates**: Apollo Client cache management
+- **Real-time Updates**: urql cache management with graphcache
 
 ## Getting Started
 
@@ -634,10 +634,10 @@ export function setupSeasonStateMachine() {
             }
           `;
           
-          const { data } = await apolloClient.query({
-            query: GET_EPISODES,
-            variables: { seasonId: transformedData.id },
-            fetchPolicy: 'network-only'
+          const result = await urqlClient.query(GET_EPISODES, {
+            seasonId: transformedData.id
+          }).toPromise();
+          const { data } = result;
           });
           
           const existingEpisodes = data?.episodes || [];
@@ -1078,7 +1078,7 @@ src/
 │   ├── en.ts
 │   └── es.ts
 ├── lib/                  # Utilities and configurations
-│   ├── apolloClient.ts
+│   ├── urqlClient.ts
 │   └── themeContext.tsx
 └── public/
     └── i18n/            # Static JSON i18n
@@ -1096,7 +1096,7 @@ src/
 - **Framework**: Next.js 15.4.6 with App Router
 - **Language**: TypeScript 5 (strict mode)
 - **UI Library**: Material-UI v7.3.1
-- **Data Layer**: Apollo Client 3.13.9 + GraphQL 16.11.0
+- **Data Layer**: urql 5.0.1 + GraphQL 16.11.0
 - **Styling**: Tailwind CSS 4 + Emotion
 - **State Management**: React hooks + custom hooks
 - **Internationalization**: i18n support (en/es)
@@ -1120,7 +1120,7 @@ To learn more about the technologies used in this project:
 
 - **[Next.js Documentation](https://nextjs.org/docs)** - Learn about Next.js features and API
 - **[Material-UI Documentation](https://mui.com/)** - Material-UI components and theming
-- **[Apollo Client](https://www.apollographql.com/docs/react/)** - GraphQL client for React
+- **[urql Documentation](https://commerce.nearform.com/open-source/urql/docs/)** - GraphQL client for React
 - **[Simfinity.js](https://github.com/simtlix/simfinity-js)** - GraphQL schema and API generator
 
 ## Deploy on Vercel

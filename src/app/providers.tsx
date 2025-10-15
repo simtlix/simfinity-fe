@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ApolloProvider } from "@apollo/client";
-import { apolloClient } from "@/lib/apolloClient";
+import { Provider as UrqlProvider } from "urql";
+import { urqlClient } from "@/lib/urqlClient";
 import { CssBaseline, ThemeProvider as MuiThemeProvider } from "@mui/material";
 import { I18nProvider } from "@simtlix/simfinity-fe-components";
 
@@ -15,13 +15,13 @@ setupConfigurations();
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ApolloProvider client={apolloClient}>
+    <UrqlProvider value={urqlClient}>
       <I18nProvider>
         <ThemeProvider>
           <ThemeConsumer>{children}</ThemeConsumer>
         </ThemeProvider>
       </I18nProvider>
-    </ApolloProvider>
+    </UrqlProvider>
   );
 }
 
