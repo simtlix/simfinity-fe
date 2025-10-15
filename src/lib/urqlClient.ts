@@ -7,11 +7,19 @@ const GRAPHQL_URL =
 
 export const urqlClient = new Client({
   url: GRAPHQL_URL,
-  exchanges: [cacheExchange, fetchExchange],
-  // Force POST method for all requests (queries and mutations)
-  fetchOptions: {
+  exchanges: [
+    cacheExchange,
+    fetchExchange
+  ],
+  // Force POST method for all GraphQL operations
+  fetchOptions: () => ({
     method: 'POST',
-  },
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }),
+  // Disable GET method for queries
+  preferGetMethod: false,
   requestPolicy: 'network-only',
 });
 
