@@ -86,6 +86,12 @@
   "grid.filter.greaterThanOrEqual": "greater than or equal to",
   "grid.filter.lessThan": "less than",
   "grid.filter.lessThanOrEqual": "less than or equal to",
+  
+  "grid.pagination.rowsPerPage": "Rows per page:",
+  "grid.pagination.displayedRows": "{from}–{to} of {count}",
+  
+  "grid.footer.rowsSelected": "{count} rows selected",
+  "grid.footer.rowSelected": "{count} row selected",
 
   "form.create": "Create",
   "form.edit": "Edit",
@@ -93,6 +99,8 @@
   "form.cancel": "Cancel",
   "form.update": "Update",
   "form.submit": "Submit",
+  "form.back": "Back",
+  "form.next": "Next",
   "form.required": "This field is required",
   "form.invalidNumber": "Must be a valid number",
   "form.invalidDate": "Must be a valid date",

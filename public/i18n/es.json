@@ -86,6 +86,12 @@
   "grid.filter.greaterThanOrEqual": "mayor o igual que",
   "grid.filter.lessThan": "menor que",
   "grid.filter.lessThanOrEqual": "menor o igual que",
+  
+  "grid.pagination.rowsPerPage": "Filas por página:",
+  "grid.pagination.displayedRows": "{from}–{to} de {count}",
+  
+  "grid.footer.rowsSelected": "{count} filas seleccionadas",
+  "grid.footer.rowSelected": "{count} fila seleccionada",
 
   "form.create": "Crear",
   "form.edit": "Editar",
@@ -93,6 +99,8 @@
   "form.cancel": "Cancelar",
   "form.update": "Actualizar",
   "form.submit": "Enviar",
+  "form.back": "Atrás",
+  "form.next": "Siguiente",
   "form.required": "Este campo es obligatorio",
   "form.invalidNumber": "Debe ser un número válido",
   "form.invalidDate": "Debe ser una fecha válida",

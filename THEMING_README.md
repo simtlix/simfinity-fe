@@ -7,7 +7,7 @@ This document describes the comprehensive theming system implemented in the Simf
 The theming system provides dynamic theme switching capabilities with multiple color schemes and modes, built on top of Material-UI v7.3.1. It supports:
 
 - **Multiple Theme Modes**: Light, Dark, and Auto (follows system preference)
-- **Multiple Color Schemes**: Default, Blue, Green, Purple, and Orange
+- **Multiple Color Schemes**: Default, Blue, Green, Purple, Orange, Mint, Soft Blue, Soft Gray, and Banking
 - **Theme Persistence**: User preferences are saved to localStorage
 - **Smooth Transitions**: Animated theme changes for better UX
 - **TypeScript Support**: Fully typed theme context and components
@@ -101,11 +101,27 @@ function ThemedComponent() {
 
 ### Color Schemes
 
+#### Classic Themes
 - **Default**: Material-UI default blue/red color scheme
 - **Blue**: Blue/orange color scheme
 - **Green**: Green/orange color scheme  
 - **Purple**: Purple/yellow color scheme
 - **Orange**: Orange/blue color scheme
+
+#### Soft Themes (Enhanced with custom backgrounds and subtle shadows)
+- **Mint**: Teal/green color scheme with soft mint backgrounds
+- **Soft Blue**: Light blue color scheme with soft blue-gray backgrounds
+- **Soft Gray**: Neutral gray color scheme with minimal contrast
+
+#### Professional Themes (Minimal, enterprise-focused design)
+- **Banking**: Deep purple/violet color scheme with minimal, professional aesthetic
+  - Primary: `#6B2DA8` (Deep Purple)
+  - Secondary: `#4A148C` (Dark Purple)
+  - Border Radius: `8px` (sharper corners)
+  - Shadows: Subtle, minimal shadows (`0 2px 8px`)
+  - Tables: Clean, minimal row design with subtle hover states
+  - Perfect for financial and enterprise applications
+  - Distinct from soft themes with its minimalist approach
 
 ## Theme Structure
 
@@ -127,6 +143,44 @@ Each color scheme defines:
   },
 }
 ```
+
+## Banking Theme - Professional Design
+
+The banking theme is specifically designed for financial and enterprise applications with a minimalist, professional aesthetic that differs from other themes:
+
+### Key Differences
+
+**Design Philosophy:**
+- **Minimal**: Clean, uncluttered interface
+- **Professional**: Subtle shadows and sharp corners (8px border radius)
+- **Accessible**: High contrast text for readability
+- **Fast**: Faster transitions (0.2s vs 0.3s)
+
+**Visual Elements:**
+- **Border Radius**: `8px` (vs `20px` in soft themes)
+- **Shadows**: `0 2px 8px rgba(0,0,0,.08)` (vs `0 18px 40px` in soft themes)
+- **AppBar**: No shadow, clean border-bottom only
+- **Tables**: Minimal row design with `#FAFAFA` header background, alternating row colors (zebra striping) for better readability
+- **Buttons**: No default shadow, hover only
+- **Transitions**: 0.2s (faster and more responsive)
+
+**Color Palette:**
+```typescript
+{
+  brand: "#6B2DA8",        // Deep Purple
+  brand2: "#4A148C",       // Dark Purple
+  canvasLight: "#FAFAFA",  // Very light gray
+  canvasDark: "#1A0F24",   // Deep purple-black
+  surfaceLight: "#FFFFFF", // Pure white
+  surfaceDark: "#2D1B4E",  // Dark purple surface
+}
+```
+
+**When to Use:**
+- Financial applications (banking, trading, accounting)
+- Enterprise business applications
+- Admin dashboards requiring a professional look
+- Applications where data clarity is paramount
 
 ## Integration with Form System
 

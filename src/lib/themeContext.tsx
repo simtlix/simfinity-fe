@@ -21,7 +21,8 @@ export type CustomTheme =
   | "orange"
   | "mint"
   | "softBlue"
-  | "softGray";
+  | "softGray"
+  | "banking";
 
 export interface ThemeContextType {
   mode: ThemeMode;
@@ -508,9 +509,356 @@ function createSoftTheme(
   return createTheme(base);
 }
 
+// ==================== Banking theme (minimal, professional) ====================
+function createBankingTheme(resolvedMode: "light" | "dark") {
+  const isDark = resolvedMode === "dark";
+
+  const colors = {
+    brand: "#6B2DA8",
+    brand2: "#4A148C",
+    canvasLight: "#FAFAFA",
+    canvasDark: "#1A0F24",
+    surfaceLight: "#FFFFFF",
+    surfaceDark: "#2D1B4E",
+    headerLight: "#FFFFFF",
+    headerDark: "#2D1B4E",
+    lineLight: "#E0E0E0",
+    lineDark: "rgba(255,255,255,0.12)",
+    hoverLight: "rgba(0,0,0,0.04)",
+    hoverDark: "rgba(255,255,255,0.05)",
+    selectLight: "#F3E5F5",
+    selectDark: "#3A2558",
+    gray1: isDark ? "#F5F5F5" : "#212121", // text.primary
+    gray2: isDark ? "#E0E0E0" : "#424242", // body text
+    gray3: isDark ? "#BDBDBD" : "#757575", // text.secondary
+  };
+
+  const base: ThemeOptions = {
+    palette: {
+      mode: resolvedMode,
+      primary: { main: colors.brand, dark: colors.brand2 },
+      background: {
+        default: isDark ? colors.canvasDark : colors.canvasLight,
+        paper: isDark ? colors.surfaceDark : colors.surfaceLight,
+      },
+      divider: isDark ? colors.lineDark : colors.lineLight,
+      text: { primary: colors.gray1, secondary: colors.gray3 },
+      success: { main: colors.brand },
+    },
+    shape: { borderRadius: 8 }, // Sharper corners like banking apps
+    typography: {
+      fontFamily: [
+        "Inter",
+        "system-ui",
+        "-apple-system",
+        "Segoe UI",
+        "Roboto",
+        "Arial",
+      ].join(","),
+      h5: { fontWeight: 600 },
+      button: { fontWeight: 600, textTransform: "none" },
+    },
+    components: {
+      // ===== Minimal inputs =====
+      MuiFormControl: {
+        defaultProps: { size: "small" },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            "&.MuiInputBase-sizeSmall": { minHeight: 40 },
+            "& .MuiSelect-select": { paddingTop: 8, paddingBottom: 8 },
+          },
+          inputSizeSmall: { paddingTop: 8, paddingBottom: 8 },
+        },
+      },
+      MuiSelect: {
+        defaultProps: { size: "small", variant: "outlined" },
+        styleOverrides: {
+          select: {
+            paddingTop: "8px !important",
+            paddingBottom: "8px !important",
+          },
+          outlined: { paddingRight: "40px !important" },
+          iconOutlined: { right: 10 },
+          nativeInput: { paddingTop: 8, paddingBottom: 8 },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: { root: { minHeight: 36 } },
+      },
+
+      // ===== Clean background (no gradient) =====
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            backgroundColor: isDark ? colors.canvasDark : colors.canvasLight,
+            transition: "background-color .2s ease, color .2s ease",
+          },
+        },
+      },
+
+      // ===== Minimal AppBar =====
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            backgroundColor: isDark ? colors.headerDark : colors.headerLight,
+            borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            boxShadow: "none", // No shadow for cleaner look
+            transition: "background-color .2s ease",
+            color: colors.gray1,
+            "& .MuiIconButton-root, & .MuiTypography-root, & .MuiButton-root, & .MuiSvgIcon-root":
+              { color: "inherit" },
+          },
+        },
+      },
+
+      // ===== Minimal Drawer =====
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            borderRight: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
+            boxShadow: "none",
+            transition: "background-color .2s ease",
+          },
+        },
+      },
+
+      // ===== Paper with subtle shadow =====
+      MuiPaper: {
+        defaultProps: { elevation: 0 },
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
+            border: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            boxShadow: isDark
+              ? "0 2px 8px rgba(0,0,0,.2)"
+              : "0 2px 8px rgba(0,0,0,.08)",
+          },
+          outlined: {
+            border: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
+            boxShadow: "none",
+          },
+        },
+      },
+
+      // ===== Minimal buttons =====
+      MuiButton: {
+        defaultProps: { variant: "contained" },
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            boxShadow: "none",
+            ":hover": {
+              boxShadow: isDark
+                ? "0 4px 12px rgba(0,0,0,.3)"
+                : "0 4px 12px rgba(107,45,168,.2)",
+            },
+          },
+          outlined: {
+            borderColor: alpha(colors.brand, 0.5),
+            color: colors.brand,
+            backgroundColor: "transparent",
+            ":hover": {
+              borderColor: colors.brand,
+              backgroundColor: alpha(colors.brand, 0.08),
+            },
+          },
+        },
+      },
+
+      // ===== Clean inputs =====
+      MuiTextField: {
+        defaultProps: { size: "small", fullWidth: true },
+        styleOverrides: {
+          root: {
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 8,
+              backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
+            },
+          },
+        },
+      },
+      MuiFormLabel: {
+        styleOverrides: {
+          root: { color: colors.gray3, "&.Mui-focused": { color: colors.gray3 } },
+        },
+      },
+      MuiInputBase: {
+        styleOverrides: { input: { color: colors.gray1 } },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 8,
+          },
+        },
+      },
+      MuiPopover: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 8,
+          },
+        },
+      },
+
+      // ===== Minimal chips =====
+      MuiChip: {
+        variants: [
+          {
+            props: { color: "success", variant: "filled" },
+            style: {
+              backgroundColor: isDark
+                ? alpha(colors.brand, 0.3)
+                : alpha(colors.brand, 0.12),
+              color: colors.brand,
+              fontWeight: 600,
+              borderRadius: 6,
+            },
+          },
+          {
+            props: { color: "default", variant: "filled" },
+            style: {
+              backgroundColor: isDark ? "rgba(255,255,255,.1)" : "#F5F5F5",
+              color: isDark ? "#E0E0E0" : "#424242",
+              fontWeight: 600,
+              borderRadius: 6,
+            },
+          },
+        ],
+      },
+
+      // ===== Clean table (minimal design) =====
+      MuiTableContainer: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            border: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
+            boxShadow: "none",
+            overflow: "hidden",
+            marginTop: "16px",
+            marginBottom: "0px",
+          },
+        },
+      },
+      MuiTable: {
+        styleOverrides: {
+          root: {
+            backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
+            "& .MuiTableCell-root": { paddingBlock: 12 },
+          },
+        },
+      },
+      MuiTableHead: {
+        styleOverrides: {
+          root: {
+            backgroundColor: isDark ? "rgba(255,255,255,.03)" : "#FAFAFA",
+            "& .MuiTableCell-head": {
+              color: colors.gray1,
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              letterSpacing: ".02em",
+              borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            },
+          },
+        },
+      },
+      MuiTableRow: {
+        styleOverrides: {
+          root: {
+            // Alternating row colors (zebra striping)
+            "&:nth-of-type(even) .MuiTableCell-root": {
+              backgroundColor: isDark ? "rgba(255,255,255,.02)" : "#F9F9F9",
+            },
+            "&:hover .MuiTableCell-root": {
+              backgroundColor: isDark ? colors.hoverDark : colors.hoverLight,
+            },
+            "&.Mui-selected .MuiTableCell-root, &.Mui-selected:hover .MuiTableCell-root":
+              {
+                backgroundColor: `${isDark ? colors.selectDark : colors.selectLight} !important`,
+              },
+            transition: "background-color .1s ease",
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: {
+            borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            color: colors.gray2,
+          },
+          sizeSmall: { paddingTop: 10, paddingBottom: 10 },
+          head: {
+            backgroundColor: "transparent",
+            fontWeight: 600,
+            color: colors.gray1,
+          },
+        },
+      },
+
+      // ===== Clean DataGrid =====
+      MuiDataGrid: {
+        styleOverrides: {
+          root: {
+            border: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            borderRadius: 8,
+            backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
+            boxShadow: "none",
+            marginBottom: "0px",
+          },
+          columnHeaders: {
+            backgroundColor: isDark ? "rgba(255,255,255,.03)" : "#FAFAFA",
+            color: colors.gray1,
+            borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            minHeight: 48,
+            height: 48,
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            letterSpacing: ".02em",
+          },
+          columnHeader: {
+            "& .MuiDataGrid-columnSeparator": { display: "none" },
+            "&.MuiDataGrid-columnHeader--sorted": { color: colors.brand },
+          },
+          row: {
+            // Alternating row colors (zebra striping)
+            "&:nth-of-type(even)": {
+              backgroundColor: isDark ? "rgba(255,255,255,.02)" : "#F9F9F9",
+            },
+            "&:hover": {
+              backgroundColor: isDark ? colors.hoverDark : colors.hoverLight,
+            },
+            "&.Mui-selected, &.Mui-selected:hover": {
+              backgroundColor: `${isDark ? colors.selectDark : colors.selectLight} !important`,
+            },
+          },
+          cell: {
+            borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            color: colors.gray2,
+            paddingBlock: 12,
+          },
+          footerContainer: {
+            borderTop: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
+            backgroundColor: isDark ? "rgba(255,255,255,.03)" : "#FAFAFA",
+          },
+        },
+      },
+      // Merge shared Stepper overrides
+      ...getSharedStepperOverrides(colors.brand),
+    },
+  };
+
+  return createTheme(base);
+}
+
 // ==================== Classic themes (unchanged) ====================
 const themeDefinitions: Record<
-  Exclude<CustomTheme, "mint" | "softBlue" | "softGray">,
+  Exclude<CustomTheme, "mint" | "softBlue" | "softGray" | "banking">,
   ThemeOptions
 > = {
   default: {
@@ -569,6 +917,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [mode]);
 
   const theme = React.useMemo(() => {
+    if (customTheme === "banking") {
+      return createBankingTheme(actualMode);
+    }
     if (
       customTheme === "mint" ||
       customTheme === "softBlue" ||

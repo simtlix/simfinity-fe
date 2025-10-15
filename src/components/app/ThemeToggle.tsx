@@ -34,10 +34,11 @@ const customThemeOptions = [
     { value: 'purple'   as CustomTheme, label: 'Purple',    color: '#9c27b0' },
     { value: 'orange'   as CustomTheme, label: 'Orange',    color: '#ff9800' },
   
-    // 👇 Nuevos “soft” con el look mint pero otras paletas
+    // 👇 Nuevos "soft" con el look mint pero otras paletas
     { value: 'mint'     as CustomTheme, label: 'Mint',      color: '#108775' },
     { value: 'softBlue' as CustomTheme, label: 'Soft Blue', color: '#1E88E5' },
     { value: 'softGray' as CustomTheme, label: 'Soft Gray', color: '#5F6B7A' },
+    { value: 'banking'  as CustomTheme, label: 'Banking',   color: '#6B2DA8' },
   ];
 
 export default function ThemeToggle() {
