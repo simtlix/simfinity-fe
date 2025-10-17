@@ -86,7 +86,7 @@ const getSharedStepperOverrides = (primaryColor: string) => ({
         cursor: 'pointer',
       },
       label: {
-        fontFamily: 'var(--font-proxima-nova)',
+        fontFamily: 'Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial',
         fontSize: '14px',
         lineHeight: '16px',
         fontWeight: 700,
@@ -110,7 +110,7 @@ const getSharedStepperOverrides = (primaryColor: string) => ({
         },
       },
       text: {
-        fontFamily: 'var(--font-dm-mono)',
+        fontFamily: 'Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial',
         fontSize: '14px',
       },
     },
@@ -516,7 +516,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
   const colors = {
     brand: "#260A2F",
     brand2: "#1A0621",
-    canvasLight: "#FAFAFA",
+    canvasLight: "#F5F5F5",
     canvasDark: "#1A0F24",
     surfaceLight: "#FFFFFF",
     surfaceDark: "#2D1B4E",
@@ -859,7 +859,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           row: {
             // Alternating row colors (zebra striping)
             "&:nth-of-type(odd)": {
-              backgroundColor: isDark ? "rgba(255,255,255,.02)" : "#F9F9F9",
+              backgroundColor: isDark ? "rgba(255,255,255,.02)" : "#F5F5F5",
             },
             "&:hover": {
               backgroundColor: isDark ? colors.hoverDark : colors.hoverLight,
@@ -878,7 +878,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           },
           footerContainer: {
             borderTop: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
-            backgroundColor: isDark ? "rgba(255,255,255,.03)" : "#FAFAFA",
+            backgroundColor: isDark ? "rgba(255,255,255,.03)" : "#F5F5F5",
           },
         },
       },
