@@ -852,6 +852,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             letterSpacing: ".02em",
           },
           columnHeader: {
+            backgroundColor: isDark ? colors.surfaceDark : "#FFFFFF",
             "& .MuiDataGrid-columnSeparator": { display: "none" },
             "&.MuiDataGrid-columnHeader--sorted": { color: colors.brand },
           },
