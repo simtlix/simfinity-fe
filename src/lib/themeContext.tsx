@@ -567,28 +567,37 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
         styleOverrides: {
           root: {
             borderRadius: 8,
-            "&.MuiInputBase-sizeSmall": { minHeight: 40 },
-            "& .MuiSelect-select": { paddingTop: 8, paddingBottom: 8 },
+            fontSize: "16px",
+            minHeight: 48,
+            "&.MuiInputBase-sizeSmall": { minHeight: 48 },
+            "& .MuiSelect-select": { paddingTop: 12, paddingBottom: 12 },
           },
-          inputSizeSmall: { paddingTop: 8, paddingBottom: 8 },
+          input: {
+            fontSize: "16px",
+            paddingTop: 12,
+            paddingBottom: 12,
+          },
+          inputSizeSmall: { paddingTop: 12, paddingBottom: 12 },
         },
       },
       MuiSelect: {
         defaultProps: { size: "small", variant: "outlined" },
         styleOverrides: {
           select: {
-            paddingTop: "8px !important",
-            paddingBottom: "8px !important",
+            fontSize: "16px",
+            paddingTop: "12px !important",
+            paddingBottom: "12px !important",
           },
           outlined: { paddingRight: "40px !important" },
           iconOutlined: { right: 10 },
-          nativeInput: { paddingTop: 8, paddingBottom: 8 },
+          nativeInput: { paddingTop: 12, paddingBottom: 12 },
         },
       },
       MuiMenuItem: {
         styleOverrides: { 
           root: { 
-            minHeight: 36,
+            minHeight: 48,
+            fontSize: "16px",
           } 
         },
       },
@@ -683,6 +692,8 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           root: {
             "& .MuiOutlinedInput-root": {
               borderRadius: 8,
+              fontSize: "16px",
+              minHeight: 48,
               backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
             },
           },
@@ -691,7 +702,8 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
       MuiFormLabel: {
         styleOverrides: {
           root: { 
-            color: colors.gray3, 
+            color: colors.gray3,
+            fontSize: "16px",
             "&.Mui-focused": { color: colors.gray3 } 
           },
         },
@@ -700,6 +712,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
         styleOverrides: { 
           input: { 
             color: colors.gray1,
+            fontSize: "16px",
           } 
         },
       },
@@ -773,7 +786,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             "& .MuiTableCell-head": {
               color: colors.gray1,
               fontWeight: 600,
-              fontSize: "0.875rem",
+              fontSize: "16px",
               letterSpacing: ".02em",
               borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             },
@@ -803,12 +816,14 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           root: {
             borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             color: colors.gray2,
+            fontSize: "16px",
           },
           sizeSmall: { paddingTop: 10, paddingBottom: 10 },
           head: {
             backgroundColor: "transparent",
             fontWeight: 600,
             color: colors.gray1,
+            fontSize: "16px",
           },
         },
       },
@@ -830,7 +845,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             minHeight: 48,
             height: 48,
             fontWeight: 600,
-            fontSize: "0.875rem",
+            fontSize: "16px",
             letterSpacing: ".02em",
           },
           columnHeader: {
@@ -853,6 +868,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             color: colors.gray2,
             paddingBlock: 12,
+            fontSize: "16px",
           },
           footerContainer: {
             borderTop: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
