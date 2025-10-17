@@ -579,6 +579,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           select: {
             paddingTop: "8px !important",
             paddingBottom: "8px !important",
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
           },
           outlined: { paddingRight: "40px !important" },
           iconOutlined: { right: 10 },
@@ -586,7 +587,12 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
         },
       },
       MuiMenuItem: {
-        styleOverrides: { root: { minHeight: 36 } },
+        styleOverrides: { 
+          root: { 
+            minHeight: 36,
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+          } 
+        },
       },
 
       // ===== Clean background (no gradient) =====
@@ -595,6 +601,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           body: {
             backgroundColor: isDark ? colors.canvasDark : colors.canvasLight,
             transition: "background-color .2s ease, color .2s ease",
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
           },
         },
       },
@@ -608,6 +615,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             boxShadow: "none", // No shadow for cleaner look
             transition: "background-color .2s ease",
             color: colors.gray1,
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
             "& .MuiIconButton-root, & .MuiTypography-root, & .MuiButton-root, & .MuiSvgIcon-root":
               { color: "inherit" },
           },
@@ -622,6 +630,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
             boxShadow: "none",
             transition: "background-color .2s ease",
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
           },
         },
       },
@@ -653,6 +662,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           root: {
             borderRadius: 8,
             boxShadow: "none",
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
             ":hover": {
               boxShadow: isDark
                 ? "0 4px 12px rgba(0,0,0,.3)"
@@ -685,11 +695,20 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
       },
       MuiFormLabel: {
         styleOverrides: {
-          root: { color: colors.gray3, "&.Mui-focused": { color: colors.gray3 } },
+          root: { 
+            color: colors.gray3, 
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+            "&.Mui-focused": { color: colors.gray3 } 
+          },
         },
       },
       MuiInputBase: {
-        styleOverrides: { input: { color: colors.gray1 } },
+        styleOverrides: { 
+          input: { 
+            color: colors.gray1,
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+          } 
+        },
       },
       MuiMenu: {
         styleOverrides: {
@@ -718,6 +737,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
               color: colors.brand,
               fontWeight: 600,
               borderRadius: 6,
+              fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
             },
           },
           {
@@ -727,6 +747,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
               color: isDark ? "#E0E0E0" : "#424242",
               fontWeight: 600,
               borderRadius: 6,
+              fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
             },
           },
         ],
@@ -763,6 +784,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
               fontWeight: 600,
               fontSize: "0.875rem",
               letterSpacing: ".02em",
+              fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
               borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             },
           },
@@ -791,12 +813,14 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           root: {
             borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             color: colors.gray2,
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
           },
           sizeSmall: { paddingTop: 10, paddingBottom: 10 },
           head: {
             backgroundColor: "transparent",
             fontWeight: 600,
             color: colors.gray1,
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
           },
         },
       },
@@ -820,6 +844,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             fontWeight: 600,
             fontSize: "0.875rem",
             letterSpacing: ".02em",
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
           },
           columnHeader: {
             "& .MuiDataGrid-columnSeparator": { display: "none" },
@@ -841,6 +866,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             color: colors.gray2,
             paddingBlock: 12,
+            fontFamily: "Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial",
           },
           footerContainer: {
             borderTop: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
