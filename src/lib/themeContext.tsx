@@ -822,7 +822,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           },
           sizeSmall: { paddingTop: 10, paddingBottom: 10 },
           head: {
-            backgroundColor: "transparent",
+            backgroundColor: isDark ? colors.surfaceDark : "#FFFFFF",
             fontWeight: 700,
             color: colors.gray1,
             fontSize: "16px",
