@@ -548,7 +548,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
     shape: { borderRadius: 8 }, // Sharper corners like banking apps
     typography: {
       fontFamily: [
-        "Inter",
+        "Nunito",
         "system-ui",
         "-apple-system",
         "Segoe UI",
