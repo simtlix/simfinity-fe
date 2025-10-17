@@ -514,8 +514,8 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
   const isDark = resolvedMode === "dark";
 
   const colors = {
-    brand: "#6B2DA8",
-    brand2: "#4A148C",
+    brand: "#260A2F",
+    brand2: "#1A0621",
     canvasLight: "#FAFAFA",
     canvasDark: "#1A0F24",
     surfaceLight: "#FFFFFF",
@@ -671,7 +671,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             ":hover": {
               boxShadow: isDark
                 ? "0 4px 12px rgba(0,0,0,.3)"
-                : "0 4px 12px rgba(107,45,168,.2)",
+                : "0 4px 12px rgba(38,10,47,.2)",
             },
           },
           outlined: {
