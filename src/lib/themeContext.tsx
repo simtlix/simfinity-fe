@@ -858,7 +858,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           },
           row: {
             // Alternating row colors (zebra striping)
-            "&:nth-of-type(even)": {
+            "&:nth-of-type(odd)": {
               backgroundColor: isDark ? "rgba(255,255,255,.02)" : "#F9F9F9",
             },
             "&:hover": {
