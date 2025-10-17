@@ -817,6 +817,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             color: colors.gray2,
             fontSize: "16px",
+            verticalAlign: "middle",
           },
           sizeSmall: { paddingTop: 10, paddingBottom: 10 },
           head: {
@@ -824,6 +825,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             fontWeight: 600,
             color: colors.gray1,
             fontSize: "16px",
+            verticalAlign: "middle",
           },
         },
       },
@@ -869,6 +871,8 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             color: colors.gray2,
             paddingBlock: 12,
             fontSize: "16px",
+            display: "flex",
+            alignItems: "center",
           },
           footerContainer: {
             borderTop: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
