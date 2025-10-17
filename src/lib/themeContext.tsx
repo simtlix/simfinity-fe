@@ -555,7 +555,8 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
         "Roboto",
         "Arial",
       ].join(","),
-      h5: { fontWeight: 600 },
+      h4: { fontWeight: 700 },
+      h5: { fontWeight: 700 },
       button: { fontWeight: 600, textTransform: "none" },
     },
     components: {
@@ -782,10 +783,10 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
       MuiTableHead: {
         styleOverrides: {
           root: {
-            backgroundColor: isDark ? "rgba(255,255,255,.03)" : "#FAFAFA",
+            backgroundColor: isDark ? colors.surfaceDark : "#FFFFFF",
             "& .MuiTableCell-head": {
               color: colors.gray1,
-              fontWeight: 600,
+              fontWeight: 700,
               fontSize: "16px",
               letterSpacing: ".02em",
               borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
@@ -822,7 +823,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           sizeSmall: { paddingTop: 10, paddingBottom: 10 },
           head: {
             backgroundColor: "transparent",
-            fontWeight: 600,
+            fontWeight: 700,
             color: colors.gray1,
             fontSize: "16px",
             verticalAlign: "middle",
@@ -841,12 +842,12 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             marginBottom: "0px",
           },
           columnHeaders: {
-            backgroundColor: isDark ? "rgba(255,255,255,.03)" : "#FAFAFA",
+            backgroundColor: isDark ? colors.surfaceDark : "#FFFFFF",
             color: colors.gray1,
             borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             minHeight: 48,
             height: 48,
-            fontWeight: 600,
+            fontWeight: 700,
             fontSize: "16px",
             letterSpacing: ".02em",
           },
