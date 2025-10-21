@@ -840,6 +840,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
             boxShadow: "none",
             marginBottom: "0px",
+            "--DataGrid-t-header-background-base": isDark ? colors.surfaceDark : "#FFFFFF",
           },
           columnHeaders: {
             backgroundColor: isDark ? colors.surfaceDark : "#FFFFFF",
