@@ -843,6 +843,9 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             "--DataGrid-containerBackground": isDark ? colors.surfaceDark : "#FFFFFF",
             "--DataGrid-t-header-background-base": isDark ? colors.surfaceDark : "#FFFFFF",
             "--unstable_DataGrid-headWeight": "700",
+            ".MuiDataGrid-filler": {
+              backgroundColor: `${isDark ? colors.surfaceDark : "#FFFFFF"} !important`,
+            },
           },
           columnHeaders: {
             backgroundColor: `${isDark ? colors.surfaceDark : "#FFFFFF"} !important`,
@@ -858,6 +861,9 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             backgroundColor: `${isDark ? colors.surfaceDark : "#FFFFFF"} !important`,
             "& .MuiDataGrid-columnSeparator": { display: "none" },
             "&.MuiDataGrid-columnHeader--sorted": { color: colors.brand },
+            ".MuiDataGrid-filler": {
+              backgroundColor: `${isDark ? colors.surfaceDark : "#FFFFFF"} !important`,
+            },
           },
           row: {
             // Alternating row colors (zebra striping)
