@@ -840,10 +840,11 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
             boxShadow: "none",
             marginBottom: "0px",
-            "--DataGrid-t-header-background-base": isDark ? colors.surfaceDark : "#FFFFFF",
+            "--DataGrid-containerBackground": isDark ? colors.surfaceDark : "#FFFFFF",
+            "--unstable_DataGrid-headWeight": "700",
           },
           columnHeaders: {
-            backgroundColor: isDark ? colors.surfaceDark : "#FFFFFF",
+            backgroundColor: `${isDark ? colors.surfaceDark : "#FFFFFF"} !important`,
             color: colors.gray1,
             borderBottom: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             minHeight: 48,
@@ -853,7 +854,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             letterSpacing: ".02em",
           },
           columnHeader: {
-            backgroundColor: isDark ? colors.surfaceDark : "#FFFFFF",
+            backgroundColor: `${isDark ? colors.surfaceDark : "#FFFFFF"} !important`,
             "& .MuiDataGrid-columnSeparator": { display: "none" },
             "&.MuiDataGrid-columnHeader--sorted": { color: colors.brand },
           },
