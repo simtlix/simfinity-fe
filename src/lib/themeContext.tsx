@@ -878,6 +878,9 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
             display: "flex",
             alignItems: "center",
           },
+          filler: {
+            backgroundColor: `${isDark ? colors.surfaceDark : "#FFFFFF"} !important`,
+          },
           footerContainer: {
             borderTop: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             backgroundColor: isDark ? "rgba(255,255,255,.03)" : "#F5F5F5",
