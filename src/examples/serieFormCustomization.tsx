@@ -451,11 +451,11 @@ export function setupSerieFormCustomization() {
       {
         stepId: "director",
         stepLabel: 'Director',
-      },
-      {
+      },{
         stepId: "seasons",
         stepLabel: 'Seasons',
       }
+      
     ],
     
     fieldsCustomization: {

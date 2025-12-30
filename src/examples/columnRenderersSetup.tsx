@@ -22,6 +22,16 @@ export const setupColumnRenderers = () => {
     );
   });
 
+  registerColumnRenderer("episode.season", ({ value }) => {
+    if (value == null) return "";
+    
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        {"Season " + String(value)}
+      </span>
+    );
+  });
+
   // Example: Custom renderer for season year with context
   // registerColumnRenderer("season.year", ({ value, rowData }) => {
   //   if (value == null) return "";
