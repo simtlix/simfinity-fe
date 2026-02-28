@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "urql";
-import { INTROSPECTION_QUERY, getListEntityFieldNames, getElementTypeNameOfListField, SchemaData } from "@simtlix/simfinity-fe-components";
+import { useSimfinityClient } from "@simtlix/simfinity-fe-components";
 import { useI18n } from "@simtlix/simfinity-fe-components";
-import { Box, CircularProgress, Divider, Drawer, List, ListItemButton, ListItemText, Toolbar, Typography } from "@mui/material";
+import { Box, Divider, Drawer, List, ListItemButton, ListItemText, Toolbar, Typography } from "@mui/material";
 import { useRouter, usePathname } from "next/navigation";
 
 const drawerWidth = 260;
@@ -15,31 +14,18 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
+  const client = useSimfinityClient();
   const { resolveLabel } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
-  const [result] = useQuery({ query: INTROSPECTION_QUERY });
-  const { data, fetching: loading, error } = result;
 
-  // Helper function to get entity name from i18n
+  const entries = React.useMemo(() => client.getListEntityNames(), [client]);
+
   const getEntityName = (pluralName: string, form: 'single' | 'plural'): string => {
-    if (!data) return `entity.${pluralName}.${form}`;
-    
-    // Get the proper entity type name from schema
-    const entityTypeName = getElementTypeNameOfListField(data as SchemaData, pluralName);
+    const entityTypeName = client.getTypeNameForQuery(pluralName);
     if (!entityTypeName) return `entity.${pluralName}.${form}`;
-    
-    // Convert to lowercase for i18n key
-    const baseName = entityTypeName.toLowerCase();
-    
-    return `entity.${baseName}.${form}`;
+    return `entity.${entityTypeName.toLowerCase()}.${form}`;
   };
-
-  const entries = React.useMemo(() => {
-    const schema = data as SchemaData | undefined;
-    if (!schema) return [] as string[];
-    return getListEntityFieldNames(schema);
-  }, [data]);
 
   const handleNavigate = (entityListField: string) => {
     router.push(`/entities/${entityListField}`);
@@ -53,19 +39,6 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       </Toolbar>
       <Divider />
       <Box sx={{ overflow: "auto" }}>
-        {loading && (
-          <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 1 }}>
-            <CircularProgress size={20} />
-            <Typography variant="body2">Loading schema…</Typography>
-          </Box>
-        )}
-        {error && (
-          <Box sx={{ p: 2 }}>
-            <Typography color="error" variant="body2">
-              Failed to load schema
-            </Typography>
-          </Box>
-        )}
         <List>
           {entries.map((field) => {
             const selected = pathname?.startsWith(`/entities/${field}`);
@@ -102,5 +75,3 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
     </Box>
   );
 }
-
-

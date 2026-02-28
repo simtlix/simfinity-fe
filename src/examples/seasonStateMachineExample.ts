@@ -1,7 +1,6 @@
 import { registerEntityStateMachine } from '@simtlix/simfinity-fe-components';
 import { CollectionFieldState, EntityFormCallbackActions } from '@simtlix/simfinity-fe-components';
-import { gql } from 'graphql-tag';
-import { urqlClient } from '@/lib/urqlClient';
+import { getSimfinityClient } from '@/lib/simfinityClientRef';
 
 /**
  * Example of how to register state machine for season entity
@@ -18,41 +17,14 @@ export function setupSeasonStateMachine() {
           console.log('Before activating season:', { formData, collectionChanges, transformedData });
           
           try {
-            // Use URQL client
-            
-            // Query server to get actual episodes count using Simfinity pattern
-            const GET_EPISODES_COUNT = gql`
-              query GetEpisodesCount($seasonId: QLValue!, $page: Int!, $size: Int!, $count: Boolean!) {
-                episodes(
-                  season: { terms: { path: "id", operator: EQ, value: $seasonId } }
-                  pagination: { page: $page, size: $size, count: $count }
-                ) {
-                  id
-                }
-              }
-            `;
-            
-            const result = await urqlClient
-              .query(
-                GET_EPISODES_COUNT,
-                { 
-                  seasonId: transformedData.id,   
-                  page: 1,
-                  size: 1, // We only need count
-                  count: true
-                },
-                {
-                  requestPolicy: 'network-only' // Always fetch fresh data
-                }
-              )
-              .toPromise();
-            
-            if (result.error) {
-              throw new Error(result.error.message);
-            }
-            
-            // URQL exposes extensions directly on result
-            const existingEpisodesCount = result.data?.episodes?.length || 0;
+            const client = getSimfinityClient();
+
+            const result = await client.findByParent('Episode', 'season', transformedData.id as string)
+              .fields('id')
+              .page(1, 1, true)
+              .execWithMeta();
+
+            const existingEpisodesCount = typeof result.extensions?.count === 'number' ? result.extensions.count : 0;
             const episodesChanges = collectionChanges.episodes || { added: [], modified: [], deleted: [] };
             const newEpisodesCount = episodesChanges.added.length;
             const totalEpisodesCount = existingEpisodesCount + newEpisodesCount;
@@ -89,7 +61,6 @@ export function setupSeasonStateMachine() {
             message: 'Season activated successfully!'
           });
           
-          // Example: Log activation event
           const episodesChanges = collectionChanges.episodes || { added: [], modified: [], deleted: [] };
           console.log('Season activation logged:', {
             seasonId: transformedData.id,
@@ -113,51 +84,20 @@ export function setupSeasonStateMachine() {
           console.log('Before finalizing season:', { formData, collectionChanges, transformedData });
           
           try {
-            // Use URQL client
-            
-            // Query server to get actual episodes with their air dates using Simfinity pattern
-            const GET_EPISODES = gql`
-              query GetEpisodes($seasonId: QLValue!, $page: Int!, $size: Int!, $count: Boolean!) {
-                episodes(
-                  season: { terms: { path: "id", operator: EQ, value: $seasonId } }
-                  pagination: { page: $page, size: $size, count: $count }
-                ) {
-                    id
-                    date
-                }
-              }
-            `;
-            
-            const result = await urqlClient
-              .query(
-                GET_EPISODES,
-                { 
-                  seasonId: transformedData.id,
-                  page: 1,
-                  size: 1000, // Get all episodes (adjust if needed)
-                  count: true
-                },
-                {
-                  requestPolicy: 'network-only' // Always fetch fresh data
-                }
-              )
-              .toPromise();
-            
-            if (result.error) {
-              throw new Error(result.error.message);
-            }
-            
-            const data = result.data;
-            
-            const existingEpisodes = data?.episodes || [];
+            const client = getSimfinityClient();
+
+            const result = await client.findByParent('Episode', 'season', transformedData.id as string)
+              .fields('id date')
+              .page(1, 1000, true)
+              .execWithMeta();
+
+            const existingEpisodes = (result.data ?? []) as Array<{ id: string; date?: string }>;
             const episodesChanges = collectionChanges.episodes || { added: [], modified: [], deleted: [] };
             
-            // Check existing episodes for completion
-            const incompleteExistingEpisodes = existingEpisodes.filter((episode: { date?: string }) => 
+            const incompleteExistingEpisodes = existingEpisodes.filter((episode) => 
               !episode.date || new Date(episode.date) > new Date()
             );
             
-            // Check new episodes for completion
             const incompleteNewEpisodes = episodesChanges.added.filter((episode) => 
               !episode.date || new Date(episode.date as string) > new Date()
             );
@@ -199,7 +139,6 @@ export function setupSeasonStateMachine() {
             message: 'Season finalized successfully!'
           });
           
-          // Example: Log finalization event
           const episodesChanges = collectionChanges.episodes || { added: [], modified: [], deleted: [] };
           console.log('Season finalization logged:', {
             seasonId: transformedData.id,
