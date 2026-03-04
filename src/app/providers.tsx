@@ -7,6 +7,7 @@ import { I18nProvider } from "@simtlix/simfinity-fe-components";
 import { ThemeProvider, useTheme } from "@/lib/themeContext";
 import { setupConfigurations } from "@/examples/setupConfiguration";
 import { setSimfinityClient } from "@/lib/simfinityClientRef";
+import { InitGuard } from "@/components/app/SimfinityFallbacks";
 
 setupConfigurations();
 
@@ -32,14 +33,16 @@ function ThemeConsumer({ children }: { children: React.ReactNode }) {
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SimfinityClientProvider endpoint={GRAPHQL_URL}>
-      <ClientRefCapture>
-        <I18nProvider>
-          <ThemeProvider>
-            <ThemeConsumer>{children}</ThemeConsumer>
-          </ThemeProvider>
-        </I18nProvider>
-      </ClientRefCapture>
-    </SimfinityClientProvider>
+    <InitGuard endpoint={GRAPHQL_URL}>
+      <SimfinityClientProvider endpoint={GRAPHQL_URL}>
+        <ClientRefCapture>
+          <I18nProvider>
+            <ThemeProvider>
+              <ThemeConsumer>{children}</ThemeConsumer>
+            </ThemeProvider>
+          </I18nProvider>
+        </ClientRefCapture>
+      </SimfinityClientProvider>
+    </InitGuard>
   );
 }

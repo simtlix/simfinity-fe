@@ -15,7 +15,7 @@
     "@mui/material": "^7.3.1",
     "@mui/system": "^7.3.1",
     "@mui/x-data-grid": "^8.10.0",
-    "@simtlix/simfinity-fe-components": "1.0.17",
+    "@simtlix/simfinity-fe-components": "1.0.18",
     "@simtlix/simfinity-js-client": "1.0.2",
     "next": "^15.5.2",
     "react": "19.1.0",
