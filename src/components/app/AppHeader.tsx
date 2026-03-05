@@ -40,7 +40,7 @@ export default function AppHeader({ onMenuClick }: AppHeaderProps) {
        {/* Language Selector */}
         <Box sx={{ minWidth: 120, ml: 2 }}>
           <FormControl
-            variant="outlined"
+            variant="filled"
             size="small"
             sx={{ minWidth: 108 }}
           >
@@ -59,22 +59,10 @@ export default function AppHeader({ onMenuClick }: AppHeaderProps) {
               label="Lang"
               value={locale}
               onChange={handleLocale}
+              variant="filled"
               sx={{
-                // “píldora” + contraste en AppBar
-                borderRadius: '999px',
                 bgcolor: 'background.paper',
                 color: 'text.primary',
-                // borde suave en reposo/hover/focus
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'primary.main',
-                  boxShadow: (theme) =>
-                    `0 0 0 3px ${theme.palette.action.focusOpacity ? 
-                      `rgba(33, 150, 243, ${theme.palette.action.focusOpacity})` : 
-                      'rgba(0,0,0,0.06)'}`,
-                },
-                // densidad alineada con TextField small
                 '& .MuiSelect-select': { pt: '8px', pb: '8px' },
                 pr: 1.5,
               }}
@@ -93,5 +81,3 @@ export default function AppHeader({ onMenuClick }: AppHeaderProps) {
     </AppBar>
   );
 }
-
-

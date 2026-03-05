@@ -219,30 +219,73 @@ function createSoftTheme(
       button: { fontWeight: 700, textTransform: "none" },
     },
     components: {
-      // ===== Inputs alignment (Select = TextField small height) =====
+      // ===== Inputs (Reddit-style filled) =====
       MuiFormControl: {
-        defaultProps: { size: "small" },
+        defaultProps: { size: "small", variant: "filled" as const },
+      },
+      MuiFilledInput: {
+        defaultProps: { disableUnderline: true },
+        styleOverrides: {
+          root: {
+            overflow: "hidden",
+            borderRadius: 4,
+            border: "1px solid",
+            borderColor: t.line,
+            backgroundColor: t.surface,
+            transition: "border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease",
+            "&:hover": {
+              backgroundColor: "transparent",
+            },
+            "&.Mui-focused": {
+              backgroundColor: "transparent",
+              boxShadow: `${alpha(t.brand, 0.25)} 0 0 0 2px`,
+              borderColor: t.brand,
+            },
+            "&.MuiInputBase-sizeSmall": { minHeight: 40 },
+          },
+          input: {
+            paddingTop: 22,
+            paddingBottom: 6,
+            "&.MuiInputBase-inputSizeSmall": {
+              paddingTop: 22,
+              paddingBottom: 6,
+            },
+          },
+        },
       },
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: 14,
-            "&.MuiInputBase-sizeSmall": { minHeight: 40 },
-            "& .MuiSelect-select": { paddingTop: 8, paddingBottom: 8 },
+            overflow: "hidden",
+            borderRadius: 4,
+            border: "1px solid",
+            borderColor: t.line,
+            backgroundColor: t.surface,
+            transition: "border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease",
+            "&:hover": {
+              backgroundColor: "transparent",
+            },
+            "&.Mui-focused": {
+              backgroundColor: "transparent",
+              boxShadow: `${alpha(t.brand, 0.25)} 0 0 0 2px`,
+              borderColor: t.brand,
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
           },
-          inputSizeSmall: { paddingTop: 8, paddingBottom: 8 },
         },
       },
       MuiSelect: {
-        defaultProps: { size: "small", variant: "outlined" },
+        defaultProps: { size: "small", variant: "filled" as const },
         styleOverrides: {
           select: {
-            paddingTop: "8px !important",
-            paddingBottom: "8px !important",
+            paddingTop: "22px !important",
+            paddingBottom: "6px !important",
           },
-          outlined: { paddingRight: "40px !important" },
-          iconOutlined: { right: 10 },
-          nativeInput: { paddingTop: 8, paddingBottom: 8 },
+          filled: { paddingRight: "40px !important" },
+          iconFilled: { right: 10 },
+          nativeInput: { paddingTop: 22, paddingBottom: 6 },
         },
       },
       MuiMenuItem: {
@@ -345,15 +388,7 @@ function createSoftTheme(
 
       // ===== Inputs / labels =====
       MuiTextField: {
-        defaultProps: { size: "small", fullWidth: true },
-        styleOverrides: {
-          root: {
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 14,
-              backgroundColor: t.surface,
-            },
-          },
-        },
+        defaultProps: { size: "small", fullWidth: true, variant: "filled" as const },
       },
       MuiFormLabel: {
         styleOverrides: {
@@ -560,38 +595,76 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
       button: { fontWeight: 600, textTransform: "none" },
     },
     components: {
-      // ===== Minimal inputs =====
+      // ===== Inputs (Reddit-style filled) =====
       MuiFormControl: {
-        defaultProps: { size: "small" },
+        defaultProps: { size: "small", variant: "filled" as const },
+      },
+      MuiFilledInput: {
+        defaultProps: { disableUnderline: true },
+        styleOverrides: {
+          root: {
+            overflow: "hidden",
+            borderRadius: 4,
+            border: "1px solid",
+            borderColor: isDark ? colors.lineDark : colors.lineLight,
+            backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
+            fontSize: "16px",
+            transition: "border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease",
+            "&:hover": {
+              backgroundColor: "transparent",
+            },
+            "&.Mui-focused": {
+              backgroundColor: "transparent",
+              boxShadow: `${alpha(colors.brand, 0.25)} 0 0 0 2px`,
+              borderColor: colors.brand,
+            },
+            "&.MuiInputBase-sizeSmall": { minHeight: 48 },
+          },
+          input: {
+            fontSize: "16px",
+            paddingTop: 22,
+            paddingBottom: 6,
+            "&.MuiInputBase-inputSizeSmall": {
+              paddingTop: 22,
+              paddingBottom: 6,
+            },
+          },
+        },
       },
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: 8,
-            fontSize: "16px",
-            minHeight: 48,
-            "&.MuiInputBase-sizeSmall": { minHeight: 48 },
-            "& .MuiSelect-select": { paddingTop: 12, paddingBottom: 12 },
+            overflow: "hidden",
+            borderRadius: 4,
+            border: "1px solid",
+            borderColor: isDark ? colors.lineDark : colors.lineLight,
+            backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
+            transition: "border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease",
+            "&:hover": {
+              backgroundColor: "transparent",
+            },
+            "&.Mui-focused": {
+              backgroundColor: "transparent",
+              boxShadow: `${alpha(colors.brand, 0.25)} 0 0 0 2px`,
+              borderColor: colors.brand,
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
           },
-          input: {
-            fontSize: "16px",
-            paddingTop: 12,
-            paddingBottom: 12,
-          },
-          inputSizeSmall: { paddingTop: 12, paddingBottom: 12 },
         },
       },
       MuiSelect: {
-        defaultProps: { size: "small", variant: "outlined" },
+        defaultProps: { size: "small", variant: "filled" as const },
         styleOverrides: {
           select: {
             fontSize: "16px",
-            paddingTop: "12px !important",
-            paddingBottom: "12px !important",
+            paddingTop: "22px !important",
+            paddingBottom: "6px !important",
           },
-          outlined: { paddingRight: "40px !important" },
-          iconOutlined: { right: 10 },
-          nativeInput: { paddingTop: 12, paddingBottom: 12 },
+          filled: { paddingRight: "40px !important" },
+          iconFilled: { right: 10 },
+          nativeInput: { paddingTop: 22, paddingBottom: 6 },
         },
       },
       MuiMenuItem: {
@@ -688,17 +761,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
 
       // ===== Clean inputs =====
       MuiTextField: {
-        defaultProps: { size: "small", fullWidth: true },
-        styleOverrides: {
-          root: {
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 8,
-              fontSize: "16px",
-              minHeight: 48,
-              backgroundColor: isDark ? colors.surfaceDark : colors.surfaceLight,
-            },
-          },
-        },
+        defaultProps: { size: "small", fullWidth: true, variant: "filled" as const },
       },
       MuiFormLabel: {
         styleOverrides: {
@@ -940,18 +1003,19 @@ const themeDefinitions: Record<
 };
 
 // ==================== Provider ====================
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>("light");
-  const [customTheme, setCustomThemeState] = useState<CustomTheme>("default");
+function readStoredMode(): ThemeMode {
+  if (typeof window === "undefined") return "light";
+  return (localStorage.getItem("theme-mode") as ThemeMode) || "light";
+}
 
-  useEffect(() => {
-    const savedMode = localStorage.getItem("theme-mode") as ThemeMode;
-    const savedCustomTheme = localStorage.getItem(
-      "theme-custom"
-    ) as CustomTheme;
-    if (savedMode) setModeState(savedMode);
-    if (savedCustomTheme) setCustomThemeState(savedCustomTheme);
-  }, []);
+function readStoredTheme(): CustomTheme {
+  if (typeof window === "undefined") return "default";
+  return (localStorage.getItem("theme-custom") as CustomTheme) || "default";
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [mode, setModeState] = useState<ThemeMode>(readStoredMode);
+  const [customTheme, setCustomThemeState] = useState<CustomTheme>(readStoredTheme);
 
   const actualMode = React.useMemo<"light" | "dark">(() => {
     if (mode === "auto") {
@@ -982,11 +1046,74 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       'main' in baseTheme.palette.primary 
         ? baseTheme.palette.primary.main 
         : "#1976d2";
+    const dividerColor = actualMode === "dark" ? "rgba(255,255,255,0.12)" : "#E0E0E0";
+    const surfaceColor = actualMode === "dark" ? "#1e1e1e" : "#fff";
     return createTheme({
       ...baseTheme,
       palette: { ...baseTheme.palette, mode: actualMode },
       components: {
         ...baseTheme.components,
+        MuiTextField: {
+          defaultProps: { variant: "filled" as const, size: "small", fullWidth: true },
+        },
+        MuiFilledInput: {
+          defaultProps: { disableUnderline: true },
+          styleOverrides: {
+            root: {
+              overflow: "hidden",
+              borderRadius: 4,
+              border: "1px solid",
+              borderColor: dividerColor,
+              backgroundColor: surfaceColor,
+              transition: "border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease",
+              "&:hover": {
+                backgroundColor: "transparent",
+              },
+              "&.Mui-focused": {
+                backgroundColor: "transparent",
+                boxShadow: `${alpha(primaryColor, 0.25)} 0 0 0 2px`,
+                borderColor: primaryColor,
+              },
+            },
+            input: {
+              paddingTop: 22,
+              paddingBottom: 6,
+              "&.MuiInputBase-inputSizeSmall": {
+                paddingTop: 22,
+                paddingBottom: 6,
+              },
+            },
+          },
+        },
+        MuiOutlinedInput: {
+          styleOverrides: {
+            root: {
+              overflow: "hidden",
+              borderRadius: 4,
+              border: "1px solid",
+              borderColor: dividerColor,
+              backgroundColor: surfaceColor,
+              transition: "border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease",
+              "&:hover": {
+                backgroundColor: "transparent",
+              },
+              "&.Mui-focused": {
+                backgroundColor: "transparent",
+                boxShadow: `${alpha(primaryColor, 0.25)} 0 0 0 2px`,
+                borderColor: primaryColor,
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                border: "none",
+              },
+            },
+          },
+        },
+        MuiSelect: {
+          defaultProps: { variant: "filled" as const, size: "small" },
+        },
+        MuiFormControl: {
+          defaultProps: { size: "small", variant: "filled" as const },
+        },
         ...getSharedStepperOverrides(primaryColor),
       },
     });

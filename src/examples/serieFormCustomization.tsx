@@ -8,8 +8,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
-  OutlinedInput
+  Chip
 } from '@mui/material';
 import { registerFormCustomization, FormField, FormCustomizationActions, ParentFormAccess, FormMessage } from '@simtlix/simfinity-fe-components';
 
@@ -56,12 +55,12 @@ const RichTextEditor = ({
           disabled={disabled}
           error={!!error}
           helperText={error}
-          variant="outlined"
+          variant="filled"
           placeholder="Enter a rich description for the serie..."
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           sx={{
-            '& .MuiOutlinedInput-root': {
+            '& .MuiFilledInput-root': {
               backgroundColor: '#fafafa',
               '&:hover': {
                 backgroundColor: '#f5f5f5'
@@ -144,9 +143,9 @@ const CountrySelector = ({
         labelId="country-select-label"
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        input={<OutlinedInput label="Country" />}
+        variant="filled"
         sx={{
-          '& .MuiOutlinedInput-root': {
+          '& .MuiFilledInput-root': {
             backgroundColor: '#fafafa',
             '&:hover': {
               backgroundColor: '#f5f5f5'
@@ -231,7 +230,7 @@ const CategoriesInput = ({
         disabled={disabled}
         error={!!error}
         helperText={error}
-        variant="outlined"
+        variant="filled"
         sx={{ mb: 2 }}
       />
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -385,14 +384,8 @@ export function setupSerieFormCustomization() {
                   onChange={(e) => handleEmbeddedFieldChange(field.name, 'name', e.target.value)}
                   disabled={disabled}
                   fullWidth
-                  variant="outlined"
+                  variant="filled"
                   required
-                  sx={{ 
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': { borderColor: 'primary.light' },
-                      '&:hover fieldset': { borderColor: 'primary.main' },
-                    }
-                  }}
                 />
                 
                 {/* Country field with custom selector */}
@@ -540,14 +533,8 @@ export function setupSerieFormCustomization() {
                   onChange={(e) => handleEmbeddedFieldChange(field.name, 'name', e.target.value)}
                   disabled={disabled}
                   fullWidth
-                  variant="outlined"
+                  variant="filled"
                   required
-                  sx={{ 
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': { borderColor: 'primary.light' },
-                      '&:hover fieldset': { borderColor: 'primary.main' },
-                    }
-                  }}
                 />
                 
                 {/* Country field with custom selector */}

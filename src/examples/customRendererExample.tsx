@@ -43,8 +43,8 @@ export function setupCustomRendererExamples() {
               disabled={disabled}
               error={!!field.error}
               helperText={field.error}
-              variant="outlined"
-              sx={{ backgroundColor: 'rgba(0, 255, 0, 0.05)' }} // Light green background to show it's custom
+              variant="filled"
+              sx={{ backgroundColor: 'rgba(0, 255, 0, 0.05)' }}
             />
           );
         }

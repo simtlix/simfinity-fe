@@ -30,7 +30,7 @@ export function setupCustomRendererExamples() {
               disabled,
               error: !!field.error,
               helperText: field.error,
-              variant: 'outlined'
+              variant: 'filled'
             }),
             React.createElement(Typography, {
               key: 'helper-text',
@@ -65,7 +65,7 @@ export function setupCustomRendererExamples() {
               disabled,
               error: !!field.error || isLong,
               helperText: field.error || (isLong ? 'Title should be under 50 characters' : `${value.length}/50 characters`),
-              variant: 'outlined'
+              variant: 'filled'
             })
           ]);
         }
