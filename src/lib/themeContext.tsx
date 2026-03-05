@@ -533,6 +533,10 @@ function createSoftTheme(
           footerContainer: {
             borderTop: `1px solid ${t.line}`,
             backgroundColor: t.header,
+            '& .MuiTablePagination-select.MuiSelect-select': {
+              paddingTop: '4px !important',
+              paddingBottom: '4px !important',
+            },
           },
         },
       },
@@ -954,6 +958,10 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
           footerContainer: {
             borderTop: `1px solid ${isDark ? colors.lineDark : colors.lineLight}`,
             backgroundColor: isDark ? "rgba(255,255,255,.03)" : "#F5F5F5",
+            '& .MuiTablePagination-select.MuiSelect-select': {
+              paddingTop: '4px !important',
+              paddingBottom: '4px !important',
+            },
           },
         },
       },
