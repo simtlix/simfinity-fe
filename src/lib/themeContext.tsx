@@ -215,7 +215,7 @@ function createSoftTheme(
         "Roboto",
         "Arial",
       ].join(","),
-      h5: { fontWeight: 700 },
+      h5: { fontWeight: 700, fontSize: "2.5rem" },
       button: { fontWeight: 700, textTransform: "none" },
     },
     components: {
@@ -595,7 +595,7 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
         "Arial",
       ].join(","),
       h4: { fontWeight: 700 },
-      h5: { fontWeight: 700 },
+      h5: { fontWeight: 700, fontSize: "2.5rem" },
       button: { fontWeight: 600, textTransform: "none" },
     },
     components: {
