@@ -1,0 +1,37 @@
+---
+description: Simfinity naming conventions for entity setup files, registration functions, and i18n keys
+alwaysApply: true
+---
+
+# Simfinity Naming Conventions
+
+## Entity Setup Files
+
+| Concern | File Pattern | Extension |
+|---|---|---|
+| Create form | `<entity>.create.ts` | `.ts` (`.tsx` if JSX) |
+| Edit form | `<entity>.edit.ts` | `.ts` (`.tsx` if JSX) |
+| View form | `<entity>.view.tsx` | `.tsx` |
+| Column renderer | `<entity>.column.<field>.tsx` | `.tsx` |
+| State machine | `<entity>.stateMachine.ts` | `.ts` |
+| Entity wiring | `index.ts` | `.ts` |
+
+## Registration Functions
+
+| Type | Pattern | Example |
+|---|---|---|
+| Form customization | `register<Entity><Mode>Customization` | `registerSerieCreateCustomization` |
+| Column renderer | `register<Entity><Field>Column` | `registerEpisodeDateColumn` |
+| State machine | `register<Entity>StateMachine` | `registerSeasonStateMachine` |
+| Entity setup | `setup<Entity>Customization` | `setupEpisodeCustomization` |
+
+## i18n Label Keys
+
+| Pattern | Example |
+|---|---|
+| `entity.<type>.single` | `entity.serie.single` |
+| `entity.<type>.plural` | `entity.serie.plural` |
+| `<type>.<field>` | `serie.name` |
+| `<type>.step.<stepId>` | `serie.step.basicInfo` |
+| `stateMachine.<type>.state.<STATE>` | `stateMachine.season.state.ACTIVE` |
+| `stateMachine.<type>.action.<action>` | `stateMachine.season.action.activate` |

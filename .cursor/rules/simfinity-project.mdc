@@ -1,0 +1,84 @@
+---
+description: Simfinity project overview, tech stack, structure, provider hierarchy, and core APIs
+alwaysApply: true
+---
+
+# Simfinity Project
+
+## Overview
+
+Next.js 15 frontend for Simfinity. Dynamic, schema-driven form and table management built with `@simtlix/simfinity-fe-components`, Material-UI v7, and TypeScript 5.
+
+## Tech Stack
+
+- **Framework**: Next.js 15 with App Router, TypeScript 5 strict mode
+- **UI**: Material-UI v7.3.1 (MUI), MUI X Data Grid 8.10.0, Tailwind CSS 4 + Emotion
+- **Data Layer**: `@simtlix/simfinity-fe-components` 1.0.20, `@simtlix/simfinity-js-client` 1.0.2
+- **Component Dev**: Storybook 10 (`@storybook/nextjs-vite`)
+- **Testing**: Vitest 4, Playwright 1.58
+- **i18n**: Dual system (JSON-based + function-based)
+
+## Project Structure
+
+```
+src/
+├── app/                              # Next.js App Router
+│   ├── entities/[listField]/         # Dynamic entity routes (list, create, edit, view)
+│   ├── layout.tsx                    # Root layout (Server Component)
+│   ├── page.tsx                      # Home page
+│   └── providers.tsx                 # Provider hierarchy + setupSimfinity()
+├── components/
+│   ├── app/                          # App shell (AppHeader, LayoutShell, Sidebar, SimfinityFallbacks, ThemeToggle)
+│   └── custom/                       # Reusable custom components with Storybook stories
+│       ├── index.ts                  # Barrel export (components + types)
+│       ├── <Component>.tsx           # Component with exported props interface
+│       └── <Component>.stories.tsx   # Storybook story
+├── simfinitySetup/                   # All Simfinity registrations
+│   ├── index.ts                      # Entry point: setupSimfinity()
+│   ├── i18n/                         # Function-based label registration
+│   ├── <entity>/                     # Per-entity customizations
+│   │   ├── index.ts                  # Wires all entity registrations
+│   │   ├── <entity>.create.ts(x)     # registerFormCustomization for create mode
+│   │   ├── <entity>.edit.ts(x)       # registerFormCustomization for edit mode
+│   │   ├── <entity>.view.tsx         # registerFormCustomization for view mode
+│   │   ├── <entity>.column.<field>.tsx  # registerColumnRenderer per field
+│   │   └── <entity>.stateMachine.ts  # registerEntityStateMachine
+├── i18n/                             # Function-based i18n (en.ts, es.ts)
+├── lib/
+│   ├── simfinityClientRef.ts         # Shared client ref for non-React usage
+│   └── themeContext.tsx              # MUI theme system
+└── public/i18n/                      # Static JSON labels (en.json, es.json)
+```
+
+## Provider Hierarchy
+
+`setupSimfinity()` runs once at module scope in `providers.tsx`, then:
+
+`InitGuard` → `SimfinityClientProvider` → `ClientRefCapture` → `I18nProvider` → `ThemeProvider` → `MuiThemeProvider` + `CssBaseline` → children
+
+## Core APIs (from @simtlix/simfinity-fe-components)
+
+### Registration Functions
+
+| Function | Purpose | Example File |
+|---|---|---|
+| `registerFormCustomization(entity, mode, config)` | Form layout, fields, callbacks | `serie/serie.create.tsx` |
+| `registerColumnRenderer(key, renderer)` | Custom table column display | `episode/episode.column.date.tsx` |
+| `registerEntityStateMachine(entity, config)` | State transitions + mutations | `season/season.stateMachine.ts` |
+| `registerFunctionLabels(locale, labels)` | Dynamic i18n labels | `i18n/i18n.setup.ts` |
+
+### Components
+
+| Component | Usage |
+|---|---|
+| `EntityForm` | Schema-driven forms (create/edit/view) |
+| `EntityTable` | Data grid with sorting/filtering/pagination |
+| `SimfinityClientProvider` | Wraps app with data client |
+| `I18nProvider` | Wraps app with i18n context |
+
+### Hooks
+
+| Hook | Purpose |
+|---|---|
+| `useSimfinityClient()` | Access Simfinity client |
+| `useI18n()` | Access locale, setLocale, resolveLabel |

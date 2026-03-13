@@ -1,0 +1,50 @@
+---
+description: Simfinity development guidelines, code style, and step-by-step guides
+alwaysApply: true
+---
+
+# Simfinity Development Guidelines
+
+## Code Style
+
+- TypeScript strict mode, functional components with hooks
+- Next.js 15 App Router conventions, `"use client"` only when required
+- Material-UI components consistently, responsive design (mobile-first)
+- Import custom components via barrel: `import { X } from '@/components/custom'`
+- Import registration APIs from `@simtlix/simfinity-fe-components`
+
+## Custom Components (src/components/custom/)
+
+Two types:
+- **Form input**: props `{ value: T; onChange: (v: T) => void; disabled: boolean; error?: string }`
+- **Column display**: props `{ value: string | number | null | undefined }`
+
+Every component must have:
+1. Exported props interface (`<Name>Props`)
+2. Storybook story (`<Name>.stories.tsx`) with `title: 'Custom/<Name>'`, `tags: ['autodocs']`
+3. Barrel export in `index.ts` (component + type)
+
+## When Adding a New Entity
+
+1. Create folder `src/simfinitySetup/<entity>/`
+2. Add form customization files per mode (`.create.ts`, `.edit.ts`, `.view.tsx`)
+3. Add column renderers if needed (`<entity>.column.<field>.tsx`)
+4. Add state machine if needed (`<entity>.stateMachine.ts`)
+5. Create `index.ts` that wires all registrations
+6. Import and call from `src/simfinitySetup/index.ts`
+7. Add i18n labels to `public/i18n/en.json`, `public/i18n/es.json`
+8. Add function labels to `src/simfinitySetup/i18n/i18n.setup.ts` if needed
+
+## When Adding a Custom Component
+
+1. Create `src/components/custom/<Name>.tsx` with typed props interface
+2. Create `src/components/custom/<Name>.stories.tsx`
+3. Add exports to `src/components/custom/index.ts`
+4. Verify with `npm run storybook`
+
+## When Modifying Form Customizations
+
+- Use the correct mode (create/edit/view) — they are independent
+- Stepper forms require `mode: "stepper"` + `steps[]` + `stepId` on each field
+- Custom renderers using JSX require `.tsx` extension
+- Always wire new registration functions in the entity's `index.ts`

@@ -1,0 +1,40 @@
+---
+description: Simfinity maintenance practices for documentation, skills, Storybook, and rules
+alwaysApply: true
+---
+
+# Simfinity Maintenance
+
+## Documentation
+
+- All documentation lives in a single `README.md` at the project root
+- Do NOT create separate README files for individual features
+- When making structural changes, update the README's project structure section
+- When adding new APIs or patterns, add examples to the relevant README section
+
+## Skills
+
+Available Cursor skills for this project are in `~/.cursor/skills/`:
+- `simfinity-next-scaffold` — scaffold a new project from this template
+- `simfinity-add-entity` — add a new entity with all customization files
+- `simfinity-custom-component` — create a custom component with story + barrel export
+- `simfinity-form-customization` — add form customization for an entity mode
+- `simfinity-column-renderer` — register a custom column renderer
+- `simfinity-state-machine` — set up an entity state machine
+- `simfinity-i18n` — add i18n labels for an entity
+
+When making structural changes to the project (folder names, registration APIs, file patterns), update the relevant skills to match.
+
+## Storybook
+
+- Every custom component in `src/components/custom/` must have a story
+- Stories use `@storybook/nextjs-vite` with MUI theme decorators (`.storybook/preview.tsx`)
+- Form input stories: Default, WithContent, WithError, Disabled
+- Column display stories: Default, NullValue, edge cases
+- Run `npm run storybook` to verify after adding/modifying components
+
+## Cursor Rules
+
+- Rules in `.cursor/rules/*.mdc` should reflect the current project structure
+- When renaming folders, changing APIs, or updating dependencies, update the relevant rule files
+- Keep the naming conventions tables up to date

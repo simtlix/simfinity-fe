@@ -5,11 +5,11 @@ import { SimfinityClientProvider, useSimfinityClient } from "@simtlix/simfinity-
 import { CssBaseline, ThemeProvider as MuiThemeProvider } from "@mui/material";
 import { I18nProvider } from "@simtlix/simfinity-fe-components";
 import { ThemeProvider, useTheme } from "@/lib/themeContext";
-import { setupConfigurations } from "@/examples/setupConfiguration";
+import { setupSimfinity } from "@/simfinitySetup";
 import { setSimfinityClient } from "@/lib/simfinityClientRef";
 import { InitGuard } from "@/components/app/SimfinityFallbacks";
 
-setupConfigurations();
+setupSimfinity();
 
 const GRAPHQL_URL =
   process.env.NEXT_PUBLIC_GRAPHQL_URL || "http://localhost:3000/graphql";
