@@ -494,6 +494,18 @@ function createSoftTheme(
         },
       },
 
+      // ===== TablePagination (standalone, e.g. EntityCardList) =====
+      MuiTablePagination: {
+        styleOverrides: {
+          select: {
+            paddingTop: "4px !important",
+            paddingBottom: "4px !important",
+            display: "flex",
+            alignItems: "center",
+          },
+        },
+      },
+
       // ===== DataGrid =====
       MuiDataGrid: {
         styleOverrides: {
@@ -898,6 +910,18 @@ function createBankingTheme(resolvedMode: "light" | "dark") {
         },
       },
 
+      // ===== TablePagination (standalone, e.g. EntityCardList) =====
+      MuiTablePagination: {
+        styleOverrides: {
+          select: {
+            paddingTop: "4px !important",
+            paddingBottom: "4px !important",
+            display: "flex",
+            alignItems: "center",
+          },
+        },
+      },
+
       // ===== Clean DataGrid =====
       MuiDataGrid: {
         styleOverrides: {
@@ -1121,6 +1145,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         },
         MuiFormControl: {
           defaultProps: { size: "small", variant: "filled" as const },
+        },
+        MuiTablePagination: {
+          styleOverrides: {
+            select: {
+              paddingTop: "4px !important",
+              paddingBottom: "4px !important",
+              display: "flex",
+              alignItems: "center",
+            },
+          },
         },
         ...getSharedStepperOverrides(primaryColor),
       },

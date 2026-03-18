@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { EntityTable, useI18n } from "@simtlix/simfinity-fe-components";
+import { EntityCardList, useI18n } from "@simtlix/simfinity-fe-components";
 import LayoutShell from "@/components/app/LayoutShell";
 import { Paper, Stack, Link } from "@mui/material";
 import { useRouter, useSearchParams } from "next/navigation";
+import { SerieCard } from "@/components/custom";
 
 const SERIE_LIST_FIELD = "series";
 
@@ -19,7 +20,7 @@ function SearchParamsProvider({
   return <>{children(urlParams)}</>;
 }
 
-function EntityPageContent({
+function EntityCardsPageContent({
   params,
   searchParams,
 }: {
@@ -40,7 +41,7 @@ function EntityPageContent({
   );
 
   const getSearchParams = React.useCallback(
-    () => searchParams,
+    () => new URLSearchParams(searchParams.toString()),
     [searchParams]
   );
 
@@ -51,36 +52,48 @@ function EntityPageContent({
     [router]
   );
 
-  if (!resolved) {
+  React.useEffect(() => {
+    if (resolved && resolved.listField !== SERIE_LIST_FIELD) {
+      router.replace(`/entities/${resolved.listField}`);
+    }
+  }, [resolved, router]);
+
+  if (!resolved || resolved.listField !== SERIE_LIST_FIELD) {
     return null;
   }
 
   const listField = resolved.listField;
-  const viewAsCardsLabel = resolveLabel(
-    ["nav.viewAsCards"],
+  const viewAsTableLabel = resolveLabel(
+    ["nav.viewAsTable"],
     { entity: listField },
-    "View as cards"
+    "View as table"
   );
 
   return (
     <LayoutShell>
       <Paper>
         <Stack spacing={1}>
-          {listField === SERIE_LIST_FIELD && (
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => navigate(`/entities/${listField}/cards`)}
-              sx={{ alignSelf: "flex-start" }}
-            >
-              {viewAsCardsLabel}
-            </Link>
-          )}
-          <EntityTable
+          <Link
+            component="button"
+            variant="body2"
+            onClick={() => navigate(`/entities/${listField}`)}
+            sx={{ alignSelf: "flex-start" }}
+          >
+            {viewAsTableLabel}
+          </Link>
+          <EntityCardList
             listField={listField}
-            onNavigate={navigate}
+            renderCard={(item, _reload, onNavigate) => (
+              <SerieCard
+                item={item}
+                listField={listField}
+                onNavigate={onNavigate ?? navigate}
+              />
+            )}
             getSearchParams={getSearchParams}
             onSearchParamsChange={onSearchParamsChange}
+            onNavigate={navigate}
+            showFilterPanel={true}
           />
         </Stack>
       </Paper>
@@ -88,7 +101,7 @@ function EntityPageContent({
   );
 }
 
-export default function EntityPage({
+export default function EntityCardsPage({
   params,
 }: {
   params: Promise<{ listField: string }>;
@@ -97,11 +110,9 @@ export default function EntityPage({
     <React.Suspense fallback={null}>
       <SearchParamsProvider>
         {(searchParams) => (
-          <EntityPageContent params={params} searchParams={searchParams} />
+          <EntityCardsPageContent params={params} searchParams={searchParams} />
         )}
       </SearchParamsProvider>
     </React.Suspense>
   );
 }
-
-

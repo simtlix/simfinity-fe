@@ -1,29 +1,71 @@
-"use client"
+"use client";
 
 import * as React from "react";
-import {EntityForm} from "@simtlix/simfinity-fe-components";
+import { EntityForm } from "@simtlix/simfinity-fe-components";
 import LayoutShell from "@/components/app/LayoutShell";
-import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Paper } from "@mui/material";
+
+function SearchParamsProvider({
+  children,
+}: {
+  children: (searchParams: URLSearchParams) => React.ReactNode;
+}) {
+  const searchParams = useSearchParams();
+  const urlParams = new URLSearchParams(searchParams?.toString() ?? "");
+  return <>{children(urlParams)}</>;
+}
+
+function EditEntityPageContent({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ listField: string; id: string }>;
+  searchParams: URLSearchParams;
+}) {
+  const router = useRouter();
+  const [resolved, setResolved] = React.useState<{ listField: string; id: string } | null>(null);
+
+  React.useEffect(() => {
+    params.then(setResolved);
+  }, [params]);
+
+  const navigate = React.useCallback(
+    (path: string) => router.push(path),
+    [router]
+  );
+
+  if (!resolved) return null;
+
+  const returnTo = searchParams.get("returnTo") ?? undefined;
+
+  return (
+    <LayoutShell>
+      <Paper>
+        <EntityForm
+          listField={resolved.listField}
+          entityId={resolved.id}
+          action="edit"
+          onNavigate={navigate}
+          returnTo={returnTo}
+        />
+      </Paper>
+    </LayoutShell>
+  );
+}
 
 export default function EditEntityPage({
   params,
 }: {
   params: Promise<{ listField: string; id: string }>;
 }) {
-  const { listField, id } = React.use(params);
-  const router = useRouter();
-
-  const navigate = useCallback((path: string) => {
-    router.push(path);
-  }, [router]);
-  
   return (
-    <LayoutShell>
-      <Paper>
-        <EntityForm listField={listField} entityId={id} action="edit" onNavigate={navigate} />
-      </Paper>
-    </LayoutShell>
+    <React.Suspense fallback={null}>
+      <SearchParamsProvider>
+        {(searchParams) => (
+          <EditEntityPageContent params={params} searchParams={searchParams} />
+        )}
+      </SearchParamsProvider>
+    </React.Suspense>
   );
 }

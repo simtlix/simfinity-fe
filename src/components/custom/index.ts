@@ -12,3 +12,6 @@ export type { DateColumnProps } from './DateColumn';
 
 export { SeasonColumn } from './SeasonColumn';
 export type { SeasonColumnProps } from './SeasonColumn';
+
+export { SerieCard } from './SerieCard';
+export type { SerieCardProps } from './SerieCard';

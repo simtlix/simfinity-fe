@@ -106,6 +106,7 @@
   "grid.columnMenu.unsort": "Quitar orden",
   
   "grid.pagination.rowsPerPage": "Filas por página:",
+  "grid.pagination.cardsPerPage": "Tarjetas por página:",
   "grid.pagination.displayedRows": "{from}–{to} de {count}",
   
   "grid.footer.rowsSelected": "{count} filas seleccionadas",
@@ -130,6 +131,9 @@
 
   "actions.view": "Ver",
   "actions.edit": "Editar",
+
+  "nav.viewAsCards": "Ver como tarjetas",
+  "nav.viewAsTable": "Ver como tabla",
   "actions.column": "Acciones",
   "button.create": "Crear",
 
